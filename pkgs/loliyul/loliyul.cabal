@@ -1,0 +1,25 @@
+Cabal-Version:  3.0
+name:           loliyul
+version:        1.1
+category:       control
+synopsis:       Compiling to Solidity Yul using linear haskell and SMC 
+description:
+  TODO.
+license:        LGPL-3.0-or-later
+license-file:   LICENSE
+author:         Miao, ZhiCheng
+maintainer:     zhicheng.miao@gmail.com
+tested-with:    GHC==9.0.1
+build-type:     Simple
+
+Test-Suite test-loliyul
+  build-depends: linear-smc
+  default-language: GHC2021
+  type:       exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is:        Yul.hs
+  build-depends: base >=4.13 && < 666,
+                 array >= 0.5.4.0,
+                 constraints,
+                 text >= 2.0.1,
+                 linear-smc == 1.0.1

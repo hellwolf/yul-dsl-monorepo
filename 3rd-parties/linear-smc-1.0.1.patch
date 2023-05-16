@@ -1,0 +1,29 @@
+diff -ur -p2 3rd-parties/linear-smc-1.0.1/Control/Category/Linear.hs pkgs/linear-smc/Control/Category/Linear.hs
+--- 3rd-parties/linear-smc-1.0.1/Control/Category/Linear.hs	2001-09-09 03:46:40.000000000 +0200
++++ pkgs/linear-smc/Control/Category/Linear.hs	2023-05-16 16:11:11.405405232 +0300
+@@ -22,5 +22,5 @@
+ module Control.Category.Linear (
+   -- Interface
+-  type P, unit, split, merge, pattern (:::),
++  type P, unit, split, merge,
+   encode, decode, (!:),
+   -- Helpers for cartesian categories
+@@ -39,11 +39,11 @@ import qualified Control.Category.FreeSM
+ 
+ 
+-pattern (:::) :: forall con (k :: Type -> Type -> Type) r a b.
+-                   (Obj k r, Obj k a, Obj k b, Monoidal k, con (), (forall α β. (con α, con β) => con (α,β)), con ~ Obj k) =>
+-                   P k r a ⊸ P k r b ⊸ P k r (a, b)
+-pattern x ::: y <- (split @con -> (x,y))
+-  where x ::: y = merge @con (x,y)
+-
+-infixr ::: -- GHC does not always see this change. rm -r dist/dante. T_T (ghc 8.8.4)
++-- pattern (:::) :: forall con (k :: Type -> Type -> Type) r a b.
++--                    (Obj k r, Obj k a, Obj k b, Monoidal k, con (), (forall α β. (con α, con β) => con (α,β)), con ~ Obj k) =>
++--                    P k r a ⊸ P k r b ⊸ P k r (a, b)
++-- pattern x ::: y <- (split @con -> (x,y))
++--   where x ::: y = merge @con (x,y)
++--
++-- infixr ::: -- GHC does not always see this change. rm -r dist/dante. T_T (ghc 8.8.4)
+ 
+ 

@@ -12,21 +12,27 @@ maintainer:     zhicheng.miao@gmail.com
 tested-with:    GHC==9.6.1
 build-type:     Simple
 
+common optiongs
+    default-language: GHC2021
+    ghc-options:
+        -Wall
+        -Wno-name-shadowing
+
 library
-  default-language: GHC2021
+  import:           optiongs
   build-depends:    base >=4.13 && < 666,
                     constraints >= 0.13,
                     text >= 2.0.1,
                     array >= 0.5.4.0,
                     linear-smc == 1.0.1
   hs-source-dirs:   src
-  exposed-modules:  LoliYul.Types
-                    LoliYul.YulCat
-                    LoliYul.Linear
-                    LoliYul
+  exposed-modules:  LoliYul.Core.Types
+                    LoliYul.Core.YulCat
+                    LoliYul.Core.Linear
+                    LoliYul.Core
 
 Test-Suite test-loliyul
-  default-language: GHC2021
+  import:           optiongs
   type:             exitcode-stdio-1.0
   build-depends:    base >=4.13 && < 666,
                     linear-smc == 1.0.1,

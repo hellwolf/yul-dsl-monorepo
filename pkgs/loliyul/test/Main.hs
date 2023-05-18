@@ -1,11 +1,11 @@
 {-# LANGUAGE LinearTypes       #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE UnicodeSyntax     #-}
+{-# OPTIONS_GHC -Wno-missing-signatures #-}
 
 import           Control.Category.Linear
-import           Data.Proxy              (Proxy (..))
 
-import           LoliYul
+import           LoliYul.Core
 
 --------------------------------------------------------------------------------
 -- Contract Examples

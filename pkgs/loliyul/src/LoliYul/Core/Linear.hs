@@ -3,18 +3,17 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UnicodeSyntax         #-}
 
-module LoliYul.Linear where
+module LoliYul.Core.Linear where
 
-import           Data.Proxy                   (Proxy (..))
 import qualified Data.Text                    as T
 
-import           Control.Category.Constrained (Cartesian (dup), Category (Obj),
-                                               O2, O4, type (⊗))
+import           Control.Category.Constrained (Cartesian, Category (Obj), O2,
+                                               O4, type (⊗))
 import           Control.Category.Linear      (P, copy, decode, discard, encode,
                                                ignore, merge, split, unit)
 
-import           LoliYul.Types
-import           LoliYul.YulCat
+import           LoliYul.Core.Types
+import           LoliYul.Core.YulCat
 
 
 --------------------------------------------------------------------------------
@@ -60,10 +59,10 @@ fst1 (a, b) = encode YulUnitorR (merge (a, discard b))
 -- TODO use linear-ase
 -- instance YulNum a => Num (YulPort r a) where
 (+:) :: (YulCon r, YulNum a) => YulPort r a ⊸ YulPort r a ⊸ YulPort r a
-a +: b = (encode YulNumPlus) (merge (a,b))
+a +: b = encode YulNumPlus (merge (a,b))
 
 (-:) :: (YulCon r, YulNum a) => YulPort r a ⊸ YulPort r a ⊸ YulPort r a
-a -: b = (encode YulNumMinus) (merge (a,b))
+a -: b = encode YulNumMinus (merge (a,b))
 
 -- | The Linear function pipeline builder from left to right.
 {-# INLINE (&) #-}
@@ -93,7 +92,7 @@ abiReturn = yulConst
 
 sget :: forall v r. (YulCon r, YulVal v)
      => (YulPort r YulAddr ⊸ YulPort r v)
-sget atP = encode YulSGet atP
+sget = encode YulSGet
 
 sput :: forall v r. (YulCon r, YulVal v)
      => YulPort r YulAddr ⊸ YulPort r v ⊸ YulPort r ()
@@ -104,7 +103,7 @@ sput toP valP = encode YulSPut (merge (toP, valP))
 
 sputAt :: forall v r. (YulCon r, YulVal v)
        => YulAddr -> YulPort r v ⊸ YulPort r ()
-sputAt to valP = sput (yulConst to unit) valP
+sputAt to = yulConst to unit & sput
 (<=@) :: forall v r. (YulCon r, YulVal v)
       => YulAddr -> YulPort r v ⊸ YulPort r ()
 (<=@) = sputAt

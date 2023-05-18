@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 
-module LoliYul.YulCat where
+module LoliYul.Core.YulCat where
 
 import           Data.Constraint              (Dict (..))
 import qualified Data.Text                    as T
@@ -9,7 +9,7 @@ import           Control.Category.Constrained (Cartesian (dis, dup),
                                                Category (..), Monoidal (..),
                                                ProdObj (..), type (⊗))
 
-import           LoliYul.Types
+import           LoliYul.Core.Types
 
 
 --------------------------------------------------------------------------------
@@ -35,7 +35,7 @@ data YulCat a b where
   YulNumMinus :: YulNum a => YulCat (a⊗a) a
   YulSGet     :: YulVal a => YulCat YulAddr a
   YulSPut     :: YulVal a => YulCat (YulAddr⊗a) ()
-  YulDetuple  :: YulVal a => YulCat [YulType] ((Maybe a)⊗[YulType])
+  YulDetuple  :: YulVal a => YulCat [YulType] (Maybe a⊗[YulType])
   YulJust     :: YulCat (Maybe a) a
   YulBlock    :: YulCat a b -> YulCat () a
   YulFunc     :: T.Text -> YulCat a b -> YulFunction

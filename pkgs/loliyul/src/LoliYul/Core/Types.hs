@@ -1,4 +1,4 @@
-module LoliYul.Types where
+module LoliYul.Core.Types where
 
 newtype YulAddr = YulAddr Integer
 

@@ -20,7 +20,10 @@ library
                     array >= 0.5.4.0,
                     linear-smc == 1.0.1
   hs-source-dirs:   src
-  exposed-modules:  LoliYul.Yul
+  exposed-modules:  LoliYul.Types
+                    LoliYul.YulCat
+                    LoliYul.Linear
+                    LoliYul
 
 Test-Suite test-loliyul
   default-language: GHC2021

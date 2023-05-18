@@ -1,23 +1,61 @@
-{-# LANGUAGE LinearTypes       #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE UnicodeSyntax     #-}
+{-# LANGUAGE LinearTypes           #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UnicodeSyntax         #-}
 
 module LoliYul.Linear where
 
 import           Data.Proxy                   (Proxy (..))
 import qualified Data.Text                    as T
 
-import           Control.Category.Constrained (type (⊗))
-import           Control.Category.Linear      (P, decode, discard, encode,
+import           Control.Category.Constrained (Cartesian (dup), Category (Obj),
+                                               O2, O4, type (⊗))
+import           Control.Category.Linear      (P, copy, decode, discard, encode,
                                                ignore, merge, split, unit)
 
 import           LoliYul.Types
 import           LoliYul.YulCat
 
 
+--------------------------------------------------------------------------------
+-- Extra SMC Linear Combinators
+--------------------------------------------------------------------------------
+
+id1 :: forall k con r a.
+       ( Cartesian k {-<-}, O2 k r a, con ~ Obj k {->-}
+       , con (), (forall α β. (con α, con β) => con (α,β))
+       ) => P k r a ⊸ P k r a
+id1 = ignore unit
+
+copy' :: forall k con r a.
+         ( Cartesian k {-<-}, O2 k r a, con ~ Obj k {->-}
+         , con (), (forall α β. (con α, con β) => con (α,β))
+         ) => P k r a ⊸ (P k r a, P k r a)
+copy' a = copy a & split
+
+copyAp :: forall k con r a b c.
+          ( Cartesian k {-<-}, O4 k r a b c, con ~ Obj k {->-}
+          , con (), (forall α β. (con α, con β) => con (α,β))
+          ) => P k r a ⊸ (P k r a ⊸ P k r b) ⊸ (P k r a ⊸ P k r c) ⊸ P k r (b⊗c)
+copyAp a f1 f2 = copy a & split & \(a1, a2) -> merge (f1 a1, f2 a2)
+
+copyAp' :: forall k con r a b c.
+           ( Cartesian k {-<-}, O4 k r a b c, con ~ Obj k {->-}
+           , con (), (forall α β. (con α, con β) => con (α,β))
+           ) => P k r a ⊸ (P k r a ⊸ P k r b) ⊸ (P k r a ⊸ P k r c) ⊸ (P k r b, P k r c)
+copyAp' a f1 f2 = copy a & split & \(a1, a2) -> (f1 a1, f2 a2)
+
+--------------------------------------------------------------------------------
+-- YulCat Linear Combinators
+--------------------------------------------------------------------------------
+
 -- | Polymorphic port type for linear function APIs of YulCat
 type YulPort r a = P YulCat r a
+
+-- TODO, use linear-base fst
+fst1 :: forall a b r. (YulCon r, YulCon a, YulCon b)
+     => (YulPort r a ⊗ YulPort r b) ⊸ YulPort r a
+fst1 (a, b) = encode YulUnitorR (merge (a, discard b))
 
 -- TODO use linear-ase
 -- instance YulNum a => Num (YulPort r a) where
@@ -26,11 +64,6 @@ a +: b = (encode YulNumPlus) (merge (a,b))
 
 (-:) :: (YulCon r, YulNum a) => YulPort r a ⊸ YulPort r a ⊸ YulPort r a
 a -: b = (encode YulNumMinus) (merge (a,b))
-
--- TODO, use linear-base fst
-fst1 :: forall a b r. (YulCon r, YulCon a, YulCon b)
-           => (YulPort r a ⊗ YulPort r b) ⊸ YulPort r a
-fst1 (a, b) = encode YulUnitorR (merge (a, discard b))
 
 -- | The Linear function pipeline builder from left to right.
 {-# INLINE (&) #-}

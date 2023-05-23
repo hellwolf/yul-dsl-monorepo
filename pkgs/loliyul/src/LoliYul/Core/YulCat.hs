@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs        #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module LoliYul.Core.YulCat where
@@ -31,16 +32,13 @@ data YulCat a b where
   YulDup      :: YulCat a (a⊗a)
   -- Yul Primitives
   YulConst    :: YulCon b => b -> YulCat a b
-  YulNumPlus  :: YulNum a => YulCat (a⊗a) a
-  YulNumMinus :: YulNum a => YulCat (a⊗a) a
   YulSGet     :: YulVal a => YulCat YulAddr a
   YulSPut     :: YulVal a => YulCat (YulAddr⊗a) ()
+  YulNumPlus  :: YulNum a => YulCat (a⊗a) a
+  YulNumMinus :: YulNum a => YulCat (a⊗a) a
   YulDetuple  :: YulVal a => YulCat [YulType] (Maybe a⊗[YulType])
   YulJust     :: YulCat (Maybe a) a
-  YulBlock    :: YulCat a b -> YulCat () a
   YulFunc     :: T.Text -> YulCat a b -> YulFunction
-  YulIntCb    :: YulTypeSpec -> YulCat () [YulType]
-  -- YulExtCb    :: YulTypeSpec -> YulCat () YulTuple
 
 data YulTypeSpec = YulTypeSpec deriving Show
 

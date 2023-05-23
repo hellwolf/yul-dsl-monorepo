@@ -4,7 +4,9 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
 import           Control.Category.Linear
+import qualified Data.Text                as T
 
+import qualified LoliYul.CodeGen.PlantUML
 import           LoliYul.Core
 
 --------------------------------------------------------------------------------
@@ -24,11 +26,11 @@ foo = defun "foo" $ \p ->
 erc20_balance_storage :: YulCon r => YulPort r YulAddr ⊸ YulPort r YulAddr
 erc20_balance_storage account = yulConst (YulAddr 0x42) unit +: account
 
-  -- | ERC20 balance of.
+-- | ERC20 balance of.
 erc20_balance_of :: YulCon r => YulPort r YulAddr ⊸ YulPort r YulUInt
 erc20_balance_of account = sget (erc20_balance_storage account)
 
-  -- | ERC20 transfer function (no negative balance check for simplicity).
+-- | ERC20 transfer function (no negative balance check for simplicity).
 erc20_transfer :: YulFunction
 erc20_transfer = defun "transfer" $ \p ->
   -- A bit of boilerplate for input abi decoding parsing,
@@ -42,8 +44,22 @@ erc20_transfer = defun "transfer" $ \p ->
           erc20_balance_storage to <== balance +: amount)
   ) & abiReturn [yulBool True]
 
+
+--------------------------------------------------------------------------------
+-- Test Run Interface
+--------------------------------------------------------------------------------
+
+compilers = [ \name cat -> "# " <> name <> ":\n\n" ++
+                           show cat <> "\n" ++
+                           replicate 80 '-' <> "\n"
+            , \name cat -> T.unpack (LoliYul.CodeGen.PlantUML.compile name cat) ++
+                           replicate 80 '-' <> "\n"
+            ]
+
 main = do
-  putStrLn $ "yulConst ():\n" <> show (decode $ yulConst () :: YulCat () ()) <> "\n"
-  putStrLn $ "yulConst 42:\n" <> show (decode $ yulConst (yulInt 42) :: YulCat () YulType) <> "\n"
-  putStrLn $ "foo:\n" <> show foo <> "\n"
-  putStrLn $ "foo:\n" <> show erc20_transfer <> "\n"
+  let n = 1
+      c = compilers !! n
+  putStr $ c "id" YulIdentity
+  putStr $ c "const42" (decode $ yulConst (yulInt 42) :: YulCat () YulType)
+  putStr $ c "foo" foo
+  putStr $ c "ERC20.transfer" erc20_transfer

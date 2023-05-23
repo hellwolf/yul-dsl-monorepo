@@ -20,21 +20,23 @@ common optiongs
 
 library
   import:           optiongs
-  build-depends:    base >=4.13 && < 666,
+  build-depends:    base >= 4.13 && < 666,
                     constraints >= 0.13,
                     text >= 2.0.1,
                     array >= 0.5.4.0,
+                    containers >= 0.6.6,
                     linear-smc == 1.0.1
   hs-source-dirs:   src
   exposed-modules:  LoliYul.Core.Types
                     LoliYul.Core.YulCat
                     LoliYul.Core.Linear
                     LoliYul.Core
+                    LoliYul.CodeGen.PlantUML
 
 Test-Suite test-loliyul
   import:           optiongs
   type:             exitcode-stdio-1.0
-  build-depends:    base >=4.13 && < 666,
+  build-depends:    base >= 4.13 && < 666,
                     linear-smc == 1.0.1,
                     loliyul
   hs-source-dirs:   test

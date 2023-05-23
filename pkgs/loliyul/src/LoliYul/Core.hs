@@ -10,5 +10,5 @@ import           LoliYul.Core.Linear
 import           LoliYul.Core.Types
 import           LoliYul.Core.YulCat
 --
-import           Control.Category.Constrained
+import           Control.Category.Constrained hiding ((.))
 import           Control.Category.Linear

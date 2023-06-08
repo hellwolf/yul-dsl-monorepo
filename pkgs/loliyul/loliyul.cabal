@@ -21,6 +21,7 @@ common optiongs
 library
   import:           optiongs
   build-depends:    base >= 4.13 && < 666,
+                    bytestring >= 0.11,
                     constraints >= 0.13,
                     text >= 2.0.1,
                     array >= 0.5.4.0,
@@ -28,7 +29,7 @@ library
                     linear-smc == 1.0.1
   hs-source-dirs:   src
   exposed-modules:  LoliYul.Core.Types
-                    LoliYul.Core.YulCat
+                    LoliYul.Core.YulDSL
                     LoliYul.Core.Linear
                     LoliYul.Core
                     LoliYul.CodeGen.PlantUML

@@ -1,6 +1,6 @@
 module LoliYul.Core
   ( module LoliYul.Core.Types
-  , module LoliYul.Core.YulCat
+  , module LoliYul.Core.YulDSL
   , module LoliYul.Core.Linear
   , module Control.Category.Linear
   , module Control.Category.Constrained
@@ -8,7 +8,7 @@ module LoliYul.Core
 
 import           LoliYul.Core.Linear
 import           LoliYul.Core.Types
-import           LoliYul.Core.YulCat
+import           LoliYul.Core.YulDSL
 --
 import           Control.Category.Constrained hiding ((.))
 import           Control.Category.Linear

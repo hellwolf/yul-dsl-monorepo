@@ -1,3 +1,4 @@
+{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE LinearTypes           #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -5,15 +6,16 @@
 
 module LoliYul.Core.Linear where
 
+import           Data.Kind                    (Type)
 import qualified Data.Text                    as T
 
 import           Control.Category.Constrained (Cartesian, Category (Obj), O2,
-                                               O4, type (⊗))
+                                               O3, O4, type (⊗))
 import           Control.Category.Linear      (P, copy, decode, discard, encode,
                                                ignore, merge, split, unit)
 
 import           LoliYul.Core.Types
-import           LoliYul.Core.YulCat
+import           LoliYul.Core.YulDSL
 
 
 --------------------------------------------------------------------------------
@@ -44,73 +46,135 @@ copyAp' :: forall k con r a b c.
            ) => P k r a ⊸ (P k r a ⊸ P k r b) ⊸ (P k r a ⊸ P k r c) ⊸ (P k r b, P k r c)
 copyAp' a f1 f2 = copy a & split & \(a1, a2) -> (f1 a1, f2 a2)
 
---------------------------------------------------------------------------------
--- YulCat Linear Combinators
---------------------------------------------------------------------------------
-
--- | Polymorphic port type for linear function APIs of YulCat
-type YulPort r a = P YulCat r a
-
--- TODO, use linear-base fst
-fst1 :: forall a b r. (YulCon r, YulCon a, YulCon b)
-     => (YulPort r a ⊗ YulPort r b) ⊸ YulPort r a
-fst1 (a, b) = encode YulUnitorR (merge (a, discard b))
-
--- TODO use linear-ase
--- instance YulNum a => Num (YulPort r a) where
-(+:) :: (YulCon r, YulNum a) => YulPort r a ⊸ YulPort r a ⊸ YulPort r a
-a +: b = encode YulNumPlus (merge (a,b))
-
-(-:) :: (YulCon r, YulNum a) => YulPort r a ⊸ YulPort r a ⊸ YulPort r a
-a -: b = encode YulNumMinus (merge (a,b))
+passAp :: forall k con r a b.
+          ( Cartesian k {-<-}, O3 k r a b, con ~ Obj k {->-}
+          , con (), (forall α β. (con α, con β) => con (α,β))
+          ) => P k r a ⊸ (P k r a ⊸ P k r b) ⊸ (P k r a, P k r b)
+passAp i f = copyAp' i id1 f
 
 -- | The Linear function pipeline builder from left to right.
 {-# INLINE (&) #-}
 (&) :: forall a b m. a %m -> (a %m -> b) %m -> b
 x & f = f x
 
-yulConst :: forall r a b. (YulCon r, YulCon a, YulCon b)
-         => b -> (YulPort r a ⊸ YulPort r b)
+--------------------------------------------------------------------------------
+-- YulDSL Linear Combinators
+--------------------------------------------------------------------------------
+
+-- | Polymorphic port type for linear function APIs of YulDSL
+type YulP r a = P YulDSL r a
+
+yul_id :: forall a b r. (YulO3 r a b, YulSameBytes a b)
+     => YulP r a ⊸ YulP r b
+yul_id = encode YulId
+
+-- TODO, use linear-base if'/bool
+if1 :: forall r b. (YulObj r, YulObj b)
+    => YulP r AbiBool
+    ⊸  (forall r1. YulObj r1 => YulP r1 () ⊸ YulP r1 b)
+    -> (forall r2. YulObj r2 => YulP r2 () ⊸ YulP r2 b)
+    -> YulP r b
+if1 b f g = encode (YulBool (decode f) (decode g)) b
+
+-- TODO, use linear-base fst
+fst1 :: forall a b r. YulO3 r a b
+     => (YulP r a ⊗ YulP r b) ⊸ YulP r a
+fst1 (a, b) = encode YulId (merge (a, discard b))
+
+-- TODO use linear-ase
+-- instance YulNum a => Num (YulP r a) where
+(+:) :: forall a r. (YulO2 r a, YulNum a) => YulP r a ⊸ YulP r a ⊸ YulP r a
+a +: b = encode YulNumAdd (merge (a,b))
+
+negate1 :: forall a r. (YulO2 r a, YulNum a) => YulP r a ⊸ YulP r a
+negate1 = encode YulNumNeg
+
+(-:) :: forall a r. (YulO2 r a, YulNum a) =>  YulP r a ⊸ YulP r a ⊸ YulP r a
+a -: b = encode YulNumAdd (merge (a, negate1 b))
+
+yulConst :: forall a b r. YulO3 r a b
+         => b -> (YulP r a ⊸ YulP r b)
 yulConst b = encode (YulConst b)
 
-yulJust :: forall a r. (YulCon r, YulCon a)
-       => YulPort r (Maybe a) ⊸ YulPort r a
-yulJust = encode YulJust
+-- abiPop :: forall a a' as' r. YulO4 r a a' as'
+--        => YulP r a ⊸ YulP r (Maybe (a' :> as'))
+-- abiPop = encode YulAbiPop
 
-abiPop :: forall a r. (YulVal a, YulCon r)
-       => YulPort r [YulType] ⊸ YulPort r a
-abiPop a = encode YulDetuple a & split & fst1 & yulJust
+abiEncode :: forall a r. YulO2 r a
+          => YulP r a ⊸ YulP r AbiBytes
+abiEncode = encode YulAbiEnc
 
-abiIter :: forall a r. (YulVal a, YulCon r)
-        => YulPort r [YulType] ⊸ (YulPort r a, YulPort r [YulType])
-abiIter a = encode YulDetuple a & split & \(a, b) -> merge (yulJust a, b) & split
+abiDecode :: forall a r. YulO2 r a
+          => YulP r AbiBytes ⊸ YulP r (Maybe a)
+abiDecode a = encode YulAbiDec a
 
--- TODO actual abi encoding needed
-abiReturn :: forall r a b. (YulCon r, YulCon a, YulCon b)
-          => b -> (YulPort r a ⊸ YulPort r b)
-abiReturn = yulConst
-
-sget :: forall v r. (YulCon r, YulVal v)
-     => (YulPort r YulAddr ⊸ YulPort r v)
+sget :: forall v r. (YulObj r, YulVal v)
+     => (YulP r AbiAddr ⊸ YulP r v)
 sget = encode YulSGet
 
-sput :: forall v r. (YulCon r, YulVal v)
-     => YulPort r YulAddr ⊸ YulPort r v ⊸ YulPort r ()
+sput :: forall v r. (YulObj r, YulVal v)
+     => YulP r AbiAddr ⊸ YulP r v ⊸ YulP r ()
 sput toP valP = encode YulSPut (merge (toP, valP))
-(<==) :: forall v r. (YulCon r, YulVal v)
-      => YulPort r YulAddr ⊸ YulPort r v ⊸ YulPort r ()
+(<==) :: forall v r. (YulObj r, YulVal v)
+      => YulP r AbiAddr ⊸ YulP r v ⊸ YulP r ()
 (<==) = sput
 
-sputAt :: forall v r. (YulCon r, YulVal v)
-       => YulAddr -> YulPort r v ⊸ YulPort r ()
+sputAt :: forall v r. (YulObj r, YulVal v)
+       => AbiAddr -> YulP r v ⊸ YulP r ()
 sputAt to = yulConst to unit & sput
-(<=@) :: forall v r. (YulCon r, YulVal v)
-      => YulAddr -> YulPort r v ⊸ YulPort r ()
+(<=@) :: forall v r. (YulObj r, YulVal v)
+      => AbiAddr -> YulP r v ⊸ YulP r ()
 (<=@) = sputAt
-
 infixr 1 <==, <=@
 
-defun :: T.Text
-      -> (forall r. YulCon r => YulPort r [YulType] ⊸ YulPort r [YulType])
-      -> YulFunction
-defun name f = YulFunc name (decode f)
+-- Port List
+
+type family YulPortExplode (a :: Type) :: Type where
+  YulPortExplode (YulP r ()) = ()
+  YulPortExplode (YulP r (a :> as)) = YulPortExplode (YulP r a) :> YulPortExplode (YulP r as)
+  YulPortExplode (YulP r a) = YulP r a
+
+class YulObj a => YulPReducible a where
+  yul_port_reduce :: forall r. YulObj r
+                  => YulP r a ⊸ YulPortExplode (YulP r a)
+  default yul_port_reduce :: (YulObj r, YulP r a ~ YulPortExplode (YulP r a))
+                          => YulP r a ⊸ YulPortExplode (YulP r a)
+  yul_port_reduce = id1
+
+instance YulPReducible AbiAddr
+instance YulPReducible AbiBool
+instance YulPReducible AbiUInt
+instance YulPReducible AbiInt
+instance YulPReducible AbiBytes
+
+instance forall a as. (YulPReducible a, YulPReducible as) => YulPReducible (a :> as) where
+  yul_port_reduce p = yul_id @(a :> as) @(a ⊗ as) p & split &
+                      \(a, as) -> yul_port_reduce a :> yul_port_reduce as
+
+class YulO2 a as => YulPList a as where
+  yul_port_pop :: forall r. YulObj r
+               => YulP r (a :> as) ⊸ YulPortExplode (YulP r a) :> YulPortExplode (YulP r as)
+
+instance forall a a' as'. (YulPReducible a, YulPList a' as') => YulPList a (a' :> as') where
+  yul_port_pop p = yul_id @(a :> a' :> as') @(a ⊗ (a' :> as')) p & split &
+                   \(a, as) -> yul_port_reduce a :> yul_port_pop as
+
+instance forall a as. YulPList a as => YulPList (a :> as) () where
+  yul_port_pop p = yul_id @((a :> as) :> ()) @((a :> as) ⊗ ()) p & split &
+                   \(a, u) -> (ignore u a & yul_port_pop) :> ()
+
+instance forall a. YulPReducible a => YulPList a () where
+  yul_port_pop p = yul_id @(a :> ()) @(a ⊗ ()) p & split &
+                   \(a, u) -> (ignore u a & yul_port_reduce) :> ()
+
+defun :: forall a as b bs. (YulO4 a as b bs , YulPList a as)
+      => T.Text
+      -> (forall r1. YulObj r1 => YulPortExplode (YulP r1 (a :> as)) ⊸ YulP r1 (b :> bs))
+      -> YulInternalFunction (a :> as) (b :> bs)
+defun name f = YulInternFn name $ decode (\p -> f (yul_port_pop p))
+
+-- exfun :: T.Text
+--        -> (forall a as b bs r. YulO5 a as b bs r => YulP r (a :> as) ⊸ YulP r (b :> bs))
+--        -> (forall r. YulObj r => YulP r AbiBytes ⊸ YulP r ())
+--        -> YulExternFunc
+-- exfun name f e = YulExternFn name (decode f) (decode e)

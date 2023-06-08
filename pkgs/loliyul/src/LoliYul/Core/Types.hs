@@ -1,27 +1,35 @@
+{-# LANGUAGE UndecidableInstances #-}
 module LoliYul.Core.Types where
 
-newtype YulAddr = YulAddr Integer
+import           Data.ByteString (ByteString)
 
-newtype YulBool = YulBool Bool
-yulBool :: Bool -> YulType
-yulBool = MkYulBool . YulBool
+-- Primitive Types
 
-newtype YulUInt = YulUInt Integer
-yulUInt :: Integer -> YulType
-yulUInt = MkYulUInt . YulUInt
+newtype AbiAddr  = Addr Integer
+newtype AbiBool  = Bool Bool
+newtype AbiUInt  = UInt Integer
+newtype AbiInt   = Int  Integer
+newtype AbiBytes = Blob ByteString
 
-newtype YulInt  = YulInt Integer
-yulInt :: Integer -> YulType
-yulInt = MkYulInt . YulInt
+deriving instance Show AbiAddr
+deriving instance Show AbiBool
+deriving instance Show AbiUInt
+deriving instance Show AbiInt
+deriving instance Show AbiBytes
 
-data YulType  = MkYulAddr YulAddr
-              | MkYulTuple [YulType]
-              | MkYulBool YulBool
-              | MkYulUInt YulUInt
-              | MkYulInt  YulInt
+-- Heterogeneous List
 
-deriving instance Show YulAddr
-deriving instance Show YulBool
-deriving instance Show YulUInt
-deriving instance Show YulInt
-deriving instance Show YulType
+-- | Type constructor (:>) and data constructor pun for creating heterogeneous list.
+data a :> b = a :> b
+-- | Operator (:>) being right associative allows bracket-free syntax.
+infixr :>
+
+-- | Zero-element type list.
+type Nil = () :> ()
+-- | Single-element type list.
+type One a = a :> ()
+
+instance {-# OVERLAPPABLE #-} (Show a, Show b) => Show (a :> b) where
+  show (a :> b) = "(" <> show a <> "," <> show b <> ")"
+instance {-# OVERLAPPING  #-} Show a => Show (a :> ()) where
+  show (a :> ()) = show a

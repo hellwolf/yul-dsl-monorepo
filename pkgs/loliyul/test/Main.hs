@@ -29,7 +29,8 @@ bar = defun "bar" $ \(x1 :> x2 :> ()) ->
 
 -- FIXME should use hashing of course
 erc20_balance_storage :: YulObj r => YulP r AbiAddr ⊸ YulP r AbiAddr
-erc20_balance_storage account = yulConst (Addr 0x42) unit +: account
+erc20_balance_storage account = mkUnit account & \(account, unit) ->
+  yulConst (Addr 0x42) unit +: account
 
 -- | ERC20 balance of.
 erc20_balance_of :: YulObj r => YulP r AbiAddr ⊸ YulP r AbiUInt
@@ -59,7 +60,7 @@ compilers = [ \name cat -> "# " <> name <> ":\n\n" ++
             ]
 
 main = do
-  let n = 1
+  let n = 0
       c = compilers !! n
   putStr $ c "id" (YulId @AbiUInt @AbiUInt)
   putStr $ c "const42" (decode $ yulConst (Int 42) :: YulDSL () AbiInt)

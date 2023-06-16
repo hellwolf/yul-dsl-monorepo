@@ -9,10 +9,10 @@ module LoliYul.Core.Linear where
 import           Data.Kind                    (Type)
 import qualified Data.Text                    as T
 
-import           Control.Category.Constrained (Cartesian, Category (Obj), O2,
-                                               O3, O4, type (⊗))
+import           Control.Category.Constrained (Cartesian (dis), Category (Obj),
+                                               O2, O3, O4, type (⊗))
 import           Control.Category.Linear      (P, copy, decode, discard, encode,
-                                               ignore, merge, split, unit)
+                                               ignore, merge, mkUnit, split)
 
 import           LoliYul.Core.Types
 import           LoliYul.Core.YulDSL
@@ -26,7 +26,7 @@ id1 :: forall k con r a.
        ( Cartesian k {-<-}, O2 k r a, con ~ Obj k {->-}
        , con (), (forall α β. (con α, con β) => con (α,β))
        ) => P k r a ⊸ P k r a
-id1 = ignore unit
+id1 a = a
 
 copy' :: forall k con r a.
          ( Cartesian k {-<-}, O2 k r a, con ~ Obj k {->-}
@@ -121,7 +121,7 @@ sput toP valP = encode YulSPut (merge (toP, valP))
 
 sputAt :: forall v r. (YulObj r, YulVal v)
        => AbiAddr -> YulP r v ⊸ YulP r ()
-sputAt to = yulConst to unit & sput
+sputAt to v = mkUnit v & \(v, u) -> yulConst to u & \a -> sput a v
 (<=@) :: forall v r. (YulObj r, YulVal v)
       => AbiAddr -> YulP r v ⊸ YulP r ()
 (<=@) = sputAt

@@ -26,7 +26,7 @@ library
                     text >= 2.0.1,
                     array >= 0.5.4.0,
                     containers >= 0.6.6,
-                    linear-smc == 1.0.1
+                    linear-smc > 2.0.0
   hs-source-dirs:   src
   exposed-modules:  LoliYul.Core.Types
                     LoliYul.Core.YulDSL
@@ -38,7 +38,8 @@ Test-Suite test-loliyul
   import:           optiongs
   type:             exitcode-stdio-1.0
   build-depends:    base >= 4.13 && < 666,
-                    linear-smc == 1.0.1,
+                    text >= 2.0.1,
+                    linear-smc > 2.0.0,
                     loliyul
   hs-source-dirs:   test
   main-is:          Main.hs

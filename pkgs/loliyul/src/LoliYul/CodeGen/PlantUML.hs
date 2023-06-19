@@ -2,10 +2,15 @@
 
 module LoliYul.CodeGen.PlantUML (compile) where
 
+import           ClassicPrelude      ((<>))
+import           Prelude             hiding ((<>))
+
 import qualified Data.Text           as T
 import           Data.Typeable
-import           LoliYul.Core.YulDSL
 import           Text.Printf
+
+import           LoliYul.Core.YulDSL
+
 
 compile :: String -> YulDSL a b -> T.Text
 compile filename cat =

@@ -21,12 +21,17 @@ common optiongs
 library
   import:           optiongs
   build-depends:    base >= 4.13 && < 666,
+                    linear-base >= 0.3.1,
+                    text >= 2.0.1,
                     bytestring >= 0.11,
                     constraints >= 0.13,
-                    text >= 2.0.1,
                     array >= 0.5.4.0,
                     containers >= 0.6.6,
                     linear-smc > 2.0.0
+  mixins:           base hiding (Prelude),
+                    base (Prelude as ClassicPrelude),
+                    linear-base (Prelude.Linear as Prelude),
+                    linear-base
   hs-source-dirs:   src
   exposed-modules:  LoliYul.Core.Types
                     LoliYul.Core.YulDSL
@@ -38,8 +43,13 @@ Test-Suite test-loliyul
   import:           optiongs
   type:             exitcode-stdio-1.0
   build-depends:    base >= 4.13 && < 666,
+                    linear-base >= 0.3.1,
                     text >= 2.0.1,
                     linear-smc > 2.0.0,
                     loliyul
+  mixins:           base hiding (Prelude),
+                    base (Prelude as ClassicPrelude),
+                    linear-base (Prelude.Linear as Prelude),
+                    linear-base
   hs-source-dirs:   test
   main-is:          Main.hs

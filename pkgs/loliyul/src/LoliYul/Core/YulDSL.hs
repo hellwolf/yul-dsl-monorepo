@@ -76,15 +76,14 @@ data YulDSL a b where
   YulDup  :: YulObj a => YulDSL a (a⊗a)
   -- Yul Primitives
   YulConst    :: YulO2 a b => b -> YulDSL a b
-  YulBool     :: YulDSL () b -> YulDSL () b -> YulDSL AbiBool b
   YulNumNeg   :: YulNum a => YulDSL a a
   YulNumAdd   :: YulNum a => YulDSL (a⊗a) a
   YulSGet     :: YulVal a => YulDSL AbiAddr a
   YulSPut     :: YulVal a => YulDSL (AbiAddr⊗a) ()
-  YulAbiEnc   :: YulObj a => YulDSL a AbiBytes
-  YulAbiDec   :: YulObj a => YulDSL AbiBytes (Maybe a)
+  -- YulAbiEnc   :: YulObj a => YulDSL a AbiBytes
+  -- YulAbiDec   :: YulObj a => YulDSL AbiBytes (Maybe a)
   YulInternFn :: YulO2 a b => T.Text -> YulDSL a b -> YulInternalFunction a b
-  YulExternFn :: YulO2 a b => T.Text -> YulDSL a b -> YulErrorHandler -> YulExternalFunction
+  -- YulExternFn :: YulO2 a b => T.Text -> YulDSL a b -> YulErrorHandler -> YulExternalFunction
   -- YulJmpCall
   -- YulExtCall
   deriving Typeable

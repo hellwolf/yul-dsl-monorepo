@@ -25,7 +25,7 @@ library
                     constraints >= 0.13,
                     array >= 0.5.4.0,
                     containers >= 0.6.6,
-                    linear-smc > 2.0.0
+                    linear-smc >= 2.2.3
   mixins:           base hiding (Prelude),
                     base (Prelude as ClassicPrelude),
                     linear-base (Prelude.Linear as Prelude),

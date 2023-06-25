@@ -51,10 +51,14 @@ instance YulVal AbiUInt
 instance YulVal AbiInt
 
 -- | Yul number-value objects.
-class YulVal a => YulNum a
-instance YulNum AbiAddr -- FIXME remove
-instance YulNum AbiUInt
-instance YulNum AbiInt
+class YulVal a => YulNum a where
+  num_zero :: a
+instance YulNum AbiAddr where
+  num_zero = Addr 0
+instance YulNum AbiUInt where
+  num_zero = UInt 0
+instance YulNum AbiInt where
+  num_zero = Int 0
 
 -- | Family of objects that have the same bytes representations.
 class YulO2 a b => YulSameBytes a b

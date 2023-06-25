@@ -32,10 +32,10 @@ data Env = Env { node_counter :: Int
                }
 
 inc_env :: Env -> Env
-inc_env env@(Env id) = env { node_counter = id + 1 }
+inc_env env@(Env i) = env { node_counter = i + 1 }
 
 gen_obj :: String -> Env -> String
-gen_obj objtype (Env id) = printf "%s_%d" objtype id
+gen_obj objtype (Env i) = printf "%s_%d" objtype i
 
 type NodeName = String
 type NodeOutput = String

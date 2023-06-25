@@ -54,15 +54,26 @@ passAp i f = copyAp' i id f
 -- | Polymorphic port type for linear function APIs of YulDSL
 type YulP r a = P YulDSL r a
 
+-- Port Types
+
+type UnitP r  = YulP r ()
+type AddrP r  = YulP r AbiAddr
+type BoolP r  = YulP r AbiBool
+type UIntP r  = YulP r AbiUInt
+type IntP r   = YulP r AbiInt
+type BytesP r = YulP r AbiBytes
+
 instance (YulNum a, YulObj r) => Additive (YulP r a) where
-  a + b = encode YulNumAdd (merge (a,b))
+  a + b = encode YulNumAdd (merge (a, b))
 
 instance (YulNum a, YulObj r) => AddIdentity (YulP r a) where
-  zero = error "FIXME unit not supported"
+  zero = error "unit not supported for Ports"
 
 instance (YulNum a, YulObj r) => AdditiveGroup (YulP r a) where
   negate = encode YulNumNeg
   a - b = encode YulNumAdd (merge (a, negate b))
+
+-- Utilities
 
 yul_id :: forall a b r. (YulO3 r a b, YulSameBytes a b)
      => YulP r a ⊸ YulP r b
@@ -73,8 +84,8 @@ yul_fst :: forall a b r. YulO3 r a b
 yul_fst (a, b) = encode YulId (merge (a, discard b))
 
 yulConst :: forall a b r. YulO3 r a b
-         => b -> (YulP r a ⊸ YulP r b)
-yulConst b = encode (YulConst b)
+         => a -> (YulP r b ⊸ YulP r a)
+yulConst a = encode (YulConst a)
 
 -- abiEncode :: forall a r. YulO2 r a
 --           => YulP r a ⊸ YulP r AbiBytes
@@ -97,7 +108,7 @@ sput toP valP = encode YulSPut (merge (toP, valP))
 
 sputAt :: forall v r. (YulObj r, YulVal v)
        => AbiAddr -> YulP r v ⊸ YulP r ()
-sputAt to v = mkUnit v & \(v, u) -> yulConst to u & \a -> sput a v
+sputAt to v = mkUnit v & \(v', u) -> yulConst to u & \a -> sput a v'
 (<=@) :: forall v r. (YulObj r, YulVal v)
       => AbiAddr -> YulP r v ⊸ YulP r ()
 (<=@) = sputAt

@@ -5,7 +5,7 @@
 {-# LANGUAGE UnicodeSyntax         #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module LoliYul.Core.Linear where
+module LoliYul.Linear where
 
 import           Data.Kind                    (Type)
 import qualified Data.Text                    as T

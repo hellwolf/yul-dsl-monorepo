@@ -16,16 +16,16 @@ common basic-options
     default-language:     GHC2021
     ghc-options:          -Wall
 
-library
-  import:           basic-options
-  build-depends:    base >= 4.13 && < 666,
-                    linear-base >= 0.3.1,
+common loliyul-deps
+    build-depends:  base >= 4.13 && < 666,
                     text >= 2.0.1,
                     bytestring >= 0.11,
                     constraints >= 0.13,
-                    array >= 0.5.4.0,
-                    containers >= 0.6.6,
+                    linear-base >= 0.3.1,
                     linear-smc >= 2.2.3
+
+library
+  import:           basic-options, loliyul-deps
   mixins:           base hiding (Prelude),
                     base (Prelude as ClassicPrelude),
                     linear-base (Prelude.Linear as Prelude),
@@ -33,6 +33,16 @@ library
   hs-source-dirs:   src
   exposed-modules:  LoliYul.Core.Types
                     LoliYul.Core.YulDSL
-                    LoliYul.Core.Linear
                     LoliYul.Core
+                    LoliYul.Linear
+                    LoliYul.Prelude
                     LoliYul.CodeGen.PlantUML
+
+Test-Suite test-loliyul
+  import:           basic-options, loliyul-deps
+  type:             exitcode-stdio-1.0
+  build-depends:    QuickCheck >=2.13,
+                    hspec >=2.11,
+                    loliyul
+  hs-source-dirs:   test
+  main-is:          Main.hs

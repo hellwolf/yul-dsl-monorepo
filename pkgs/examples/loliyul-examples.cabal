@@ -26,11 +26,13 @@ common yol-module-options
                           -Wno-name-shadowing
     mixins:               base hiding (Prelude),
                           base (Prelude as ClassicPrelude),
-                          linear-base (Prelude.Linear as Prelude),
-                          linear-base
+                          loliyul (LoliYul.Prelude as Prelude),
+                          loliyul
     build-depends:        base >= 4.13 && < 666,
-                          linear-base >= 0.3.1,
                           text >= 2.0.1,
+                          bytestring >= 0.11,
+                          constraints >= 0.13,
+                          linear-base >= 0.3.1,
                           linear-smc >= 2.2.3,
                           loliyul
 

@@ -1,4 +1,3 @@
-{-# LANGUAGE UndecidableInstances #-}
 module LoliYul.Core.Types where
 
 import           Data.ByteString (ByteString)

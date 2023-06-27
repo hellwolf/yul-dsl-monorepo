@@ -8,7 +8,13 @@ TEST_OPTIONS = \
 gen-patch-linear-smc-1.0.1:
 	diff -ur -p2 3rd-parties/linear-smc-1.0.1 pkgs/linear-smc | tee 3rd-parties/linear-smc-1.0.1.patch
 
-dev:
-	nodemon -e sol -x cabal -- test loliyul $(TEST_OPTIONS)
+build-all:
+	cabal build all
 
-.PHONY: gen-* dev
+test-loliyul:
+	cabal test loliyul $(TEST_OPTIONS)
+
+dev:
+	nodemon -e "hs cabal" -x "make build-all test-loliyul || exit 1"
+
+.PHONY: gen-* build-* test-* dev

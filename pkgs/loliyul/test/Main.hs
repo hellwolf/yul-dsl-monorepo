@@ -1,6 +1,6 @@
-{-# OPTIONS_GHC -Wno-missing-signatures #-}
-
 import           Test.Hspec
 
+import qualified Eval_prop
+
 main = hspec $ do
-  it "always true" $ True
+  Eval_prop.tests

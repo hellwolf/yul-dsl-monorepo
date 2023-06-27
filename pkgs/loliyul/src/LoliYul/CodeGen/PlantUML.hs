@@ -2,9 +2,6 @@
 
 module LoliYul.CodeGen.PlantUML (compile) where
 
-import           ClassicPrelude      ((<>))
-import           Prelude             hiding ((<>))
-
 import qualified Data.Text           as T
 import           Data.Typeable
 import           Text.Printf
@@ -54,7 +51,8 @@ compile_cat cat = code <> T.pack (
   ) where (Node node out, code, _) = go_cat cat (Env 0) (Node "[*]" "inputs")
 
 go_cat :: YulDSL a b -> Env -> Node -> (Node, Code, Env)
-go_cat YulId env p = (p, T.pack "", env)
+go_cat YulId     env p = (p, T.pack "", env)
+go_cat YulCoerce env p = (p, T.pack "", env)
 go_cat (YulComp cat1 cat2) env (Node iname iout) =
   ( Node node1 out1
   , body2 <> body1
@@ -109,7 +107,7 @@ go_cat YulSPut env (Node iname iout) =
   , env) where obj = gen_obj "sput" env
 go_cat (YulInternFn name body) env (Node iname iout) =
   ( Node exit_obj "returns"
-  , T.pack (printf "state \"function %s\" as %s {\n"  (T.unpack name) func_obj) <>
+  , T.pack (printf "state \"function %s\" as %s {\n"  name func_obj) <>
     body' <>
     T.pack (
       printf "state %s <<expansionInput>>\n" entry_obj <>

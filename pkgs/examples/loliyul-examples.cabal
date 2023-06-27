@@ -15,27 +15,30 @@ common basic-options
     default-language:     GHC2021
     ghc-options:          -Wall
 
-common yol-module-options
-    default-language:     GHC2021
+common loliyul-shared-deps
+    build-depends:        base >= 4.13 && < 666,
+                          bytestring >= 0.11,
+                          loliyul
+
+common loliyul-module-options
+    import:               loliyul-shared-deps
     default-extensions:   LinearTypes
                           BlockArguments
                           ImpredicativeTypes
                           OverloadedStrings
                           UnicodeSyntax
-    ghc-options:          -Wall
-                          -Wno-name-shadowing
+    ghc-options:          -Wno-name-shadowing
     mixins:               base hiding (Prelude),
                           base (Prelude as ClassicPrelude),
                           loliyul (LoliYul.Prelude as Prelude),
                           loliyul
-    build-depends:        base >= 4.13 && < 666,
-                          text >= 2.0.1,
-                          bytestring >= 0.11,
-                          constraints >= 0.13,
-                          linear-base >= 0.3.1,
-                          linear-smc >= 2.2.3,
-                          loliyul
+    build-depends:        linear-base >= 0.3.1,
+                          linear-smc >= 2.2.3
+
+common loliyul-yol-options
+    import:               loliyul-shared-deps
+    build-depends:        text >= 2.0.1
 
 library
-  import:           yol-module-options
+  import:           basic-options, loliyul-module-options, loliyul-yol-options
   exposed-modules:  Basic

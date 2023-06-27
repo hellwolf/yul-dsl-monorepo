@@ -15,24 +15,25 @@ build-type:     Simple
 common basic-options
     default-language:     GHC2021
     ghc-options:          -Wall
+    default-extensions:   UnicodeSyntax
 
 common loliyul-deps
     build-depends:  base >= 4.13 && < 666,
-                    text >= 2.0.1,
                     bytestring >= 0.11,
-                    constraints >= 0.13,
                     linear-base >= 0.3.1,
                     linear-smc >= 2.2.3
 
 library
   import:           basic-options, loliyul-deps
-  mixins:           base hiding (Prelude),
-                    base (Prelude as ClassicPrelude),
-                    linear-base (Prelude.Linear as Prelude),
-                    linear-base
   hs-source-dirs:   src
+  build-depends:    text >= 2.0.1,
+                    constraints >= 0.13,
+                    containers >= 0.6.7
   exposed-modules:  LoliYul.Core.Types
+                    LoliYul.Core.YulDSL.Obj
+                    LoliYul.Core.YulDSL.Coerce
                     LoliYul.Core.YulDSL
+                    LoliYul.Core.Eval
                     LoliYul.Core
                     LoliYul.Linear
                     LoliYul.Prelude
@@ -40,9 +41,11 @@ library
 
 Test-Suite test-loliyul
   import:           basic-options, loliyul-deps
+  ghc-options:      -Wno-missing-signatures
   type:             exitcode-stdio-1.0
   build-depends:    QuickCheck >=2.13,
                     hspec >=2.11,
                     loliyul
   hs-source-dirs:   test
+  other-modules:    Eval_prop
   main-is:          Main.hs

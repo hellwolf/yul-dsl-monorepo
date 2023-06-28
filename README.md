@@ -1,7 +1,7 @@
-LoliYul - Programming Solidity/Yul in linear-typed (lolipop ⊸) functions
-=========================================================================
+LoliYul - Programming Solidity/Yul in Linear-typed (Lolipop ⊸) Functions
+========================================================================
 
-LoliYul provides an EDSL called 'YulDSL' for transpiling Haskell codes to the Solidiy/Yul codes.
+LoliYul provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
 
 Additionally, the package uses a technique called "evaluating linear functions to symmetric monoidal categories
 (Jean-Philippe Bernardy and Arnaud Spiwack)" to provide an ergonomic linear functions (nicknamed "lolipop" functions,

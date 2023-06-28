@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE DefaultSignatures  #-}
 {-# LANGUAGE DerivingStrategies #-}
-module LoliYul.Core.Types
+module LoliYul.Core.ContractABI.Types
   ( BOOL, true, false
   , ADDR, to_addr, zero_address
   , SVALUE, def_sval

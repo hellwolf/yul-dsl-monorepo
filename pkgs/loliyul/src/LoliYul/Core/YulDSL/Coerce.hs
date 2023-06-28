@@ -1,20 +1,29 @@
 {-# LANGUAGE ExplicitNamespaces   #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-------------------------------------------------------------------------------------------------------------------------
--- |
---
--- = Description
---
--- Safe yul data coercion support for same representational data.
---
--- It is the code separated out in order to isolate the usage of UndecidableInstances extension.
+{-|
 
-module LoliYul.Core.YulDSL.Coerce where
+Copyright   : (c) Miao ZhiCheng, 2023
+License     : LGPL-3
+Maintainer  : zhicheng.miao@gmail.com
+Stability   : experimental
+Portability : portable
+
+= Description
+
+Safe yul data coercion support for same representational data.
+
+It is the code separated out in order to isolate the usage of UndecidableInstances extension.
+
+-}
+
+module LoliYul.Core.YulDSL.Coerce
+  ( YulCoercible
+  ) where
 
 import           Control.Category.Constrained (type (⊗))
 
-import           LoliYul.Core.Types
+import           LoliYul.Core.ContractABI
 import           LoliYul.Core.YulDSL.Obj
 
 -- | Family of objects that have the same bytes representations.

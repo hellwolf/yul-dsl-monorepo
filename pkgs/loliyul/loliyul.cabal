@@ -2,15 +2,23 @@ Cabal-Version:  3.0
 name:           loliyul
 version:        0.1
 category:       control
-synopsis:       Compiling to Solidity Yul using linear haskell and SMC
-description:
-  TODO.
+synopsis:       Programming Solidity/Yul in linear-typed (lolipop ⊸) functions
 license:        LGPL-3.0-or-later
 license-file:   LICENSE
-author:         Miao, ZhiCheng
+author:         Miao ZhiCheng
 maintainer:     zhicheng.miao@gmail.com
-tested-with:    GHC==9.6.1
+tested-with:    GHC==9.6.2
 build-type:     Simple
+
+description:    LoliYul provides an EDSL called 'YulDSL' for transpiling Haskell codes to the Solidiy/Yul codes.
+
+                Additionally, the package uses a technique called "evaluating linear functions to symmetric monoidal
+                categories (Jean-Philippe Bernardy and Arnaud Spiwack)" to provide an ergonomic linear functions
+                (nicknamed "lolipop" functions, hence the project name) programming environment for the 'YulDSL'.
+
+                Furthermore, the 'YulDSL' has its portable artifact form (WORK-IN-PROGRESS), which opens the door for
+                other frontends (a visual programming interface or other principled programming languages) to produce
+                and share 'YulDSL' as portable modules with each other.
 
 common basic-options
     default-language:     GHC2021
@@ -29,12 +37,13 @@ library
   build-depends:    text >= 2.0.1,
                     constraints >= 0.13,
                     containers >= 0.6.7
-  exposed-modules:  LoliYul.Core.Types
+  exposed-modules:  LoliYul.Core.ContractABI.Types
+                    LoliYul.Core.ContractABI
                     LoliYul.Core.YulDSL.Obj
                     LoliYul.Core.YulDSL.Coerce
                     LoliYul.Core.YulDSL
-                    LoliYul.Core.Eval
                     LoliYul.Core
+                    LoliYul.Eval
                     LoliYul.Linear
                     LoliYul.Prelude
                     LoliYul.CodeGen.PlantUML

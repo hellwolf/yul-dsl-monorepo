@@ -1,19 +1,40 @@
 {-# LANGUAGE GADTs        #-}
 {-# LANGUAGE TypeFamilies #-}
 
+{-|
+
+Copyright   : (c) Miao ZhiCheng, 2023
+License     : LGPL-3
+Maintainer  : zhicheng.miao@gmail.com
+Stability   : experimental
+Portability : portable
+
+
+= Description
+
+[Yul](https://docs.soliditylang.org/en/latest/yul.html) is an intermediate language that is part of the [solidity
+compiler](https://docs.soliditylang.org/en/latest/). It is by-design aspiring to be compiled to bytecode for
+different backends, while at the moment it is for [Ethereum Virtual
+Machine](https://ethereum.org/en/developers/docs/evm/) (EVM).
+
+This module provides an "Embedded (in Haskell) Domain Specific Language" (EDSL) for programming in Yul, called
+'YulDSL'. Further more, the 'YulDSL' is instantiated as a "Symmetric Monoidal Category" (SMC). Being a SMC enables
+the possibility for compiling linearly-typed functions in Haskell directly to the 'YulDSL', that is believed to
+greatly enhance the ergonomics of programming in 'YulDSL'.
+
+-}
+
 module LoliYul.Core.YulDSL
   ( YulDSL (..)
   , Fn
-  , module LoliYul.Core.YulDSL.Coerce
   , module LoliYul.Core.YulDSL.Obj
+  , module LoliYul.Core.YulDSL.Coerce
   ) where
-
-import           Data.Typeable                (Typeable)
 
 import           Control.Category.Constrained (Cartesian (dis, dup), Category (..), Monoidal (..), type (⊗))
 
-import           LoliYul.Core.Types
-import           LoliYul.Core.YulDSL.Coerce   (YulCoercible)
+import           LoliYul.Core.ContractABI
+import           LoliYul.Core.YulDSL.Coerce
 import           LoliYul.Core.YulDSL.Obj
 
 
@@ -39,7 +60,6 @@ data YulDSL a b where
   -- YulExternFn :: YulO2 a b => T.Text -> YulDSL a b -> YulErrorHandler -> FnExt
   -- YulJmpCall
   -- YulExtCall
-  deriving Typeable
 
 type Fn a b = YulDSL a b
 -- type FnExt = YulDSL BYTES BYTES

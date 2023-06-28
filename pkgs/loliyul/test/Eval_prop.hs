@@ -9,6 +9,7 @@ import           Test.QuickCheck
 
 
 import           LoliYul.Core
+import           LoliYul.Eval
 
 instance Arbitrary UINT256 where
   arbitrary = arbitrary <&> to_uint256 -- FIXME use chooseBoundedIntegral

@@ -1,13 +1,28 @@
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE MonoLocalBinds     #-}
 
-module LoliYul.Core.Eval where
+{-|
 
-import           Data.ByteString     (ByteString)
-import qualified Data.Map            as M
+Copyright   : (c) Miao ZhiCheng, 2023
+License     : LGPL-3
+Maintainer  : zhicheng.miao@gmail.com
+Stability   : experimental
+Portability : portable
 
-import           LoliYul.Core.Types
-import           LoliYul.Core.YulDSL (YulDSL (..), YulObj)
+= Description
+
+This module provides a function 'evalYulDSL' simulating the evaluation of the 'YulDSL'.
+
+-}
+
+
+module LoliYul.Eval where
+
+import           Data.ByteString          (ByteString)
+import qualified Data.Map                 as M
+
+import           LoliYul.Core.ContractABI
+import           LoliYul.Core.YulDSL      (YulDSL (..), YulObj)
 
 encYulObj :: YulObj a => a -> ByteString
 encYulObj = undefined

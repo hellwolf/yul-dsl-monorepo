@@ -5,6 +5,20 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
+{-|
+
+Copyright   : (c) Miao ZhiCheng, 2023
+License     : LGPL-3
+Maintainer  : zhicheng.miao@gmail.com
+Stability   : experimental
+Portability : portable
+
+= Description
+
+This module provides extra combinators to program 'YulDSL' in linear-types, in addition to "linear-base".
+
+-}
+
 module LoliYul.Linear where
 
 import           Data.Kind                    (Type)
@@ -14,8 +28,7 @@ import           Prelude.Linear
 import           Control.Category.Constrained (Cartesian, Category (Obj), O2, O3, O4, type (⊗))
 import           Control.Category.Linear      (P, copy, decode, encode, ignore, merge, mkUnit, split)
 
-import           LoliYul.Core.Types
-import           LoliYul.Core.YulDSL
+import           LoliYul.Core
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Extra SMC Linear Combinators

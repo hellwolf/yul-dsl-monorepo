@@ -1,13 +1,20 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE MonoLocalBinds     #-}
 
-------------------------------------------------------------------------------------------------------------------------
--- |
---
--- = Description
---
--- The objects in the YulDSL symmetrical monoidal category consist of ABI primitive types, their products and their
--- heterogeneous lists.
+{-|
+
+Copyright   : (c) Miao ZhiCheng, 2023
+License     : LGPL-3
+Maintainer  : zhicheng.miao@gmail.com
+Stability   : experimental
+Portability : portable
+
+= Description
+
+The objects in the YulDSL symmetrical monoidal category consist of ABI primitive types, their products and their
+heterogeneous lists.
+
+-}
 
 module LoliYul.Core.YulDSL.Obj
   ( YulObj (..)
@@ -21,7 +28,7 @@ import           Data.Typeable                (Typeable)
 
 import           Control.Category.Constrained (ProdObj (..), type (⊗))
 
-import           LoliYul.Core.Types
+import           LoliYul.Core.ContractABI
 
 
 -- | YulDSL SMC objects.

@@ -10,7 +10,7 @@ maintainer:     zhicheng.miao@gmail.com
 tested-with:    GHC==9.6.2
 build-type:     Simple
 
-description:    LoliYul provides an EDSL called 'YulDSL' for transpiling Haskell codes to the Solidiy/Yul codes.
+description:    LoliYul provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
 
                 Additionally, the package uses a technique called "evaluating linear functions to symmetric monoidal
                 categories (Jean-Philippe Bernardy and Arnaud Spiwack)" to provide an ergonomic linear functions

@@ -23,7 +23,7 @@ Motivation
 * Many emerging ecosystems have specialized programming languages to work on them. The Solidity programming language,
   which is created for Ethereum Virtual Machine (EVM) related ecosystems, is one example.
 
-* These new languages don't serve a purpose than programming for its particular ecosystem.
+* These new languages don't serve any purpose other than programming for its particular ecosystem.
 
 * In the meantime, programming language theories have continued advancing, especially in type theory and category
   theory.

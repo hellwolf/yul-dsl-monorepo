@@ -24,13 +24,13 @@ const_42 = decode (yulConst (to_intx 42)) :: YulDSL () UINT256
 foo :: Fn (One UINT256) (One BOOL)
 foo = defun "foo" \(x :> ()) ->
   (copy x & split & \(x1, x2) ->
-      to_addr 0xdeadbeef <=@ x1 + x2
+      to_addr' 0xdeadbeef <=@ x1 + x2
   ) &
   yulConst (true :> ())
 
 foo2 :: Fn (UINT256 :> UINT256 :> ()) (One BOOL)
 foo2 = defun "foo" \(x1 :> x2 :> ()) ->
-  (to_addr 0xdeadbeef <=@ x1 + x2) &
+  (to_addr' 0xdeadbeef <=@ x1 + x2) &
   yulConst (true :> ())
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ foo2 = defun "foo" \(x1 :> x2 :> ()) ->
 -- TODO should use hashing of course.
 erc20_balance_storage :: forall r. YulObj r => AddrP r ⊸ AddrP r
 erc20_balance_storage account = mkUnit account & \(account, unit) -> yulCoerce $
-  yulCoerce account + yulConst (to_uint256 0x42) unit
+  yulCoerce account + yulConst (to_intx @UINT256 0x42) unit
 
 -- | ERC20 balance of the account.
 erc20_balance_of :: YulObj r => AddrP r ⊸ Uint256P r

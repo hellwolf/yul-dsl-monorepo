@@ -25,6 +25,7 @@ module LoliYul.Core.YulDSL.Obj
 
 import           Data.Constraint              (Dict (..))
 import           Data.Typeable                (Typeable)
+import           GHC.TypeNats                 (KnownNat)
 
 import           Control.Category.Constrained (ProdObj (..), type (⊗))
 
@@ -57,12 +58,12 @@ class (YulObj a, ABIValue a) => YulVal a
 
 instance YulVal BOOL
 instance YulVal ADDR
-instance (Typeable s, Typeable n) => YulVal (INTx s n)
+instance (Typeable s, KnownNat n) => YulVal (INTx s n)
 
 -- | Yul number-value objects.
 class (YulObj a, Num a) => YulNum a
 
-instance (Typeable s, Typeable n) => YulNum (INTx s n)
+instance (Typeable s, KnownNat n) => YulNum (INTx s n)
 
 -- | YulObj Maybe typed instance.
 instance YulObj a => YulObj (Maybe a)

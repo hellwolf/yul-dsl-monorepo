@@ -95,7 +95,7 @@ yulConst :: forall a b r. YulO3 r a b
 yulConst a = encode (YulConst a)
 
 sget :: forall v r. (YulObj r, YulVal v)
-     => (YulP r ADDR ⊸ YulP r v)
+     => YulP r ADDR ⊸ YulP r  v
 sget = encode YulSGet
 
 sput :: forall v r. (YulObj r, YulVal v)

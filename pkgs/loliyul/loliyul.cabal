@@ -56,5 +56,6 @@ Test-Suite test-loliyul
                     hspec >=2.11,
                     loliyul
   hs-source-dirs:   test
-  other-modules:    Eval_prop
+  other-modules:    TestCommon
+                    Eval_prop
   main-is:          Main.hs

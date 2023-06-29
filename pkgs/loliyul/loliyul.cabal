@@ -35,9 +35,12 @@ library
   import:           basic-options, loliyul-deps
   hs-source-dirs:   src
   build-depends:    text >= 2.0.1,
+                    cereal >= 0.5.8,
                     constraints >= 0.13,
                     containers >= 0.6.7
-  exposed-modules:  LoliYul.Core.ContractABI.Types
+  exposed-modules:  LoliYul.Core.ContractABI.Internal
+                    LoliYul.Core.ContractABI.Types
+                    LoliYul.Core.ContractABI.Serialization
                     LoliYul.Core.ContractABI
                     LoliYul.Core.YulDSL.Obj
                     LoliYul.Core.YulDSL.Coerce

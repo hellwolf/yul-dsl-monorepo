@@ -27,6 +27,6 @@ test-loliyul:
 	cabal test loliyul $(TEST_OPTIONS)
 
 dev:
-	nodemon -e "hs cabal" -x "make build-all-modules test-loliyul || exit 1"
+	nodemon -w pkgs -e "hs cabal" -x "make build-all-modules test-loliyul || exit 1"
 
 .PHONY: gen-* build-* clean test-* dev

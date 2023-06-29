@@ -7,7 +7,6 @@ Copyright   : (c) Miao ZhiCheng, 2023
 License     : LGPL-3
 Maintainer  : zhicheng.miao@gmail.com
 Stability   : experimental
-Portability : portable
 
 = Description
 
@@ -15,20 +14,14 @@ This module provides a function 'evalYulDSL' simulating the evaluation of the 'Y
 
 -}
 
-
 module LoliYul.Eval where
 
-import           Data.ByteString          (ByteString)
 import qualified Data.Map                 as M
+import           Data.Maybe               (fromJust)
 
 import           LoliYul.Core.ContractABI
-import           LoliYul.Core.YulDSL      (YulDSL (..), YulObj)
+import           LoliYul.Core.YulDSL      (YulDSL (..))
 
-encYulObj :: YulObj a => a -> ByteString
-encYulObj = undefined
-
-decYulObj :: YulObj a => ByteString -> a
-decYulObj = undefined
 
 data EvalState = EvalState { store_map :: M.Map ADDR SVALUE
                            }
@@ -40,7 +33,7 @@ initEvalState = EvalState { store_map = M.empty
 
 evalYulDSL :: EvalState -> YulDSL a b -> a -> (EvalState, b)
 evalYulDSL s YulId             a  = (s, a)
-evalYulDSL s YulCoerce         a  = (s, decYulObj . encYulObj $ a)
+evalYulDSL s YulCoerce         a  = (s, fromJust . abi_decode . abi_encode $ a)
 evalYulDSL s (YulComp n m)     a  = (s'', c) where (s' , b) = evalYulDSL s  m a
                                                    (s'', c) = evalYulDSL s' n b
 evalYulDSL s (YulProd m n) (a, b) = (s'', (c, d)) where (s',  c) = evalYulDSL s  m a

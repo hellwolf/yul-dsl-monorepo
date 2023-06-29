@@ -1,13 +1,39 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE DefaultSignatures   #-}
 {-# LANGUAGE DerivingStrategies  #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+
+{-|
+
+Copyright   : (c) Miao ZhiCheng, 2023
+License     : LGPL-3
+Maintainer  : zhicheng.miao@gmail.com
+Stability   : experimental
+
+= Description
+
+This module includes the necessary primitive and composite types for any contract ABI types. Additionally, utility
+functions and common type class instances (such as Num) are provided for them, so that interacting with them outside of
+the EVM is possible.
+
+One design principle of the library is to avoid any partial functions at all cost: it is reflected in the design of the
+types and functions here.
+
+-}
 
 module LoliYul.Core.ContractABI.Types
-  ( SVALUE, def_sval, max_sval
-  , BOOL, true, false, if'
-  , ADDR, to_addr, to_addr', zero_address
+  ( -- * Primitive Types
+
+    -- ** BOOL
+    BOOL, true, false, if'
+
+    -- ** ADDR
+  , ADDR, zero_address, max_addr, to_addr, to_addr', addr_to_integer
+
+    -- ** INTx
   , INTx, intx_sign, intx_nbits, min_intx, max_intx, to_intx
+
+    -- *** Assorted INTx Types
   , UINT8,UINT16,UINT24,UINT32,UINT40,UINT48,UINT56,UINT64
   , UINT72,UINT80,UINT88,UINT96,UINT104,UINT112,UINT120,UINT128
   , UINT136,UINT144,UINT152,UINT160,UINT168,UINT176,UINT184,UINT192
@@ -16,50 +42,62 @@ module LoliYul.Core.ContractABI.Types
   , INT72,INT80,INT88,INT96,INT104,INT112,INT120,INT128
   , INT136,INT144,INT152,INT160,INT168,INT176,INT184,INT192
   , INT200,INT208,INT216,INT224,INT232,INT240,INT248,INT256
-  , ABIValue(..)
+    -- *** Range Check Examples
+    -- $range_check_examples
+
+    -- ** BYTES
   , BYTES(..)
-  , (:>)(..), Nil, One
+
+    -- * ABI Value Types
+  , SVALUE, def_sval, max_sval
+  , ABIValue(..)
+
+    -- * Composite Types
+  , (:>)(..), One
+
+    -- * Show Instance Examples
+    -- $show_instance_examples
   ) where
 
-import           Data.Bits       (shift)
-import           Data.ByteString (ByteString, unpack)
-import           Data.Maybe      (fromJust)
-import           Data.Typeable   (Proxy (..), Typeable, typeRep)
-import           GHC.Natural     (Natural, naturalFromInteger)
-import           GHC.TypeNats    (KnownNat, Nat, natVal)
-import           Numeric         (showHex)
+import           Data.Bits                         (shift)
+import           Data.ByteString                   (unpack)
+import           Data.Maybe                        (fromJust)
+import           Data.Typeable                     (Proxy (..), Typeable, typeRep)
+import           GHC.Natural                       (Natural, naturalFromInteger, naturalToInteger)
+import           GHC.TypeNats                      (KnownNat, Nat, natVal)
+import           Numeric                           (showHex)
+
+import           LoliYul.Core.ContractABI.Internal
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Primitive (Solidity) ABI Types
 ------------------------------------------------------------------------------------------------------------------------
 
--- | Storage value.
-newtype SVALUE = SVALUE Natural deriving newtype (Eq, Show)
-
--- | Default storage value.
-def_sval :: SVALUE
-def_sval = SVALUE 0
-
--- | Maximum storage value.
-max_sval :: SVALUE
-max_sval = SVALUE (2 ^ (256 :: Natural) - 1)
-
--- | ABI address value type.
-newtype ADDR = ADDR Natural deriving newtype (Ord, Eq)
-
--- | From integer to ADDR.
-to_addr :: Natural -> Maybe ADDR
-to_addr = Just . ADDR -- FIXME range check
-
-to_addr' :: Natural -> ADDR
-to_addr' = fromJust . to_addr
+-- ADDR type utilities
 
 -- | The proverbial zero address.
 zero_address :: ADDR
 zero_address = ADDR 0
 
--- | ABI boolean value type.
-newtype BOOL = BOOL Bool deriving newtype (Eq)
+_max_addr_nat :: Natural
+_max_addr_nat = (2 ^ (256 :: Int)) - 1
+
+-- | Maximum value of address.
+max_addr :: ADDR
+max_addr = ADDR _max_addr_nat
+
+-- | From integer to ADDR.
+to_addr :: Natural -> Maybe ADDR
+to_addr a = if a <= _max_addr_nat then Just (ADDR a) else Nothing
+
+to_addr' :: Natural -> ADDR
+to_addr' = fromJust . to_addr
+
+-- | Convert address to integer.
+addr_to_integer :: ADDR -> Integer
+addr_to_integer (ADDR a) = naturalToInteger a
+
+-- BOOL type utilities
 
 -- | True value for 'BOOL'.
 true :: BOOL
@@ -74,52 +112,45 @@ if' :: BOOL -> a -> a -> a
 if' (BOOL True) x _  = x
 if' (BOOL False) _ y = y
 
--- | ABI integer value types, where ~s~ is for signess and ~n~ is the multiple of 8 bits
-newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer) deriving newtype (Ord, Eq)
+-- INTx type utilities
 
--- | Show the canonical type name for the INTX type.
+-- | Show the canonical type name for the INTX type. Use type application on @a@.
 intx_typename :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => String
 intx_typename = (if intx_sign @a then "" else "U") ++ "INT" ++ show (intx_nbits @a)
 
--- | Number of bits for the INTx type. Use type application on ~a~.
+-- | Number of bits for the INTx type. Use type application on @a@.
 intx_nbits :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownNat n) => Int
 intx_nbits = fromEnum (8 * natVal (Proxy @n))
 
--- | Sign of the INTx type. Use type application on ~a~.
+-- | Sign of the INTx type. Use type application on @a@.
 intx_sign :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => Bool
 intx_sign = typeRep (Proxy @s) == typeRep (Proxy @True)
 
--- | Minimum value of the INTx type. Use type application on ~a~.
+-- | Minimum value of the INTx type. Use type application on @a@.
 min_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => a
 min_intx = INT . Just $
   if intx_sign @(INTx s n) then negate (1 `shift` (nbits - 1)) else 0
   where nbits = intx_nbits @(INTx s n)
 
--- | Maximum value of the INTx type. Use type application on ~a~.
+-- | Maximum value of the INTx type. Use type application on @a@.
 max_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => a
 max_intx = INT . Just $
   if intx_sign @(INTx s n) then (1 `shift` (nbits - 1)) - 1 else (1 `shift` nbits) - 1
   where nbits = intx_nbits @(INTx s n)
 
+-- | Convert integer to the INTx type.
+to_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => Integer -> a
+to_intx = fromInteger
+
 instance (Typeable s, KnownNat n) => Bounded (INTx s n) where
   minBound = min_intx
   maxBound = max_intx
 
-to_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => Integer -> a
-to_intx = fromInteger
-
--- = Assorted integer types
+-- Assorted integer types:
 --
--- == Code generation command
+--   (Note: Code generation command)
 --   sh$ for i in `seq 1 32`;do echo "type UINT$((i*8)) = INTx False $i;type INT$((i*8)) = INTx True $i";done
---
--- == Examples
--- >>> (min_intx @INT32, max_intx @INT32)
--- (INT (Just (-2147483648)),INT (Just 2147483647))
--- >>> (min_intx @UINT32, max_intx @UINT32)
--- (INT (Just 0),INT (Just 4294967295))
--- >>> (min_intx @INT96, max_intx @INT96)
--- (INT (Just (-39614081257132168796771975168)),INT (Just 39614081257132168796771975167))
+
 type UINT8 = INTx False 1;type INT8 = INTx True 1
 type UINT16 = INTx False 2;type INT16 = INTx True 2
 type UINT24 = INTx False 3;type INT24 = INTx True 3
@@ -153,10 +184,24 @@ type UINT240 = INTx False 30;type INT240 = INTx True 30
 type UINT248 = INTx False 31;type INT248 = INTx True 31
 type UINT256 = INTx False 32;type INT256 = INTx True 32
 
--- | ABI bytes reference type.
-newtype BYTES = BYTES ByteString
+-- BYTES type utilities
 
--- ABI value types
+-- TODO
+
+------------------------------------------------------------------------------------------------------------------------
+-- ABI Value Types
+------------------------------------------------------------------------------------------------------------------------
+
+-- | Raw storage value for ABI value types.
+newtype SVALUE = SVALUE Natural deriving newtype (Eq, Show)
+
+-- | Default storage value.
+def_sval :: SVALUE
+def_sval = SVALUE 0
+
+-- | Maximum storage value.
+max_sval :: SVALUE
+max_sval = SVALUE (2 ^ (256 :: Natural) - 1)
 
 -- | ABI value type class.
 class ABIValue a where
@@ -180,45 +225,13 @@ instance (Typeable s, KnownNat n) => ABIValue (INTx s n) where
   to_svalue (INT (Just a)) = SVALUE (naturalFromInteger a) -- assert (a <= max_sval)
   to_svalue (INT Nothing)  = def_sval
 
--- Num instance for INTx types.
+-- Num-related instances for INTx types:
 
 instance Enum (INTx s n) where
   fromEnum (INT (Just a)) = fromEnum a
   fromEnum (INT Nothing)  =0
   toEnum = INT . Just . toEnum
 
--- | Num instance for the INTx types.
---
---
--- == Range check examples
--- >>> (to_intx 3 :: UINT8) + (to_intx 5 :: UINT8)
--- >>> (to_intx 255 :: UINT8) + (to_intx 1 :: UINT8)
--- >>> (to_intx 32 :: UINT8) * (to_intx 2 :: UINT8)
--- >>> (to_intx 32 :: UINT8) * (to_intx 8 :: UINT8)
--- WAS INT (Just 8)
--- WAS INT Nothing
--- WAS INT (Just 64)
--- WAS INT Nothing
--- NOW 8::UINT1
--- NOW NaN::UINT1
--- NOW 64::UINT1
--- NOW NaN::UINT1
---
--- >>> negate (to_intx 32 :: UINT8)
--- >>> negate (to_intx 32 :: INT8)
--- >>> to_intx (-128) :: INT8
--- >>> negate (to_intx (-128) :: INT8)
--- >>> abs (to_intx (-128) :: INT8)
--- WAS INT Nothing
--- WAS INT (Just (-32))
--- WAS INT (Just (-128))
--- WAS INT Nothing
--- WAS INT Nothing
--- NOW NaN::UINT1
--- NOW -32::INT1
--- NOW -128::INT1
--- NOW NaN::INT1
--- NOW NaN::INT1
 instance (Typeable s, KnownNat n) => Num (INTx s n) where
   (INT (Just a)) + (INT (Just b)) = fromInteger (a + b)
   _ + _                           = INT Nothing
@@ -251,30 +264,58 @@ instance (Typeable s, KnownNat n) => Integral (INTx s n) where
   quotRem (INT (Just a)) (INT (Just b)) = let (c, d) = quotRem a b in (INT (Just c), INT (Just d))
   quotRem _              _              = (INT Nothing, INT Nothing)
 
--- Show instances
--- >>> show true
--- >>> show (ADDR 1)
--- >>> show (to_intx 255 :: UINT8)
--- >>> show (to_intx (-8) :: INT96)
--- >>> show (to_intx 256 :: UINT8)
--- >>> import Data.ByteString.Char8 (pack)
--- >>> show (BYTES (pack "hello, world"))
--- "true"
--- "0x1::ADDR"
--- "255::UINT8"
--- "-8::INT96"
--- "NaN::UINT8"
--- "0x68656c6c6f2c20776f726c64::BYTES"
+-- Show instances:
+
+_lpad0 :: Int -> ShowS -> ShowS
+_lpad0 n s = showString (reverse (take n (reverse (s "") ++ repeat '0')))
+
 instance Show BOOL where
   show (BOOL True)  = "true"
   show (BOOL False) = "false"
 instance Show ADDR where
-  show (ADDR a) = "0x" ++ showHex a "::ADDR"
+  show (ADDR a) = "0x" ++ _lpad0 40 (showHex a) "" ++ "::ADDR"
 instance (Typeable s, KnownNat n) => Show (INTx s n) where
   show (INT (Just a)) = show a ++ "::" ++ intx_typename @(INTx s n)
   show (INT Nothing)  = "NaN" ++ "::" ++ intx_typename @(INTx s n)
 instance Show BYTES where
-  show (BYTES a) = "0x" ++ (foldr showHex "" . unpack) a ++ "::BYTES"
+  show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . unpack) a ++ "::BYTES"
+
+{- $range_check_examples
+
+__INTx Types__
+
+>>> (min_intx @INT32, max_intx @INT32)
+>>> (min_intx @UINT32, max_intx @UINT32)
+>>> (min_intx @INT96, max_intx @INT96)
+>>> to_intx (-128) :: INT8
+>>> to_intx 128 :: INT8
+(-2147483648::INT32,2147483647::INT32)
+(0::UINT32,4294967295::UINT32)
+(-39614081257132168796771975168::INT96,39614081257132168796771975167::INT96)
+-128::INT8
+NaN::INT8
+
+__Num Operators__
+
+>>> (to_intx 3 :: UINT8) + (to_intx 5 :: UINT8)
+>>> (to_intx 255 :: UINT8) + (to_intx 1 :: UINT8)
+>>> (to_intx 32 :: UINT8) * (to_intx 2 :: UINT8)
+>>> (to_intx 32 :: UINT8) * (to_intx 8 :: UINT8)
+8::UINT8
+NaN::UINT8
+64::UINT8
+NaN::UINT8
+
+>>> negate (to_intx 32 :: UINT8)
+>>> negate (to_intx 32 :: INT8)
+>>> negate (to_intx (-128) :: INT8)
+>>> abs (to_intx (-128) :: INT8)
+NaN::UINT8
+-32::INT8
+NaN::INT8
+NaN::INT8
+
+-}
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Heterogeneous List
@@ -285,12 +326,34 @@ data a :> b = a :> b
 -- | Operator (:>) being right associative allows bracket-free syntax.
 infixr :>
 
--- | Zero-element type list.
-type Nil = () :> ()
--- | Single-element type list.
+-- | Alias for single-element type list.
 type One a = a :> ()
+
+instance Show a => Show (a :> ()) where
+  show (a :> ()) = show a
 
 instance {-# OVERLAPPABLE #-} (Show a, Show b) => Show (a :> b) where
   show (a :> b) = "(" <> show a <> "," <> show b <> ")"
-instance {-# OVERLAPPING  #-} Show a => Show (a :> ()) where
-  show (a :> ()) = show a
+
+
+
+{- $show_instance_examples
+
+>>> show true
+>>> show (ADDR 0x42)
+>>> show (to_intx 255 :: UINT8)
+>>> show (to_intx (-8) :: INT96)
+>>> show (to_intx 256 :: UINT8)
+>>> import Data.ByteString.Char8 as BC
+>>> show (BYTES (BC.pack "hello, world"))
+>>> import Data.ByteString as B
+>>> show (BYTES (B.pack [1,2]))
+"true"
+"0x0000000000000000000000000000000000000042::ADDR"
+"255::UINT8"
+"-8::INT96"
+"NaN::UINT8"
+"0x68656c6c6f2c20776f726c64::BYTES"
+"0x0102::BYTES"
+
+-}

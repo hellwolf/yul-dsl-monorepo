@@ -11,7 +11,6 @@ Copyright   : (c) Miao ZhiCheng, 2023
 License     : LGPL-3
 Maintainer  : zhicheng.miao@gmail.com
 Stability   : experimental
-Portability : portable
 
 = Description
 

@@ -22,11 +22,12 @@ module LoliYul.Core.ContractABI.Types
   ) where
 
 import           Data.Bits       (shift)
-import           Data.ByteString (ByteString)
+import           Data.ByteString (ByteString, unpack)
 import           Data.Maybe      (fromJust)
 import           Data.Typeable   (Proxy (..), Typeable, typeRep)
 import           GHC.Natural     (Natural, naturalFromInteger)
 import           GHC.TypeNats    (KnownNat, Nat, natVal)
+import           Numeric         (showHex)
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Primitive (Solidity) ABI Types
@@ -75,6 +76,10 @@ if' (BOOL False) _ y = y
 
 -- | ABI integer value types, where ~s~ is for signess and ~n~ is the multiple of 8 bits
 newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer) deriving newtype (Ord, Eq)
+
+-- | Show the canonical type name for the INTX type.
+intx_typename :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => String
+intx_typename = (if intx_sign @a then "" else "U") ++ "INT" ++ show (intx_nbits @a)
 
 -- | Number of bits for the INTx type. Use type application on ~a~.
 intx_nbits :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownNat n) => Int
@@ -190,21 +195,30 @@ instance Enum (INTx s n) where
 -- >>> (to_intx 255 :: UINT8) + (to_intx 1 :: UINT8)
 -- >>> (to_intx 32 :: UINT8) * (to_intx 2 :: UINT8)
 -- >>> (to_intx 32 :: UINT8) * (to_intx 8 :: UINT8)
--- INT (Just 8)
--- INT Nothing
--- INT (Just 64)
--- INT Nothing
+-- WAS INT (Just 8)
+-- WAS INT Nothing
+-- WAS INT (Just 64)
+-- WAS INT Nothing
+-- NOW 8::UINT1
+-- NOW NaN::UINT1
+-- NOW 64::UINT1
+-- NOW NaN::UINT1
 --
 -- >>> negate (to_intx 32 :: UINT8)
 -- >>> negate (to_intx 32 :: INT8)
 -- >>> to_intx (-128) :: INT8
 -- >>> negate (to_intx (-128) :: INT8)
 -- >>> abs (to_intx (-128) :: INT8)
--- INT Nothing
--- INT (Just (-32))
--- INT (Just (-128))
--- INT Nothing
--- INT Nothing
+-- WAS INT Nothing
+-- WAS INT (Just (-32))
+-- WAS INT (Just (-128))
+-- WAS INT Nothing
+-- WAS INT Nothing
+-- NOW NaN::UINT1
+-- NOW -32::INT1
+-- NOW -128::INT1
+-- NOW NaN::INT1
+-- NOW NaN::INT1
 instance (Typeable s, KnownNat n) => Num (INTx s n) where
   (INT (Just a)) + (INT (Just b)) = fromInteger (a + b)
   _ + _                           = INT Nothing
@@ -238,11 +252,29 @@ instance (Typeable s, KnownNat n) => Integral (INTx s n) where
   quotRem _              _              = (INT Nothing, INT Nothing)
 
 -- Show instances
-
-deriving instance Show BOOL
-deriving instance Show ADDR
-deriving instance Show (INTx s n)
-deriving instance Show BYTES
+-- >>> show true
+-- >>> show (ADDR 1)
+-- >>> show (to_intx 255 :: UINT8)
+-- >>> show (to_intx (-8) :: INT96)
+-- >>> show (to_intx 256 :: UINT8)
+-- >>> import Data.ByteString.Char8 (pack)
+-- >>> show (BYTES (pack "hello, world"))
+-- "true"
+-- "0x1::ADDR"
+-- "255::UINT8"
+-- "-8::INT96"
+-- "NaN::UINT8"
+-- "0x68656c6c6f2c20776f726c64::BYTES"
+instance Show BOOL where
+  show (BOOL True)  = "true"
+  show (BOOL False) = "false"
+instance Show ADDR where
+  show (ADDR a) = "0x" ++ showHex a "::ADDR"
+instance (Typeable s, KnownNat n) => Show (INTx s n) where
+  show (INT (Just a)) = show a ++ "::" ++ intx_typename @(INTx s n)
+  show (INT Nothing)  = "NaN" ++ "::" ++ intx_typename @(INTx s n)
+instance Show BYTES where
+  show (BYTES a) = "0x" ++ (foldr showHex "" . unpack) a ++ "::BYTES"
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Heterogeneous List

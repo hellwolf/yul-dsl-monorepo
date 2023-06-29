@@ -23,6 +23,7 @@ module LoliYul.Linear where
 
 import           Data.Kind                    (Type)
 import           Data.Typeable                (Typeable)
+import           GHC.TypeNats                 (KnownNat)
 import           Prelude.Linear
 
 import           Control.Category.Constrained (Cartesian, Category (Obj), O2, O3, O4, type (⊗))
@@ -129,7 +130,7 @@ class YulObj a => YulPReducible a where
 
 instance YulPReducible ADDR
 instance YulPReducible BOOL
-instance (Typeable s, Typeable n) => YulPReducible (INTx s n)
+instance (Typeable s, KnownNat n) => YulPReducible (INTx s n)
 instance YulPReducible BYTES
 
 instance forall a as. (YulPReducible a, YulPReducible as) => YulPReducible (a :> as) where

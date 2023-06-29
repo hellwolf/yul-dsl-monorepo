@@ -50,7 +50,7 @@ type YulO5 a b c d e = (YulObj a, YulObj b, YulObj c, YulObj d, YulObj e)
 instance YulObj ()
 instance YulObj BOOL
 instance YulObj ADDR
-instance (Typeable s, Typeable n) => YulObj (INTx s n)
+instance (Typeable s, KnownNat n) => YulObj (INTx s n)
 instance YulObj BYTES
 
 -- | Yul value objects.

@@ -335,8 +335,6 @@ instance Show a => Show (a :> ()) where
 instance {-# OVERLAPPABLE #-} (Show a, Show b) => Show (a :> b) where
   show (a :> b) = "(" <> show a <> "," <> show b <> ")"
 
-
-
 {- $show_instance_examples
 
 >>> show true

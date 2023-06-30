@@ -1,3 +1,4 @@
+{-# LANGUAGE ExplicitNamespaces #-}
 {-|
 
 Copyright   : (c) Miao ZhiCheng, 2023
@@ -20,7 +21,10 @@ The Core of the LoliYul is the 'LoliYul.Core.ContractABI' & 'LoliYul.Core.YulDSL
 module LoliYul.Core
   ( module LoliYul.Core.ContractABI
   , module LoliYul.Core.YulDSL
+  , type (⊗)
   ) where
 
 import           LoliYul.Core.ContractABI
 import           LoliYul.Core.YulDSL
+
+import           Control.Category.Constrained (type (⊗))

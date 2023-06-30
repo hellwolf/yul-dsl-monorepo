@@ -28,4 +28,4 @@ newtype BOOL = BOOL Bool deriving newtype (Eq)
 newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer) deriving newtype (Ord, Eq)
 
 -- | ABI bytes reference type.
-newtype BYTES = BYTES ByteString
+newtype BYTES = BYTES ByteString deriving newtype (Eq)

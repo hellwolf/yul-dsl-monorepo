@@ -25,7 +25,7 @@ import           Data.Typeable                (Typeable)
 import           GHC.TypeNats                 (KnownNat)
 import           Prelude.Linear
 
-import           Control.Category.Constrained (Cartesian, Category (Obj), O2, O3, O4, type (⊗))
+import           Control.Category.Constrained (Cartesian, Category (Obj), O2, O3, O4)
 import           Control.Category.Linear      (P, copy, decode, encode, ignore, merge, mkUnit, split)
 
 import           LoliYul.Core

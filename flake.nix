@@ -12,7 +12,14 @@
       pkgs = import nixpkgs { inherit system; };
     in {
       devShells.default = pkgs.mkShell {
-        buildInputs = haskell-tooling.lib.install pkgs ["ghc96+hls"];
+        buildInputs = with pkgs; [
+          shellcheck
+          jq
+        ] ++ haskell-tooling.lib.install pkgs ["ghc96+hls"];
+
+        shellHook = ''
+          export PATH=$PWD/bin:$PATH
+        '';
       };
     }));
 }

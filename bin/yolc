@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+# Copyright   : (c) Miao ZhiCheng, 2023
+# License     : LGPL-3
+# Maintainer  : zhicheng.miao@gmail.com
+# Synopsis    : yolc, the LoliYul commandline compiler
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Main Program, Utilities & Global Variables
+#-----------------------------------------------------------------------------------------------------------------------
+
+opt_verbose=; function when_verbose() { [[ -n "$opt_verbose" ]]; }
+is_nix_dist=
+dist_path=
+out_mode=0
+out_dir="$PWD"/build
+declare -a yol_modules=()
+
+function help() {
+  cat <<EOF
+yolc, the LoliYul commandline transpiler.
+
+Usage: yolc [options] yol_module_spec...
+
+-m [output_mode] Valid output modes: show (default), plantuml
+-h               Display this help and exit
+-v               Output more information about what is going on
+
+yol_module_spec: [package_path:]module_name[{symbol...}]
+  where default package_path is $PWD and
+        default symbol is 'default'
+
+EOF
+}
+
+function die() {
+  echo "$@"
+  exit 1
+}
+
+function main() {
+  local PROGRAM_PATH="$0"
+  local OPTIND OPTARG
+
+  # parse options
+  while getopts m:hv o; do
+    case $o in
+      m)
+        case "$OPTARG" in
+          plantuml)
+            out_mode=1
+            ;;
+          show)
+            out_mode=0
+            ;;
+          *)
+            die "Unknown output mode"
+            ;;
+        esac
+        ;;
+      v)
+        opt_verbose=1
+      ;;
+      h)
+        help; exit 0
+        ;;
+      *)
+        help; exit 1
+        ;;
+    esac
+  done
+  shift $(( "$OPTIND" - 1 ))
+
+  # detect distribution mode
+  [[ -z "${PROGRAM_PATH##/nix/store}" ]] && is_nix_dist=1
+  if [[ -n "$is_nix_dist" ]]; then
+    dist_path=$(nix metadata --json | jq -r .path)
+  else
+    dist_path=$(readlink -f "$(dirname "$PROGRAM_PATH")"/..)
+  fi
+  ## TODO support nix-distribution mode
+  [[ -n "$is_nix_dist" ]] && die "Nix-distribution mode not supported"
+
+  when_verbose && {
+    echo "Distribution path: $dist_path"
+    echo "Output mode: $out_mode"
+    echo "Output directory: $out_dir"
+    echo
+  }
+
+  mkdir -p "$out_dir"
+
+  for i in "$@"; do
+    build_yol_module "$i"
+  done
+}
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Yol Module Builder
+#-----------------------------------------------------------------------------------------------------------------------
+
+function build_yol_module() {
+  local yol_dir pkg_path cabal_path pkg_name mod_name syms rest build_failed
+
+  when_verbose && echo "=== Building yol module: $1"
+
+  # parse `pkg_path` (default: current folder)
+  # shellcheck disable=SC2162 # allowing read -r
+  IFS=: read pkg_path rest < <(echo "$1")
+  [ -z "$rest" ] && { rest=$pkg_path; pkg_path=$PWD; }
+  pkg_path=$(readlink -f "$pkg_path")
+  [ -d "$pkg_path" ] || die "Package path not a directory: $pkg_path"
+  cabal_path=$(echo "$pkg_path"/*.cabal)
+  [ -f "$cabal_path" ] || die "Does not look like a cabal package: $pkg_path"
+  pkg_name=$(sed -nE -e 's|^name:\s*(.+)\s*$|\1|p' < "$cabal_path")
+  [ -n "$pkg_name" ] || die "Package name cannot be detected, is it a valid cabal file?"
+
+  # parse `mod_name`
+  read -r mod_name rest < <(echo -n "$rest" | sed -nE -e 's|^([.a-zA-Z]+)(\[(.*)\])?$|\1 \3|gp')
+  [ -z "$mod_name" ] && die "Module name cannot be empty"
+
+  # parse `syms`
+  syms=$(echo -n "$rest" | sed -e 's|\s*,\s*| |g')
+  [ -z "$syms" ] && syms=default
+
+  # prepare the build directory
+  yol_dir=$out_dir/${pkg_name}-${mod_name}.yol
+  mkdir -p "$yol_dir"
+
+  when_verbose && {
+    echo "Package path: $pkg_path"
+    echo "Cabal file: $cabal_path"
+    echo "Package name: $pkg_name"
+    echo "Module name: $mod_name"
+    echo "Symbols to be built: $syms"
+    echo "Yol module building directory: $yol_dir"
+  }
+
+  # prepare cabal build files and build
+  cat > "$yol_dir"/cabal.project <<EOF
+packages:
+  $dist_path/3rd-parties/linear-smc
+  $dist_path/pkgs/loliyul
+  $cabal_path
+  $yol_dir/runyol.cabal
+EOF
+
+  {
+    sed -e "s|__YOL_PKG_NAME__|$pkg_name|g"
+  } < "$dist_path"/templates/runyol.cabal > "$yol_dir"/runyol.cabal
+
+  local csyms
+  csyms=$(for i in $syms;do echo -n "putStrLn((compilers !! $out_mode) \"$i\" $i);";done)
+  {
+    sed -e "s|__YOL_MOD_NAME__|${mod_name}|g" \
+        -e "s|__COMPILE_SYMBOLS__|${csyms}|g"
+  } < "$dist_path"/templates/RunYol.hs > "$yol_dir"/RunYol.hs
+
+  when_verbose && {
+    echo "=== BEGIN cabal.project"
+    cat "$yol_dir"/cabal.project
+    echo "=== END cabal.project"
+
+    echo "=== BEGIN runyol.cabal"
+    cat "$yol_dir"/runyol.cabal
+    echo "=== END runyol.cabal"
+
+    echo "=== BEGIN RunYol.hs"
+    cat "$yol_dir"/RunYol.hs
+    echo "=== END RunYol.hs"
+  }
+
+  when_verbose && set -x
+
+  cabal run runyol \
+       --project-file="$yol_dir"/cabal.project \
+       --builddir="$out_dir/cabal" \
+    || build_failed=1
+
+  # cleanup the build directory
+  # rm -rf "$yol_dir"
+
+  when_verbose && set +x
+
+  [ -z "$build_failed" ] || die "Failed to build yol module: $1"
+
+  when_verbose && {
+    echo "=== Done with yol module: $1"
+    echo
+  }
+}
+
+main "$@"

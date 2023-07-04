@@ -2,10 +2,6 @@
 
 module Basic where
 
-import           Data.List                ((!!))
-import qualified Data.Text                as T
-
-import qualified LoliYul.CodeGen.PlantUML
 import           LoliYul.Core
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -56,24 +52,3 @@ erc20_transfer = defun "transfer" \(from :> to :> amount :> ()) ->
     (\amount -> passAp to erc20_balance_of & \(to, balance) ->
         erc20_balance_storage to <== balance + amount)) &
   yulConst (true :> ())
-
---------------------------------------------------------------------------------
--- Test Functions
---------------------------------------------------------------------------------
-
-compilers = [ \name cat -> "# " <> name <> ":\n\n" ++
-                           show cat <> "\n" ++
-                           replicate 80 '-' <> "\n"
-            , \name cat -> T.unpack (LoliYul.CodeGen.PlantUML.compile name cat) ++
-                           replicate 80 '-' <> "\n"
-            ]
-
-print_all = do
-  let n = 0
-      c = compilers !! n
-  putStr $ c "simple_id" simple_id
-  putStr $ c "simple_coerce" simple_coerce
-  putStr $ c "const_42" const_42
-  putStr $ c "foo" foo
-  putStr $ c "foo2" foo2
-  putStr $ c "ERC20.transfer" erc20_transfer

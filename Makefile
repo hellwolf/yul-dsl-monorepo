@@ -22,6 +22,7 @@ build-docs:
 
 clean:
 	cabal clean
+	rm -rf build
 
 test-loliyul:
 	cabal test loliyul $(TEST_OPTIONS)

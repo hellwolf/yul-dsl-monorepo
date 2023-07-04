@@ -38,6 +38,12 @@ function die() {
   exit 1
 }
 
+function trace_run() {
+  # not using `set -x` on purpose
+  when_verbose && { echo "+ " "$@"; }
+  "$@"
+}
+
 function main() {
   local PROGRAM_PATH="$0"
   local OPTIND OPTARG
@@ -157,30 +163,24 @@ EOF
   } < "$dist_path"/templates/RunYol.hs > "$yol_dir"/RunYol.hs
 
   when_verbose && {
+    echo
     echo "=== BEGIN cabal.project"
     cat "$yol_dir"/cabal.project
     echo "=== END cabal.project"
-
+    echo
     echo "=== BEGIN runyol.cabal"
     cat "$yol_dir"/runyol.cabal
     echo "=== END runyol.cabal"
-
+    echo
     echo "=== BEGIN RunYol.hs"
     cat "$yol_dir"/RunYol.hs
     echo "=== END RunYol.hs"
   }
 
-  when_verbose && set -x
-
-  cabal run runyol \
+  trace_run cabal run runyol \
        --project-file="$yol_dir"/cabal.project \
        --builddir="$out_dir/cabal" \
     || build_failed=1
-
-  # cleanup the build directory
-  # rm -rf "$yol_dir"
-
-  when_verbose && set +x
 
   [ -z "$build_failed" ] || die "Failed to build yol module: $1"
 

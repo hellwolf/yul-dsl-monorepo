@@ -1,3 +1,4 @@
+{-# LANGUAGE ExplicitNamespaces #-}
 {-|
 
 Copyright   : (c) Miao ZhiCheng, 2023
@@ -44,5 +45,8 @@ instance forall (s :: Bool) (n :: Nat) .(Typeable s, KnownNat n) => ABIType (INT
 instance ABIType BYTES
 
 -- Composite types:
-instance forall a b. (ABIType a, ABIType b) => ABIType (a, b)
+
+instance forall a b. (ABIType a, ABIType b) => ABIType (a , b) where
+  maybe_prod_objs = Dict
+
 instance forall a b. (ABIType a, ABIType b) => ABIType (a :> b)

@@ -25,9 +25,10 @@ Usage: yolc [options] yol_module_spec...
 -h               Display this help and exit
 -v               Output more information about what is going on
 
-yol_module_spec: [package_path:]module_name[{symbol...}]
-  where default package_path is $PWD and
-        default symbol is 'default'
+yol_module_spec: {package_path:}module_name{[symbol...,]}
+  where 1) both package_path and symbol list is optional,
+        2) default package_path is current working directory ($PWD),
+        3) and default symbol is 'default'.
 
 EOF
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright   : (c) Miao ZhiCheng, 2023
+# Copyright   : (c) 2023 Miao, ZhiCheng
 # License     : LGPL-3
 # Maintainer  : zhicheng.miao@gmail.com
 # Synopsis    : yolc, the LoliYul commandline compiler
@@ -122,7 +122,7 @@ function build_yol_module() {
   [ -n "$pkg_name" ] || die "Package name cannot be detected, is it a valid cabal file?"
 
   # parse `mod_name`
-  read -r mod_name rest < <(echo -n "$rest" | sed -nE -e 's|^([.a-zA-Z]+)(\[(.*)\])?$|\1 \3|gp')
+  read -r mod_name rest < <(echo -n "$rest" | sed -nE -e 's|^([.0-9a-zA-Z]+)(\[(.*)\])?$|\1 \3|gp')
   [ -z "$mod_name" ] && die "Module name cannot be empty"
 
   # parse `syms`
@@ -179,7 +179,7 @@ EOF
 
   trace_run cabal run runyol \
        --project-file="$yol_dir"/cabal.project \
-       --builddir="$out_dir/cabal" \
+       --builddir="$out_dir/yolc" \
     || build_failed=1
 
   [ -z "$build_failed" ] || die "Failed to build yol module: $1"

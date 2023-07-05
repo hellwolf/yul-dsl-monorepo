@@ -3,17 +3,15 @@ name:           runyol-__YOL_PKG_NAME__
 version:        0.1
 build-type:     Simple
 
-common basic-options
-    default-language:     GHC2021
-    ghc-options:          -Wall
-
 common yol-module-options
+    default-language:     GHC2021
     default-extensions:   LinearTypes
                           BlockArguments
                           ImpredicativeTypes
                           OverloadedStrings
                           UnicodeSyntax
-    ghc-options:          -Wno-name-shadowing
+    ghc-options:          -Wall
+                          -Wno-name-shadowing
     mixins:               base hiding (Prelude),
                           base (Prelude as ClassicPrelude),
                           loliyul (LoliYul.Prelude as Prelude),
@@ -26,6 +24,6 @@ common yol-module-options
                           loliyul
 
 executable runyol
-  import:           basic-options, yol-module-options
+  import:           yol-module-options
   build-depends:    __YOL_PKG_NAME__
   main-is:          RunYol.hs

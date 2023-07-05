@@ -5,7 +5,7 @@ category:       control
 synopsis:       Programming Solidity/Yul in linear-typed (lolipop ⊸) functions
 license:        LGPL-3.0-or-later
 license-file:   LICENSE
-author:         Miao ZhiCheng
+author:         Miao, ZhiCheng
 maintainer:     zhicheng.miao@gmail.com
 tested-with:    GHC==9.6.2
 build-type:     Simple

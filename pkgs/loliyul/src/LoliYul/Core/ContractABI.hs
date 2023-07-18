@@ -1,7 +1,7 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 {-|
 
-Copyright   : (c) 2023 Miao, ZhiCheng
+Copyright   : (c) Miao ZhiCheng, 2023
 License     : LGPL-3
 Maintainer  : zhicheng.miao@gmail.com
 Stability   : experimental
@@ -46,7 +46,11 @@ instance ABIType BYTES
 
 -- Composite types:
 
-instance forall a b. (ABIType a, ABIType b) => ABIType (a , b) where
+instance forall a b. (ABIType a, ABIType b) => ABIType (a, b) where
   maybe_prod_objs = Dict
 
 instance forall a b. (ABIType a, ABIType b) => ABIType (a :> b)
+
+instance ABIType a => ABIType [a]
+
+-- External Call Specifications:

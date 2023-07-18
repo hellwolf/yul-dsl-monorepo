@@ -13,11 +13,11 @@ erc20_balance_of :: YulObj r => AddrP r ⊸ Uint256P r
 erc20_balance_of account = sget (erc20_balance_storage account)
 
 -- | ERC20 transfer function (no negative balance check for simplicity).
-erc20_transfer :: Fn (ADDR :> ADDR :> UINT256 :> ()) (One BOOL)
-erc20_transfer = defun "transfer" \(from :> to :> amount :> ()) ->
+erc20_transfer :: Fn (ADDR :> ADDR :> UINT256 :> ()) BOOL
+erc20_transfer = defun "transfer" \(from :> to :> amount :> u) ->
   (copyAp amount
     (\amount -> passAp from erc20_balance_of & \(from, balance) ->
         erc20_balance_storage from <== balance - amount)
     (\amount -> passAp to erc20_balance_of & \(to, balance) ->
         erc20_balance_storage to <== balance + amount)) &
-  yulConst (true :> ())
+  ignore u & yulConst true

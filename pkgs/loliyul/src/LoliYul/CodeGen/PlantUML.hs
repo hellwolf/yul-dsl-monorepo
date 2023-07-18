@@ -105,17 +105,17 @@ go_cat YulSPut env (Node iname iout) =
   ( Node obj "()",
     T.pack $ printf "%s --> %s: %s\n" iname obj iout
   , env) where obj = gen_obj "sput" env
-go_cat (YulInternFn name body) env (Node iname iout) =
-  ( Node exit_obj "returns"
-  , T.pack (printf "state \"function %s\" as %s {\n"  name func_obj) <>
-    body' <>
-    T.pack (
-      printf "state %s <<expansionInput>>\n" entry_obj <>
-      printf "state %s <<expansionOutput>>\n" exit_obj <>
-      printf "%s -> %s : %s\n" node' exit_obj out' <>
-      "}\n") <>
-    T.pack (printf "%s -> %s : %s\n" iname entry_obj iout)
-  , env') where func_obj = gen_obj "func" env
-                entry_obj = gen_obj "entry" env
-                exit_obj = gen_obj "exit" env
-                (Node node' out', body', env') = go_cat body (inc_env env) (Node entry_obj (print_types body))
+-- go_cat (YulDefun name body) env (Node iname iout) =
+--   ( Node exit_obj "returns"
+--   , T.pack (printf "state \"function %s\" as %s {\n"  name func_obj) <>
+--     body' <>
+--     T.pack (
+--       printf "state %s <<expansionInput>>\n" entry_obj <>
+--       printf "state %s <<expansionOutput>>\n" exit_obj <>
+--       printf "%s -> %s : %s\n" node' exit_obj out' <>
+--       "}\n") <>
+--     T.pack (printf "%s -> %s : %s\n" iname entry_obj iout)
+--   , env') where func_obj = gen_obj "func" env
+--                 entry_obj = gen_obj "entry" env
+--                 exit_obj = gen_obj "exit" env
+--                 (Node node' out', body', env') = go_cat body (inc_env env) (Node entry_obj (print_types body))

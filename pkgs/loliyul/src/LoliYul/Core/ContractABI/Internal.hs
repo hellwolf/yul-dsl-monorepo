@@ -13,6 +13,7 @@ This module exposes the internal of the ABI types, so that serialization can use
 
 module LoliYul.Core.ContractABI.Internal where
 
+import           Data.Word       (Word32)
 import           GHC.Natural     (Natural)
 import           GHC.TypeNats    (Nat)
 
@@ -29,3 +30,12 @@ newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer) deriving newtype (Ord,
 
 -- | ABI bytes reference type.
 newtype BYTES = BYTES ByteString deriving newtype (Eq)
+
+
+-- External Call Specification:
+
+newtype Selector = MkSelector Word32
+
+data CallSpec a b = ExternalCall ADDR Selector
+                  | DelegateCall ADDR Selector
+                  | StaticCall   ADDR Selector

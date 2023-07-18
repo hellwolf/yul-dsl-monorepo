@@ -48,4 +48,4 @@ evalYulDSL s  YulSGet          r  = (s, case M.lookup r (store_map s) of
                                           Just a  -> from_svalue a
                                           Nothing -> from_svalue def_sval)
 evalYulDSL s  YulSPut      (r, a) = (s', ()) where s' = s { store_map = M.insert r (to_svalue a) (store_map s) }
-evalYulDSL s  (YulInternFn _ f) a = evalYulDSL s f a
+-- evalYulDSL s  (YulDefun _ f)   () = (s', () ::)

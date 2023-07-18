@@ -53,7 +53,9 @@ module LoliYul.Core.ContractABI.Types
   , ABIValue(..)
 
     -- * Composite Types
-  , (:>)(..), One
+  , (:>)(..)
+
+  , Selector (..), CallSpec (..)
 
     -- * Show Instance Examples
     -- $show_instance_examples
@@ -318,16 +320,15 @@ NaN::INT8
 -}
 
 ------------------------------------------------------------------------------------------------------------------------
--- Heterogeneous List
+-- N-ary product
+--
+-- TODO: should use sop-core instead?
 ------------------------------------------------------------------------------------------------------------------------
 
 -- | Type constructor (:>) and data constructor pun for creating heterogeneous list.
 data a :> b = a :> b
 -- | Operator (:>) being right associative allows bracket-free syntax.
 infixr :>
-
--- | Alias for single-element type list.
-type One a = a :> ()
 
 instance Show a => Show (a :> ()) where
   show (a :> ()) = show a

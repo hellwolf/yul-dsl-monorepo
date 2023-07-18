@@ -26,7 +26,7 @@ import           GHC.TypeNats                 (KnownNat)
 import           Prelude.Linear
 
 import           Control.Category.Constrained (Cartesian, Category (Obj), O2, O3, O4)
-import           Control.Category.Linear      (P, copy, decode, encode, ignore, merge, mkUnit, split)
+import           Control.Category.Linear      (P, copy, decode, encode, merge, mkUnit, split)
 
 import           LoliYul.Core
 
@@ -90,9 +90,33 @@ yulCoerce :: forall a b r. (YulO3 r a b, YulCoercible a b)
      => YulP r a ⊸ YulP r b
 yulCoerce = encode YulCoerce
 
+-- Control Flow
+
 yulConst :: forall a b r. YulO3 r a b
          => a -> (YulP r b ⊸ YulP r a)
 yulConst a = encode (YulConst a)
+
+ifThenElse :: forall a r. YulO2 a r
+           => BoolP r ⊸ YulP r a ⊸ YulP r a ⊸ YulP r a
+ifThenElse i a b = encode YulITE (merge (i, merge(a, b)))
+
+-- YulVal utilities
+
+(<?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
+a <? b = encode (YulNumCmp (true, false, false)) (merge (a, b))
+(<=?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
+a <=? b = encode (YulNumCmp (true, true, false)) (merge (a, b))
+(>?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
+a >? b = encode (YulNumCmp (false, false, true)) (merge (a, b))
+(>=?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
+a >=? b = encode (YulNumCmp (false, true, true)) (merge (a, b))
+(==?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
+a ==? b = encode (YulNumCmp (false, true, false)) (merge (a, b))
+(/=?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
+a /=? b = encode (YulNumCmp (true, false, true)) (merge (a, b))
+infixr 4 <?, <=?, >?, >=?, ==?, /=?
+
+-- Storage
 
 sget :: forall v r. (YulObj r, YulVal v)
      => YulP r ADDR ⊸ YulP r  v
@@ -115,45 +139,46 @@ infixr 1 <==, <=@
 
 -- Port List
 
-type family YulPortExplode (a :: Type) :: Type where
-  YulPortExplode (YulP r ()) = ()
-  YulPortExplode (YulP r (a :> as)) = YulPortExplode (YulP r a) :> YulPortExplode (YulP r as)
-  YulPortExplode (YulP r a) = YulP r a
+type family YulPortReduce (a :: Type) :: Type where
+  -- YulPortReduce (YulP r ()) = ()
+  YulPortReduce (YulP r (a :> as)) = YulPortReduce (YulP r a) :> YulPortReduce (YulP r as)
+  -- YulPortReduce (YulP r [a]) = [YulPortReduce (YulP r a)]
+  -- YulPortReduce (YulP r (a, b)) = YulPortReduce (YulP r a) :> YulPortReduce(YulP r b) :> YulP r ()
+  YulPortReduce (YulP r a) = YulP r a
 
-class YulObj a => YulPReducible a where
+class YulObj a => YulPortReducible a where
   yul_port_reduce :: forall r. YulObj r
-                  => YulP r a ⊸ YulPortExplode (YulP r a)
-  default yul_port_reduce :: (YulObj r, YulP r a ~ YulPortExplode (YulP r a))
-                          => YulP r a ⊸ YulPortExplode (YulP r a)
+                  => YulP r a ⊸ YulPortReduce (YulP r a)
+  -- | Default instance for irreducible yul ports as base cases.
+  default yul_port_reduce :: (YulObj r, YulP r a ~ YulPortReduce (YulP r a))
+                          => YulP r a ⊸ YulPortReduce (YulP r a)
   yul_port_reduce = id
 
-instance YulPReducible ADDR
-instance YulPReducible BOOL
-instance (Typeable s, KnownNat n) => YulPReducible (INTx s n)
-instance YulPReducible BYTES
+  yul_port_merge :: forall r. YulObj r
+                 => YulPortReduce (YulP r a) ⊸ YulP r a
+  default yul_port_merge :: (YulObj r, YulP r a ~ YulPortReduce (YulP r a))
+                         => YulPortReduce (YulP r a) ⊸ YulP r a
+  yul_port_merge = id
 
-instance forall a as. (YulPReducible a, YulPReducible as) => YulPReducible (a :> as) where
+-- Irreducible yul ports:
+
+instance YulPortReducible () where
+instance YulPortReducible ADDR
+instance YulPortReducible BOOL
+instance (Typeable s, KnownNat n) => YulPortReducible (INTx s n)
+instance YulPortReducible BYTES
+
+instance forall a as. (YulPortReducible a, YulPortReducible as) => YulPortReducible (a :> as) where
   yul_port_reduce p = yulCoerce @(a :> as) @(a ⊗ as) p & split &
                       \(a, as) -> yul_port_reduce a :> yul_port_reduce as
+  yul_port_merge (a :> as) = merge (yul_port_merge a, yul_port_merge as) & yulCoerce @(a ⊗ as) @(a :> as)
 
-class YulO2 a as => YulPList a as where
-  yul_port_pop :: forall r. YulObj r
-               => YulP r (a :> as) ⊸ YulPortExplode (YulP r a) :> YulPortExplode (YulP r as)
-
-instance forall a a' as'. (YulPReducible a, YulPList a' as') => YulPList a (a' :> as') where
-  yul_port_pop p = yulCoerce @(a :> a' :> as') @(a ⊗ (a' :> as')) p & split &
-                   \(a, as) -> yul_port_reduce a :> yul_port_pop as
-
-instance forall a as. YulPList a as => YulPList (a :> as) () where
-  yul_port_pop p = yulCoerce @((a :> as) :> ()) @((a :> as) ⊗ ()) p & split &
-                   \(a, u) -> (ignore u a & yul_port_pop) :> ()
-
-instance forall a. YulPReducible a => YulPList a () where
-  yul_port_pop p = yulCoerce @(a :> ()) @(a ⊗ ()) p & split &
-                   \(a, u) -> (ignore u a & yul_port_reduce) :> ()
-
-defun :: forall a as b bs. (YulO4 a as b bs, YulPList a as)
+defun :: forall a b. (YulO2 a b, YulPortReducible a)
       => String
-      -> (forall r1. YulObj r1 => YulPortExplode (YulP r1 (a :> as)) ⊸ YulP r1 (b :> bs))
-      -> Fn (a :> as) (b :> bs)
-defun name f = YulInternFn name $ decode (f . yul_port_pop)
+      -> (forall r. YulObj r => YulPortReduce (YulP r a) ⊸ YulP r b)
+      -> Fn a b
+defun name f = Defun name $ decode (f . yul_port_reduce)
+
+apfun :: forall a b r. (YulPortReducible a, YulO3 a b r)
+      => Fn a b -> YulPortReduce (YulP r a) ⊸ YulP r b
+apfun (Defun name _) a = encode (YulApfun name) (yul_port_merge @a a)

@@ -26,7 +26,7 @@ import           GHC.TypeNats                 (KnownNat)
 import           Prelude.Linear
 
 import           Control.Category.Constrained (Cartesian, Category (Obj), O2, O3, O4)
-import           Control.Category.Linear      (P, copy, decode, encode, merge, mkUnit, split)
+import           Control.Category.Linear      (P, copy, decode, discard, encode, merge, mkUnit, split)
 
 import           LoliYul.Core
 
@@ -74,6 +74,9 @@ type Uint256P r = YulP r UINT256
 type Int256P  r = YulP r INT256
 type BytesP   r = YulP r BYTES
 
+dup2P :: YulO2 a r => YulP r a ⊸ (YulP r a, YulP r a)
+dup2P = split . copy
+
 instance (YulNum a, YulObj r) => Additive (YulP r a) where
   a + b = encode YulNumAdd (merge (a, b))
 
@@ -83,6 +86,28 @@ instance (YulNum a, YulObj r) => AddIdentity (YulP r a) where
 instance (YulNum a, YulObj r) => AdditiveGroup (YulP r a) where
   negate = encode YulNumNeg
   a - b = encode YulNumAdd (merge (a, negate b))
+
+-- Vars
+
+-- newtype Var r a = MkVar { getVar :: UnitP r ⊸ YulP r a }
+--
+-- mkVar :: forall a r. YulO2 a r => YulP r a ⊸ Var r a
+-- mkVar a = MkVar (\u -> ignore u a)
+--
+-- -- useVar :: forall a r. YulO2 a r => Var r a
+--
+-- --
+-- -- unVar :: forall a r. YulO2 a r => Var a -> UnitP r ⊸ YulP r a
+-- -- unVar a = encode a
+--
+-- instance (YulObj r, YulNum a) => Additive (Var r a) where
+--   a + b = (\u -> copy u & split & \(u1, u2) -> a u1 + b u2)
+--
+-- instance (YulObj r, YulNum a) => AddIdentity (Var r a) where
+--   zero = (\u -> yulConst 0 u)
+--
+-- instance (YulObj r, YulNum a) => AdditiveGroup (Var r a) where
+--   a - b = (\u -> copy u & split & \(u1, u2) -> a u1 - b u2)
 
 -- Utilities
 
@@ -94,7 +119,7 @@ yulCoerce = encode YulCoerce
 
 yulConst :: forall a b r. YulO3 r a b
          => a -> (YulP r b ⊸ YulP r a)
-yulConst a = encode (YulConst a)
+yulConst a = \b -> encode (YulEmbed a) (discard b)
 
 ifThenElse :: forall a r. YulO2 a r
            => BoolP r ⊸ YulP r a ⊸ YulP r a ⊸ YulP r a
@@ -181,4 +206,4 @@ defun name f = Defun name $ decode (f . yul_port_reduce)
 
 apfun :: forall a b r. (YulPortReducible a, YulO3 a b r)
       => Fn a b -> YulPortReduce (YulP r a) ⊸ YulP r b
-apfun (Defun name _) a = encode (YulApfun name) (yul_port_merge @a a)
+apfun (Defun name _) a = encode (YulApFun name) (yul_port_merge @a a)

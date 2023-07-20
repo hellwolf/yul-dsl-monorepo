@@ -45,12 +45,28 @@ foo3 = defun "foo3" \(x1 :> x2 :> u) ->
 
 rangeSum :: Fn (UINT256 :> UINT256 :> UINT256) UINT256
 rangeSum = defun "rangeSum" \(a :> b :> c) ->
-  copy a & split & \(a, a') ->
-  copy b & split & \(b, b') ->
-  copy c & split & \(c, c') ->
-  copy (a + b) & split & \ (d, d') ->
+  dup2P a & \(a, a') ->
+  dup2P b & \(b, b') ->
+  dup2P c & \(c, c') ->
+  dup2P (a + b) & \ (d, d') ->
   mkUnit a' & \(a', u) ->
   a' + ifThenElse (d <? c) (apfun rangeSum (d' :> b' :> c')) (yulConst 0 u)
+
+-- idVar :: Fn UINT256 UINT256
+-- idVar = defun "idVar" \a -> a' + a'
+--   where a' = mkVar a
+--   -- mkUnit a & \(a, u) ->
+--   -- unVar (mkVar a) u
+
+-- rangeSum' :: Fn (UINT256 :> UINT256 :> UINT256) UINT256
+-- rangeSum' = defun "rangeSum1" \(a :> b :> c) ->
+--   mkUnit a & \(a, u) ->
+--   let a' = mkVar a
+--       b' = mkVar b
+--       c' = mkVar c
+--       d = a' + b'
+--   in unVar d u
+--   -- in ifThenElse (d <? c) (apfun rangeSum' (d :> b :> c)) (zero)
 
 --  enumFromThenTo a b c
 

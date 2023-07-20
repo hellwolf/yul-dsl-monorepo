@@ -41,7 +41,7 @@ evalYulDSL s (YulProd m n) (a, b) = (s'', (c, d)) where (s',  c) = evalYulDSL s 
 evalYulDSL s  YulSwap      (a, b) = (s, (b, a))
 evalYulDSL s  YulDis           _  = (s, ())
 evalYulDSL s  YulDup           a  = (s, (a, a))
-evalYulDSL s (YulConst b)      _  = (s, b)
+evalYulDSL s (YulEmbed b)      _  = (s, b)
 evalYulDSL s  YulNumNeg       a   = (s, negate a)
 evalYulDSL s  YulNumAdd    (a, b) = (s, a + b)
 evalYulDSL s  YulSGet          r  = (s, case M.lookup r (store_map s) of

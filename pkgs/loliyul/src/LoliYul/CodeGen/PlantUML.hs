@@ -85,7 +85,7 @@ go_cat YulDup env (Node iname iout) =
   ( Node dup_obj "a⊗a"
   , T.pack $ printf "%s --> %s: %s\n" iname dup_obj iout
   , env) where dup_obj = gen_obj "dup" env
-go_cat (YulConst a) env (Node iname iout) =
+go_cat (YulEmbed a) env (Node iname iout) =
   ( Node const_obj (show a),
     T.pack $ printf "%s --> %s: %s\n" iname const_obj iout
   , env) where const_obj = gen_obj "const" env

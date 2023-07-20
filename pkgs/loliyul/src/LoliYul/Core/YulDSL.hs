@@ -52,10 +52,10 @@ data YulDSL a b where
 
   -- Control Flow Primitives
   --
-  -- | Embed a constant value, and ignore the input.
-  YulConst :: forall a b. YulO2 a b => b -> YulDSL a b
+  -- | Embed a constant value.
+  YulEmbed :: forall a  . YulO1 a   => a -> YulDSL () a
   -- | Apply the function object over an argument.
-  YulApfun :: forall a b. YulO2 a b => String -> YulDSL a b
+  YulApFun :: forall a b. YulO2 a b => String -> YulDSL a b
   -- | Mapping over a list.
   YulMap   :: forall a b. YulO2 a b => YulDSL a b -> YulDSL [a] [b]
   -- | Folding over a list from the left.
@@ -68,14 +68,14 @@ data YulDSL a b where
   -- YulVal Primitives
   --
   -- - Boolean Operatiosn
-  YulNOT    :: YulDSL BOOL BOOL
-  YulAND    :: YulDSL (BOOL ⊗ BOOL) BOOL
-  YulOR     :: YulDSL (BOOL ⊗ BOOL) BOOL
+  YulNot :: YulDSL BOOL BOOL
+  YulAnd :: YulDSL (BOOL ⊗ BOOL) BOOL
+  YulOr  :: YulDSL (BOOL ⊗ BOOL) BOOL
   -- - Num Types
   YulNumNeg :: forall a. YulNum a => YulDSL a a
   YulNumAdd :: forall a. YulNum a => YulDSL (a ⊗ a) a
   -- | Number comparison with a three-way boolean-switches (LT, EQ, GT).
-  YulNumCmp :: forall a. YulNum a => (BOOL, BOOL, BOOL) -> YulDSL (a ⊗ a) BOOL
+  YulNumCmp :: forall a b. (YulNum a, YulObj b) => (b, b, b) -> YulDSL (a ⊗ a) b
   -- - Contract ABI Serialization
   YulAbiEnc :: YulObj a => YulDSL a BYTES
   YulAbiDec :: YulObj a => YulDSL BYTES (Maybe a)

@@ -145,8 +145,8 @@ function build_yol_module() {
   # prepare cabal build files and build
   cat > "$yol_dir"/cabal.project <<EOF
 packages:
-  $dist_path/3rd-parties/linear-smc
-  $dist_path/pkgs/loliyul
+  $dist_path/3rd-parties/linear-smc-2.2.3
+  $dist_path/hs-pkgs/loliyul
   $cabal_path
   $yol_dir/runyol.cabal
 EOF
@@ -156,7 +156,7 @@ EOF
   } < "$dist_path"/templates/runyol.cabal > "$yol_dir"/runyol.cabal
 
   local csyms
-  csyms=$(for i in $syms;do echo -n "putStrLn((compilers !! $out_mode) \"$i\" $i);";done)
+  csyms=$(for i in $syms;do echo -n "putStrLn((compilers !! $out_mode) $i);";done)
   {
     sed -e "s|__YOL_MOD_NAME__|${mod_name}|g" \
         -e "s|__COMPILE_SYMBOLS__|${csyms}|g"

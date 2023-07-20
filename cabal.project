@@ -1,4 +1,4 @@
 packages:
-    3rd-parties/linear-smc
-    pkgs/loliyul
-    pkgs/examples
+    3rd-parties/linear-smc-2.2.3
+    hs-pkgs/loliyul
+    hs-pkgs/examples

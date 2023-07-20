@@ -35,12 +35,14 @@ DEV_TARGETS = build-all-modules test-loliyul
 # TARGETS
 ########################################################################################################################
 
-default: dev
+all: build test
 
 gen-patch-linear-smc:
 	diff -ur -p2 3rd-parties/linear-smc-"$(LINEAR_SMC_VERSION)" 3rd-parties/linear-smc | tee "$(LINEAR_SMC_PATH_FILE)"
 	# delete the patch if empty
 	[[ -s "$(LINEAR_SMC_PATH_FILE)" ]] & rm -f "$(LINEAR_SMC_PATH_FILE)"
+
+build: build-all-modules build-docs
 
 build-all-modules:
 	$(CABAL_BUILD) build all $(BUILD_OPTIONS)
@@ -52,10 +54,15 @@ build-docs:
 clean:
 	rm -rf build
 
+test: test-loliyul test-yolc-basic
+
 test-loliyul:
 	$(CABAL_TEST) test loliyul $(TEST_OPTIONS)
+
+test-yolc-basic:
+	yolc hs-pkgs/examples:Basic[foo2]
 
 dev:
 	nodemon -w pkgs -e "hs cabal" -x "make $(DEV_TARGETS) || exit 1"
 
-.PHONY: default gen-* build-* clean test-* dev
+.PHONY: all gen-* build-* clean test test-* dev

@@ -18,17 +18,20 @@ This module provides extra combinators to program 'YulDSL' in linear-types, in a
 
 -}
 
-module LoliYul.Linear where
+module YulDSL.Linear where
 
+-- base
 import           Data.Kind                    (Type)
 import           Data.Typeable                (Typeable)
 import           GHC.TypeNats                 (KnownNat)
 import           Prelude.Linear
-
-import           Control.Category.Constrained (Cartesian, Category (Obj), O2, O3, O4)
+-- linear-smc
+import           Control.Category.Constrained (Cartesian, Category (Obj), O2, O3, O4, type (⊗))
 import           Control.Category.Linear      (P, copy, decode, discard, encode, merge, mkUnit, split)
-
-import           LoliYul.Core
+-- yul-dsl
+import           YulDSL.Core
+--
+import           YulDSL.Linear.Categories     ()
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Extra SMC Linear Combinators

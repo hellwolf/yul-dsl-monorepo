@@ -1,5 +1,5 @@
 {
-  description = "Nix Flake for LoliYul";
+  description = "Nix Flake for the YulDSL Monorepo";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";

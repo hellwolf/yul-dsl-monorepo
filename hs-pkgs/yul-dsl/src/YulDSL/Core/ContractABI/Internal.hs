@@ -11,7 +11,7 @@ This module exposes the internal of the ABI types, so that serialization can use
 
 -}
 
-module LoliYul.Core.ContractABI.Internal where
+module YulDSL.Core.ContractABI.Internal where
 
 import           Data.Word       (Word32)
 import           GHC.Natural     (Natural)

@@ -2,7 +2,7 @@
 # Copyright   : (c) 2023 Miao, ZhiCheng
 # License     : LGPL-3
 # Maintainer  : zhicheng.miao@gmail.com
-# Synopsis    : yolc, the LoliYul commandline compiler
+# Synopsis    : yolc, the YulDSL commandline compiler
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Main Program, Utilities & Global Variables
@@ -17,7 +17,7 @@ declare -a yol_modules=()
 
 function help() {
   cat <<EOF
-yolc, the LoliYul commandline transpiler.
+yolc, the YulDSL commandline transpiler.
 
 Usage: yolc [options] yol_module_spec...
 
@@ -28,7 +28,7 @@ Usage: yolc [options] yol_module_spec...
 yol_module_spec: {package_path:}module_name{[symbol...,]}
   where 1) both package_path and symbol list is optional,
         2) default package_path is current working directory ($PWD),
-        3) and default symbol is 'default'.
+        3) and default symbol is 'defsym' (TODO, use object instead).
 
 EOF
 }
@@ -127,7 +127,7 @@ function build_yol_module() {
 
   # parse `syms`
   syms=$(echo -n "$rest" | sed -e 's|\s*,\s*| |g')
-  [ -z "$syms" ] && syms=default
+  [ -z "$syms" ] && syms=defsym
 
   # prepare the build directory
   yol_dir=$out_dir/${pkg_name}-${mod_name}.yol
@@ -146,7 +146,8 @@ function build_yol_module() {
   cat > "$yol_dir"/cabal.project <<EOF
 packages:
   $dist_path/3rd-parties/linear-smc-2.2.3
-  $dist_path/hs-pkgs/loliyul
+  $dist_path/hs-pkgs/yul-dsl
+  $dist_path/hs-pkgs/yul-dsl-linear-smc
   $cabal_path
   $yol_dir/runyol.cabal
 EOF

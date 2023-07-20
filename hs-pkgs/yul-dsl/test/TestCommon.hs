@@ -10,8 +10,8 @@ import           GHC.TypeNats                      (KnownNat)
 
 import           Test.QuickCheck
 
-import           LoliYul.Core.ContractABI.Internal
-import           LoliYul.Core.ContractABI.Types
+import           YulDSL.Core.ContractABI.Internal
+import           YulDSL.Core.ContractABI.Types
 
 instance Arbitrary ADDR where
   arbitrary = chooseBoundedIntegral (minBound @UINT256, maxBound @UINT256)

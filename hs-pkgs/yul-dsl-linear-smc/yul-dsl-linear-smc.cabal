@@ -1,0 +1,44 @@
+Cabal-Version:  3.0
+name:           yul-dsl-linear-smc
+version:        0.1
+category:       control
+synopsis:       Programming Solidity/Yul in linear-typed functions
+license:        LGPL-3.0-or-later
+license-file:   LICENSE
+author:         Miao, ZhiCheng
+maintainer:     zhicheng.miao@gmail.com
+tested-with:    GHC==9.6.2
+build-type:     Simple
+
+description:    YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
+
+                Additionally, the package uses a technique called "evaluating linear functions to symmetric monoidal
+                categories (Jean-Philippe Bernardy and Arnaud Spiwack)" to provide an ergonomic linear functions
+                (nicknamed "lolipop" functions, hence the project name) programming environment for the 'YulDSL'.
+
+                Furthermore, the 'YulDSL' has its portable artifact form (WORK-IN-PROGRESS), which opens the door for
+                other frontends (a visual programming interface or other principled programming languages) to produce
+                and share 'YulDSL' as portable modules with each other.
+
+common basic-options
+    default-language:     GHC2021
+    ghc-options:          -Wall
+    default-extensions:   UnicodeSyntax
+
+common yolc-deps
+  build-depends:    base >= 4.13 && < 666,
+                    bytestring >= 0.11,
+                    linear-base >= 0.3.1,
+                    linear-smc >= 2.2.3,
+                    yul-dsl
+
+library
+  import:           basic-options, yolc-deps
+  hs-source-dirs:   src
+  build-depends:    text >= 2.0.1,
+                    cereal >= 0.5.8,
+                    constraints >= 0.13,
+                    containers >= 0.6.7
+  exposed-modules:  YulDSL.Linear.Categories
+                    YulDSL.Linear
+                    Prelude.YulDSL

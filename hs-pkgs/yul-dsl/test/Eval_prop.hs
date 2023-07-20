@@ -3,8 +3,8 @@ module Eval_prop (tests) where
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           LoliYul.Core
-import           LoliYul.Eval
+import           YulDSL.Core
+import           YulDSL.Eval
 
 import           TestCommon      ()
 
@@ -23,16 +23,16 @@ test_coerce_two_vals_unit_hlist a b = a == a' && b == b' &&
 test_coerce_commutative :: forall p q r. (p ~ ADDR, q ~ UINT32, r ~ BOOL) => p -> q -> r -> Bool
 test_coerce_commutative a b c = a == a' && b == b' && c == c' &&
                                 a == a'' && b == b'' && c == c''
-  where (_, ((a',b'),c')) = evalYulDSL initEvalState (YulCoerce @(p⊗(q⊗r)) @((p⊗q)⊗r)) (a,(b,c))
-        (_, (a'',(b'',c''))) = evalYulDSL initEvalState (YulCoerce @((p⊗q)⊗r) @(p⊗(q⊗r))) ((a,b),c)
+  where (_, ((a',b'),c')) = evalYulDSL initEvalState (YulCoerce @(p, (q, r)) @((p, q), r)) (a, (b, c))
+        (_, (a'',(b'',c''))) = evalYulDSL initEvalState (YulCoerce @((p, q), r) @(p, (q, r))) ((a, b), c)
 
 test_num_add :: UINT256 -> UINT256 -> Bool
 test_num_add a b = (a + b) == c
   where (_, c) = evalYulDSL initEvalState YulNumAdd (a, b)
 
-tests = describe "LoliYUl.Core.Eval tests" $ do
+tests = describe "YulDSL.Core.Eval tests" $ do
   describe "YulCoerce" $ do
     it "UINT256 =~= (UINT256,())" $ property test_coerce_uint256_unit_prod
     it "p :> q :> () =~= (p, q)" $ property test_coerce_two_vals_unit_hlist
-    it "(p⊗(q⊗r)) =~= ((p⊗q)⊗r)" $ property test_coerce_commutative
+    it "(p, (q, r)) =~= ((p, q), r)" $ property test_coerce_commutative
   it "YulNumAdd" $ property test_num_add

@@ -17,14 +17,14 @@ This module provides a faithful codec for the /Contract ABI/ types.
 
 -}
 
-module LoliYul.Core.ContractABI.Serialization where
+module YulDSL.Core.ContractABI.Serialization where
 
 import           Data.ByteString                   (ByteString)
 import qualified Data.Serialize                    as S
 import           GHC.Generics
 
-import           LoliYul.Core.ContractABI.Internal
-import           LoliYul.Core.ContractABI.Types
+import           YulDSL.Core.ContractABI.Internal
+import           YulDSL.Core.ContractABI.Types
 
 -- | ABI serialization class. FIXME: currently an alias to Serialize from cereal library.
 type ABISerialize = S.Serialize

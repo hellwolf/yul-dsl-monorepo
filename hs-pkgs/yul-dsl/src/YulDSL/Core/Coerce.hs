@@ -16,22 +16,19 @@ It is the code separated out in order to isolate the usage of UndecidableInstanc
 
 -}
 
-module LoliYul.Core.YulDSL.Coerce
+module YulDSL.Core.Coerce
   ( YulCoercible
   ) where
 
-import           Control.Category.Constrained (type (⊗))
-
-import           LoliYul.Core.ContractABI
-import           LoliYul.Core.YulDSL.Obj
+import           YulDSL.Core.ContractABI
 
 -- | Family of objects that have the same bytes representations.
-class YulO2 a b => YulCoercible a b
+class (ABIType a, ABIType b) => YulCoercible a b
 
-instance {-# OVERLAPPABLE #-} YulCoercible b a => YulCoercible a b
+instance {-# OVERLAPPABLE #-} (ABIType a, ABIType b, YulCoercible b a) => YulCoercible a b
 
 instance {-# OVERLAPPING #-} YulCoercible UINT256 ADDR
 
-instance {-# OVERLAPPING #-} YulO1 a     => YulCoercible (a⊗()) a
-instance {-# OVERLAPPING #-} YulO2 a as  => YulCoercible (a :> as) (a⊗as)
-instance {-# OVERLAPPING #-} YulO3 a b c => YulCoercible (a⊗(b⊗c)) ((a⊗b)⊗c)
+instance {-# OVERLAPPING #-} ABIType a => YulCoercible (a, ()) a
+instance {-# OVERLAPPING #-} (ABIType a, ABIType as)  => YulCoercible (a :> as) (a, as)
+instance {-# OVERLAPPING #-} (ABIType a, ABIType b, ABIType c) => YulCoercible (a, (b, c)) ((a, b), c)

@@ -1,7 +1,5 @@
 module ERC20 where
 
-import           LoliYul.Core
-
 -- | ERC20 balance storage location for the account.
 -- TODO should use hashing of course.
 erc20_balance_storage :: forall r. YulObj r => AddrP r ⊸ AddrP r

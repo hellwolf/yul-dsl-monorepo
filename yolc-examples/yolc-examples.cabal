@@ -1,8 +1,8 @@
 Cabal-Version:  3.0
-name:           loliyul-examples
+name:           yolc-examples
 version:        0.1
 category:       control
-synopsis:       Examples built with LoliYul
+synopsis:       Examples built with yolc (A YulDSL Compiler)
 license:        LGPL-3.0-or-later
 license-file:   LICENSE
 author:         Miao, ZhiCheng
@@ -20,13 +20,14 @@ common yol-module-options
                           OverloadedStrings
                           UnicodeSyntax
     mixins:               base hiding (Prelude),
-                          base (Prelude as ClassicPrelude),
-                          loliyul (LoliYul.Prelude as Prelude),
-                          loliyul
+                          base (Prelude as BasePrelude),
+                          yul-dsl-linear-smc (Prelude.YulDSL as Prelude),
+                          yul-dsl-linear-smc
     build-depends:        base >= 4.13 && < 666,
                           text >= 2.0.1,
                           bytestring >= 0.11,
-                          loliyul,
+                          yul-dsl,
+                          yul-dsl-linear-smc,
                           linear-base >= 0.3.1,
                           linear-smc >= 2.2.3
 

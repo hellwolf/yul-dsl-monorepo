@@ -21,21 +21,55 @@ This module provides an "Embedded (in Haskell) Domain Specific Language" (EDSL) 
 the possibility for compiling linearly-typed functions in Haskell directly to the 'YulDSL', that is believed to
 greatly enhance the ergonomics of programming in 'YulDSL'.
 
+YulDSL is designed to be a category. The objects in this category are instances of @ABIType@.
+
+The classification objects in the YulDSL symmetrical monoidal category:
+
+  * 'YulObj'
+  * 'YulVal'
+  * 'YulNum'
+
 -}
 
-module LoliYul.Core.YulDSL
-  ( YulDSL (..)
+module YulDSL.Core.YulDSL
+  ( YulObj
+  , YulO1, YulO2, YulO3, YulO4, YulO5
+  , YulVal
+  , YulNum
+  , YulDSL (..)
   , Fn (..)
-  , module LoliYul.Core.YulDSL.Obj
-  , module LoliYul.Core.YulDSL.Coerce
+  , module YulDSL.Core.Coerce
   ) where
 
-import           Control.Category.Constrained (Cartesian (dis, dup), Category (..), Monoidal (..), type (⊗))
+-- base
+import           Data.Typeable           (Typeable)
+import           GHC.TypeNats            (KnownNat)
+--
+import           YulDSL.Core.Coerce
+import           YulDSL.Core.ContractABI
 
-import           LoliYul.Core.ContractABI
-import           LoliYul.Core.YulDSL.Coerce
-import           LoliYul.Core.YulDSL.Obj
+-- | All objects in the category is simply a 'ABIType'.
+type YulObj  = ABIType
 
+-- Convenient aliases for declaring YulObj constraints.
+
+type YulO1 a = YulObj a
+type YulO2 a b = (YulObj a, YulObj b)
+type YulO3 a b c = (YulObj a, YulObj b, YulObj c)
+type YulO4 a b c d = (YulObj a, YulObj b, YulObj c, YulObj d)
+type YulO5 a b c d e = (YulObj a, YulObj b, YulObj c, YulObj d, YulObj e)
+
+-- | Value-type objects in the category.
+class (YulObj a, ABIValue a) => YulVal a
+
+instance YulVal BOOL
+instance YulVal ADDR
+instance (Typeable s, KnownNat n) => YulVal (INTx s n)
+
+-- | Number-type objects in the category.
+class (YulVal a, Num a) => YulNum a
+
+instance (Typeable s, KnownNat n) => YulNum (INTx s n)
 
 -- | A GADT-style DSL for Yul that constructs morphisms between its objects.
 data YulDSL a b where
@@ -45,10 +79,10 @@ data YulDSL a b where
   --
   YulId     :: forall a.       YulO2 a a     => YulDSL a a
   YulComp   :: forall a b c.   YulO3 a b c   => YulDSL c b -> YulDSL a c -> YulDSL a b
-  YulProd   :: forall a b c d. YulO4 a b c d => YulDSL a b -> YulDSL c d -> YulDSL (a ⊗ c) (b ⊗ d)
-  YulSwap   :: forall a b.     YulO2 a b     => YulDSL (a ⊗ b) (b ⊗ a)
+  YulProd   :: forall a b c d. YulO4 a b c d => YulDSL a b -> YulDSL c d -> YulDSL (a, c) (b, d)
+  YulSwap   :: forall a b.     YulO2 a b     => YulDSL (a, b) (b, a)
   YulDis    :: forall a.       YulO1 a       => YulDSL a ()
-  YulDup    :: forall a.       YulO1 a       => YulDSL a (a ⊗ a)
+  YulDup    :: forall a.       YulO1 a       => YulDSL a (a, a)
 
   -- Control Flow Primitives
   --
@@ -59,23 +93,23 @@ data YulDSL a b where
   -- | Mapping over a list.
   YulMap   :: forall a b. YulO2 a b => YulDSL a b -> YulDSL [a] [b]
   -- | Folding over a list from the left.
-  YulFoldl :: forall a b. YulO2 a b => YulDSL (b ⊗ a) b -> YulDSL [a] b
+  YulFoldl :: forall a b. YulO2 a b => YulDSL (b, a) b -> YulDSL [a] b
   -- | EVM Call.
-  YulCall  :: forall a b. YulO2 a b => YulDSL ((CallSpec a b) ⊗ a) (Maybe b)
+  YulCall  :: forall a b. YulO2 a b => YulDSL ((CallSpec a b), a) (Maybe b)
   -- | If-then-else.
-  YulITE   :: forall a  . YulO1 a   => YulDSL (BOOL ⊗ (a ⊗ a)) a
+  YulITE   :: forall a  . YulO1 a   => YulDSL (BOOL, (a, a)) a
 
   -- YulVal Primitives
   --
   -- - Boolean Operatiosn
   YulNot :: YulDSL BOOL BOOL
-  YulAnd :: YulDSL (BOOL ⊗ BOOL) BOOL
-  YulOr  :: YulDSL (BOOL ⊗ BOOL) BOOL
+  YulAnd :: YulDSL (BOOL, BOOL) BOOL
+  YulOr  :: YulDSL (BOOL, BOOL) BOOL
   -- - Num Types
   YulNumNeg :: forall a. YulNum a => YulDSL a a
-  YulNumAdd :: forall a. YulNum a => YulDSL (a ⊗ a) a
+  YulNumAdd :: forall a. YulNum a => YulDSL (a, a) a
   -- | Number comparison with a three-way boolean-switches (LT, EQ, GT).
-  YulNumCmp :: forall a b. (YulNum a, YulObj b) => (b, b, b) -> YulDSL (a ⊗ a) b
+  YulNumCmp :: forall a b. (YulNum a, YulObj b) => (b, b, b) -> YulDSL (a, a) b
   -- - Contract ABI Serialization
   YulAbiEnc :: YulObj a => YulDSL a BYTES
   YulAbiDec :: YulObj a => YulDSL BYTES (Maybe a)
@@ -83,26 +117,9 @@ data YulDSL a b where
   -- Storage Primitives
   --
   YulSGet :: forall a. YulVal a => YulDSL ADDR a
-  YulSPut :: forall a. YulVal a => YulDSL (ADDR ⊗ a) ()
+  YulSPut :: forall a. YulVal a => YulDSL (ADDR, a) ()
 
 -- | Internal function object.
 data Fn a b = Defun String (YulDSL a b) deriving Show
-
-instance Category YulDSL where
-  type Obj YulDSL = YulObj
-  id  = YulId
-  (∘) = YulComp
-
-instance Monoidal YulDSL where
-  (×)     = YulProd
-  unitor  = YulCoerce
-  unitor' = YulCoerce
-  assoc   = YulCoerce
-  assoc'  = YulCoerce
-  swap    = YulSwap
-
-instance Cartesian YulDSL where
-  dis = YulDis
-  dup = YulDup
 
 deriving instance Show (YulDSL a b)

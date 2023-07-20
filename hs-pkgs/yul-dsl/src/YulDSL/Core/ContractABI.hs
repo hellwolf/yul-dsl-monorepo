@@ -17,18 +17,18 @@ bytestring representation of the data.
 
 -}
 
-module LoliYul.Core.ContractABI
-  ( module LoliYul.Core.ContractABI.Types
+module YulDSL.Core.ContractABI
+  ( module YulDSL.Core.ContractABI.Types
   , ABIType (..)
-  , module LoliYul.Core.ContractABI.Serialization
+  , module YulDSL.Core.ContractABI.Serialization
   ) where
 
 import           Data.Constraint                        (Dict (..))
 import           Data.Typeable                          (Typeable)
 import           GHC.TypeNats                           (KnownNat, Nat)
 
-import           LoliYul.Core.ContractABI.Serialization
-import           LoliYul.Core.ContractABI.Types
+import           YulDSL.Core.ContractABI.Serialization
+import           YulDSL.Core.ContractABI.Types
 
 -- | Contract ABI type class for all primitive and composite ABI types.
 class (Show a, Typeable a, ABISerialize a) => ABIType a where

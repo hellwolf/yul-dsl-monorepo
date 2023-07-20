@@ -1,8 +1,8 @@
 Cabal-Version:  3.0
-name:           loliyul
+name:           yul-dsl
 version:        0.1
 category:       control
-synopsis:       Programming Solidity/Yul in linear-typed (lolipop ⊸) functions
+synopsis:       YulDSL, a DSL for Solidity/Yul
 license:        LGPL-3.0-or-later
 license-file:   LICENSE
 author:         Miao, ZhiCheng
@@ -10,7 +10,7 @@ maintainer:     zhicheng.miao@gmail.com
 tested-with:    GHC==9.6.2
 build-type:     Simple
 
-description:    LoliYul provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
+description:    YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
 
                 Additionally, the package uses a technique called "evaluating linear functions to symmetric monoidal
                 categories (Jean-Philippe Bernardy and Arnaud Spiwack)" to provide an ergonomic linear functions
@@ -21,43 +21,36 @@ description:    LoliYul provides an EDSL called 'YulDSL' for transpiling Haskell
                 and share 'YulDSL' as portable modules with each other.
 
 common basic-options
-    default-language:     GHC2021
-    ghc-options:          -Wall
-    default-extensions:   UnicodeSyntax
-
-common loliyul-deps
-  build-depends:    base >= 4.13 && < 666,
-                    bytestring >= 0.11,
-                    linear-base >= 0.3.1,
-                    linear-smc >= 2.2.3
+  default-language:     GHC2021
+  ghc-options:          -Wall
+  build-depends:    base >= 4.13 && < 666
 
 library
-  import:           basic-options, loliyul-deps
+  import:           basic-options
   hs-source-dirs:   src
-  build-depends:    text >= 2.0.1,
+  build-depends:    bytestring >= 0.11,
+                    text >= 2.0.1,
+                    -- TODO remove cereal dependency
                     cereal >= 0.5.8,
                     constraints >= 0.13,
                     containers >= 0.6.7
-  exposed-modules:  LoliYul.Core.ContractABI.Internal
-                    LoliYul.Core.ContractABI.Types
-                    LoliYul.Core.ContractABI.Serialization
-                    LoliYul.Core.ContractABI
-                    LoliYul.Core.YulDSL.Obj
-                    LoliYul.Core.YulDSL.Coerce
-                    LoliYul.Core.YulDSL
-                    LoliYul.Core
-                    LoliYul.Eval
-                    LoliYul.Linear
-                    LoliYul.Prelude
-                    LoliYul.CodeGen.PlantUML
+  exposed-modules:  YulDSL.Core.ContractABI.Internal
+                    YulDSL.Core.ContractABI.Types
+                    YulDSL.Core.ContractABI.Serialization
+                    YulDSL.Core.ContractABI
+                    YulDSL.Core.Coerce
+                    YulDSL.Core.YulDSL
+                    YulDSL.Core
+                    YulDSL.Eval
+                    YulDSL.CodeGen.PlantUML
 
-Test-Suite test-loliyul
-  import:           basic-options, loliyul-deps
+Test-Suite test-yul-dsl
+  import:           basic-options
   ghc-options:      -Wno-missing-signatures
   type:             exitcode-stdio-1.0
   build-depends:    QuickCheck >=2.13,
                     hspec >=2.11,
-                    loliyul
+                    yul-dsl
   hs-source-dirs:   test
   other-modules:    TestCommon
                     Eval_prop

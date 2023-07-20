@@ -14,13 +14,13 @@ This module provides a function 'evalYulDSL' simulating the evaluation of the 'Y
 
 -}
 
-module LoliYul.Eval where
+module YulDSL.Eval where
 
 import qualified Data.Map                 as M
 import           Data.Maybe               (fromJust)
 
-import           LoliYul.Core.ContractABI
-import           LoliYul.Core.YulDSL      (YulDSL (..))
+import           YulDSL.Core.ContractABI
+import           YulDSL.Core.YulDSL      (YulDSL (..))
 
 
 data EvalState = EvalState { store_map :: M.Map ADDR SVALUE

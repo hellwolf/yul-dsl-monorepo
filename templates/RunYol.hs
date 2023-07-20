@@ -1,10 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-import           ClassicPrelude
+import           BasePrelude
 import qualified Data.Text                as T
 
-import qualified LoliYul.CodeGen.PlantUML
-import LoliYul.Core (Fn (..))
+import qualified YulDSL.CodeGen.PlantUML
+import YulDSL.Core (Fn (..))
 
 import __YOL_MOD_NAME__
 
@@ -16,7 +16,7 @@ compilers :: [Compiler]
 compilers = [ \(Defun name cat) -> "# __YOL_MOD_NAME__." <> name <> "\n\n" ++
                            show cat <> "\n\n" ++
                            "# " <> replicate 98 '-' <> "\n"
-            , \(Defun name cat) -> T.unpack (LoliYul.CodeGen.PlantUML.compile name cat) ++
+            , \(Defun name cat) -> T.unpack (YulDSL.CodeGen.PlantUML.compile name cat) ++
                            "' " <> replicate 98 '-' <> "\n"
             ]
 

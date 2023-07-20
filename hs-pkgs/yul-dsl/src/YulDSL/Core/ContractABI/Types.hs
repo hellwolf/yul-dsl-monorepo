@@ -21,7 +21,7 @@ types and functions here.
 
 -}
 
-module LoliYul.Core.ContractABI.Types
+module YulDSL.Core.ContractABI.Types
   ( -- * Primitive Types
 
     -- ** BOOL
@@ -69,7 +69,7 @@ import           GHC.Natural                       (Natural, naturalFromInteger,
 import           GHC.TypeNats                      (KnownNat, Nat, natVal)
 import           Numeric                           (showHex)
 
-import           LoliYul.Core.ContractABI.Internal
+import           YulDSL.Core.ContractABI.Internal
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Primitive (Solidity) ABI Types

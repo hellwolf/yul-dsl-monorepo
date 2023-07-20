@@ -1,12 +1,12 @@
 {-# LANGUAGE GADTs #-}
 
-module LoliYul.CodeGen.PlantUML (compile) where
+module YulDSL.CodeGen.PlantUML (compile) where
 
 import qualified Data.Text           as T
 import           Data.Typeable
 import           Text.Printf
 
-import           LoliYul.Core.YulDSL
+import           YulDSL.Core.YulDSL
 
 
 compile :: String -> YulDSL a b -> T.Text

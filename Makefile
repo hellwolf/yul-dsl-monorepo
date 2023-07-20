@@ -29,7 +29,7 @@ CABAL_COVERAGE = $(CABAL) --builddir=$(TEST_COVERAGE_BUILDDIR)
 CABAL_DOCS     = $(CABAL) --builddir=$(DOCS_BUILDDIR)
 
 # Misc
-DEV_TARGETS = build-all-modules test-loliyul
+DEV_TARGETS = build-all-modules test-yul-dsl
 
 ########################################################################################################################
 # TARGETS
@@ -48,19 +48,22 @@ build-all-modules:
 	$(CABAL_BUILD) build all $(BUILD_OPTIONS)
 
 build-docs:
-	$(CABAL_DOCS) haddock loliyul
-	xdg-open $(DOCS_BUILDDIR)/build/*/*/loliyul-*/doc/html/loliyul/index.html
+	$(CABAL_DOCS) haddock yul-dsl yul-dsl-linear-smc
+
+build-docs-and-display: build-docs
+	xdg-open $(DOCS_BUILDDIR)/build/*/*/yul-dsl-*/doc/html/yul-dsl/index.html
+	xdg-open $(DOCS_BUILDDIR)/build/*/*/yul-dsl-linear-smc-*/doc/html/yul-dsl-linear-smc/index.html
 
 clean:
 	rm -rf build
 
-test: test-loliyul test-yolc-basic
+test: test-yul-dsl test-yolc-basic
 
-test-loliyul:
-	$(CABAL_TEST) test loliyul $(TEST_OPTIONS)
+test-yul-dsl:
+	$(CABAL_TEST) test yul-dsl $(TEST_OPTIONS)
 
 test-yolc-basic:
-	yolc hs-pkgs/examples:Basic[foo2]
+	yolc yolc-examples:Basic[foo]
 
 dev:
 	nodemon -w pkgs -e "hs cabal" -x "make $(DEV_TARGETS) || exit 1"

@@ -1,7 +1,7 @@
-LoliYul - Programming Solidity/Yul in Linear-typed (Lolipop ⊸) Functions
-========================================================================
+YOLC - Programming Solidity/Yul in Linear-typed (Lolipop ⊸) Functions
+=====================================================================
 
-LoliYul provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
+YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
 
 Additionally, the package uses a technique called "evaluating linear functions to symmetric monoidal categories
 (Jean-Philippe Bernardy and Arnaud Spiwack)" to provide an ergonomic linear functions (nicknamed "lolipop" functions,
@@ -35,7 +35,7 @@ Motivation
   that provides an ergonomic programming environment for such EDSLs using linear-typed Haskell.
 
 * In the quest to provide an advanced, purely functional high-level programming language to the EVM ecosystem, the author
-  embarked on a journey into creating this program known as **LoliYul**.
+  embarked on a journey into creating this program known as **yolc**.
 
 STILL WORK IN PROGRESS
 ----------------------

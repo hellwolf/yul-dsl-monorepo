@@ -66,7 +66,7 @@ passAp i f = copyAp' i id f
 ------------------------------------------------------------------------------------------------------------------------
 
 -- | Polymorphic port type for linear function APIs of YulDSL
-type YulP r a = P YulDSL r a
+type YulP r a = P YulCat r a
 
 -- Port Types
 

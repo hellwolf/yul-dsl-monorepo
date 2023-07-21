@@ -106,7 +106,7 @@ function main() {
 #-----------------------------------------------------------------------------------------------------------------------
 
 function build_yol_module() {
-  local yol_dir pkg_path cabal_path pkg_name mod_name syms rest build_failed
+  local yol_dir pkg_path cabal_path pkg_name mod_name cmpl_mode cmpl_syms rest build_failed
 
   when_verbose && echo "=== Building yol module: $1"
 
@@ -126,8 +126,13 @@ function build_yol_module() {
   [ -z "$mod_name" ] && die "Module name cannot be empty"
 
   # parse `syms`
-  syms=$(echo -n "$rest" | sed -e 's|\s*,\s*| |g')
-  [ -z "$syms" ] && syms=defsym
+  cmpl_syms=$(echo -n "$rest" | sed -e 's|\s*,\s*| |g')
+  if [ -z "$cmpl_syms" ]; then
+    cmpl_mode=fst # object mode
+    cmpl_syms=object
+  else
+    cmpl_mode=snd # fn mode
+  fi
 
   # prepare the build directory
   yol_dir=$out_dir/${pkg_name}-${mod_name}.yol
@@ -138,7 +143,7 @@ function build_yol_module() {
     echo "Cabal file: $cabal_path"
     echo "Package name: $pkg_name"
     echo "Module name: $mod_name"
-    echo "Symbols to be built: $syms"
+    echo "Symbols to be built: $cmpl_syms"
     echo "Yol module building directory: $yol_dir"
   }
 
@@ -157,7 +162,7 @@ EOF
   } < "$dist_path"/templates/runyol.cabal > "$yol_dir"/runyol.cabal
 
   local csyms
-  csyms=$(for i in $syms;do echo -n "putStrLn((compilers !! $out_mode) $i);";done)
+  csyms=$(for i in $cmpl_syms;do echo -n "putStrLn($cmpl_mode (compilers !! $out_mode) $i);";done)
   {
     sed -e "s|__YOL_MOD_NAME__|${mod_name}|g" \
         -e "s|__COMPILE_SYMBOLS__|${csyms}|g"

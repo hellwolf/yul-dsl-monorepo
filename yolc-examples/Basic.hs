@@ -8,7 +8,7 @@ module Basic where
 
 simple_id = YulId @UINT256
 simple_coerce = YulCoerce @UINT256 @INT256
-const_42 = decode (yulConst (to_intx 42)) :: YulDSL () UINT256
+const_42 = decode (yulConst (to_intx 42)) :: YulCat () UINT256
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Yul Internal Functions
@@ -78,3 +78,13 @@ rangeSum = defun "rangeSum" \(a :> b :> c) ->
   --         copy x2 & split & \(x2, x2') ->
   --         ifThenElse (x1' ?== x2') (yulCoerce x1) (yulCoerce x2)
   --         -- (copy x2 & split & \(x2, x2') -> go x2 x2')
+
+object = MkYulObject "Basic"
+         (MkYulCode
+           [ MkAnyFn foo
+           , MkAnyFn foo2
+           , MkAnyFn foo3
+           , MkAnyFn rangeSum
+           ]
+           emptyYulCat)
+         []

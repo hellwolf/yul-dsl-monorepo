@@ -4,21 +4,29 @@ import           BasePrelude
 import qualified Data.Text                as T
 
 import qualified YulDSL.CodeGen.PlantUML
-import YulDSL.Core (Fn (..))
+import YulDSL.Core (YulO2, Fn (..), YulCode (..), YulObject (..))
 
 import __YOL_MOD_NAME__
 
-type Compiler = forall a b.  Fn a b -> String
+type FnCompiler = forall a b.  YulO2 a b => Fn a b -> String
+type ObjectCompiler = YulObject -> String
 
 default (String)
 
-compilers :: [Compiler]
-compilers = [ \(Defun name cat) -> "# __YOL_MOD_NAME__." <> name <> "\n\n" ++
-                           show cat <> "\n\n" ++
-                           "# " <> replicate 98 '-' <> "\n"
-            , \(Defun name cat) -> T.unpack (YulDSL.CodeGen.PlantUML.compile name cat) ++
-                           "' " <> replicate 98 '-' <> "\n"
-            ]
+compilers :: [(ObjectCompiler, FnCompiler)]
+compilers = [
+  -- Show mode
+  ( \o -> "module __YOL_MOD_NAME__ where\n"
+          <> foldr (flip (<>).(<>"\n\n").("  "<>).show) "" (yulFunctions (yulObjectCode o))
+          <> "// Init code:"
+          <> show (yulInitCode (yulObjectCode o))
+  , \fn -> "__YOL_MOD_NAME__." <> show fn <> "\n"
+  ),
+  -- PlantUML mode
+  ( \_ -> "Unsupported"
+  , \(Defun name cat) -> T.unpack (YulDSL.CodeGen.PlantUML.compile name cat) ++
+                         "' " <> replicate 98 '-' <> "\n"
+  )]
 
 main :: IO ()
 main = do

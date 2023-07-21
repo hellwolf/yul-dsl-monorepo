@@ -22,7 +22,7 @@ import           Data.Constraint              (Dict (..))
 import           Control.Category.Constrained (Cartesian (dis, dup), Category (..), Monoidal (..), ProdObj (..))
 --
 import           YulDSL.Core.ContractABI
-import           YulDSL.Core.YulDSL           (YulDSL (..), YulObj)
+import           YulDSL.Core.YulCat           (YulCat (..), YulObj)
 
 -- | Instance for linear-smc 'ProdObj' for the objects in the category.
 instance ProdObj YulObj where
@@ -30,12 +30,12 @@ instance ProdObj YulObj where
   objprod = maybe_prod_objs
   objunit = Dict
 
-instance Category YulDSL where
-  type Obj YulDSL = YulObj
+instance Category YulCat where
+  type Obj YulCat = YulObj
   id  = YulId
   (∘) = YulComp
 
-instance Monoidal YulDSL where
+instance Monoidal YulCat where
   (×)     = YulProd
   unitor  = YulCoerce
   unitor' = YulCoerce
@@ -43,6 +43,6 @@ instance Monoidal YulDSL where
   assoc'  = YulCoerce
   swap    = YulSwap
 
-instance Cartesian YulDSL where
+instance Cartesian YulCat where
   dis = YulDis
   dup = YulDup

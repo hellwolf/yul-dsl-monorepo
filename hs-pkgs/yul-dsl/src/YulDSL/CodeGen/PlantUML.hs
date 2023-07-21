@@ -2,14 +2,14 @@
 
 module YulDSL.CodeGen.PlantUML (compile) where
 
-import qualified Data.Text           as T
+import qualified Data.Text          as T
 import           Data.Typeable
 import           Text.Printf
 
-import           YulDSL.Core.YulDSL
+import           YulDSL.Core.YulCat
 
 
-compile :: String -> YulDSL a b -> T.Text
+compile :: String -> YulCat a b -> T.Text
 compile filename cat =
   get_header filename <>
   compile_cat cat <>
@@ -40,17 +40,17 @@ data Node = Node NodeName NodeOutput
 type Code = T.Text
 
 deriving instance YulObj a => Typeable a
-deriving instance (Typeable a, Typeable b) => Typeable (YulDSL a b)
+deriving instance (Typeable a, Typeable b) => Typeable (YulCat a b)
 
-print_types :: forall a b. YulO2 a b => YulDSL a b -> String
+print_types :: forall a b. YulO2 a b => YulCat a b -> String
 print_types _ = show (typeRep (Proxy @a)) <> " -> " <> show (typeRep (Proxy @b))
 
-compile_cat :: YulDSL a b -> T.Text
+compile_cat :: YulCat a b -> T.Text
 compile_cat cat = code <> T.pack (
   printf "%s -> [*] : %s\n" node out
   ) where (Node node out, code, _) = go_cat cat (Env 0) (Node "[*]" "inputs")
 
-go_cat :: YulDSL a b -> Env -> Node -> (Node, Code, Env)
+go_cat :: YulCat a b -> Env -> Node -> (Node, Code, Env)
 go_cat YulId     env p = (p, T.pack "", env)
 go_cat YulCoerce env p = (p, T.pack "", env)
 go_cat (YulComp cat1 cat2) env (Node iname iout) =

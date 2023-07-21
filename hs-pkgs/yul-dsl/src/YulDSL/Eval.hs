@@ -16,11 +16,11 @@ This module provides a function 'evalYulDSL' simulating the evaluation of the 'Y
 
 module YulDSL.Eval where
 
-import qualified Data.Map                 as M
-import           Data.Maybe               (fromJust)
+import qualified Data.Map                as M
+import           Data.Maybe              (fromJust)
 
 import           YulDSL.Core.ContractABI
-import           YulDSL.Core.YulDSL      (YulDSL (..))
+import           YulDSL.Core.YulCat      (YulCat (..))
 
 
 data EvalState = EvalState { store_map :: M.Map ADDR SVALUE
@@ -31,7 +31,7 @@ initEvalState :: EvalState
 initEvalState = EvalState { store_map = M.empty
                           }
 
-evalYulDSL :: EvalState -> YulDSL a b -> a -> (EvalState, b)
+evalYulDSL :: EvalState -> YulCat a b -> a -> (EvalState, b)
 evalYulDSL s YulId             a  = (s, a)
 evalYulDSL s YulCoerce         a  = (s, fromJust . abi_decode . abi_encode $ a)
 evalYulDSL s (YulComp n m)     a  = (s'', c) where (s' , b) = evalYulDSL s  m a

@@ -39,7 +39,8 @@ library
                     YulDSL.Core.ContractABI.Serialization
                     YulDSL.Core.ContractABI
                     YulDSL.Core.Coerce
-                    YulDSL.Core.YulDSL
+                    YulDSL.Core.YulCat
+                    YulDSL.Core.YulObject
                     YulDSL.Core
                     YulDSL.Eval
                     YulDSL.CodeGen.PlantUML

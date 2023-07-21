@@ -66,6 +66,6 @@ test-yolc-basic:
 	yolc yolc-examples:Basic[foo]
 
 dev:
-	nodemon -w pkgs -e "hs cabal" -x "make $(DEV_TARGETS) || exit 1"
+	nodemon -w hs-pkgs -w yolc-examples -e "hs cabal" -x "make $(DEV_TARGETS) || exit 1"
 
 .PHONY: all gen-* build-* clean test test-* dev

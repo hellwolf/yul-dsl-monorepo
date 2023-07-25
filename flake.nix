@@ -1,5 +1,5 @@
 {
-  description = "Nix Flake for the YulDSL Monorepo";
+  description = "Nix flake for the YulDSL monorepo";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -10,16 +10,16 @@
   outputs = { nixpkgs, haskell-tooling, flake-utils, ... }: (flake-utils.lib.eachDefaultSystem (system:
     let
       pkgs = import nixpkgs { inherit system; };
+      requiredInputs = haskell-tooling.lib.install pkgs ["ghc96+hls"];
+      devInputs = with pkgs; [ shellcheck jq nodePackages.nodemon ];
+      shellHook = ''
+        # This makes binaries of this project available for testing, e.g. `yolc`
+        export PATH=$PWD/bin:$PATH
+      '';
     in {
       devShells.default = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          shellcheck
-          jq
-        ] ++ haskell-tooling.lib.install pkgs ["ghc96+hls"];
-
-        shellHook = ''
-          export PATH=$PWD/bin:$PATH
-        '';
+        buildInputs = requiredInputs ++ devInputs;
+        inherit shellHook;
       };
     }));
 }

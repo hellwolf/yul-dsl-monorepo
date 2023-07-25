@@ -205,8 +205,13 @@ defun :: forall a b. (YulO2 a b, YulPortReducible a)
       => String
       -> (forall r. YulObj r => YulPortReduce (YulP r a) ⊸ YulP r b)
       -> Fn a b
-defun name f = Defun name $ decode (f . yul_port_reduce)
+defun name f = MkFn name $ decode (f . yul_port_reduce)
+
+defun' :: forall a b. (YulO2 a b, YulPortReducible a)
+      => (forall r. YulObj r => YulPortReduce (YulP r a) ⊸ YulP r b)
+      -> Fn a b
+defun' f = mkFn' $ decode (f . yul_port_reduce)
 
 apfun :: forall a b r. (YulPortReducible a, YulO3 a b r)
       => Fn a b -> YulPortReduce (YulP r a) ⊸ YulP r b
-apfun (Defun name _) a = encode (YulApFun name) (yul_port_merge @a a)
+apfun fn a = encode (YulApFun fn) (yul_port_merge @a a)

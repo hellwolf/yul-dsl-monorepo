@@ -61,13 +61,13 @@ module YulDSL.Core.ContractABI.Types
     -- $show_instance_examples
   ) where
 
-import           Data.Bits                         (shift)
-import           Data.ByteString                   (unpack)
-import           Data.Maybe                        (fromJust)
-import           Data.Typeable                     (Proxy (..), Typeable, typeRep)
-import           GHC.Natural                       (Natural, naturalFromInteger, naturalToInteger)
-import           GHC.TypeNats                      (KnownNat, Nat, natVal)
-import           Numeric                           (showHex)
+import           Data.Bits                        (shift)
+import           Data.ByteString                  (unpack)
+import           Data.Maybe                       (fromJust)
+import           Data.Typeable                    (Proxy (..), Typeable, typeRep)
+import           GHC.Natural                      (Natural, naturalFromInteger, naturalToInteger)
+import           GHC.TypeNats                     (KnownNat, Nat, natVal)
+import           Numeric                          (showHex)
 
 import           YulDSL.Core.ContractABI.Internal
 

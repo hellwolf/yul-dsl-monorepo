@@ -38,10 +38,15 @@ function die() {
   exit 1
 }
 
-function trace_run() {
-  # not using `set -x` on purpose
-  when_verbose && { echo "+ " "$@"; }
-  "$@"
+function runyol () {
+  when_verbose && {
+    echo "+ runyol" "$@";
+    cabal run runyol "$@"
+  } || {
+    # remove build
+    cabal build runyol "$@" >/dev/null && \
+    cabal run runyol "$@"
+  }
 }
 
 function main() {
@@ -183,9 +188,8 @@ EOF
     echo "=== END RunYol.hs"
   }
 
-  trace_run cabal run runyol \
-       --project-file="$yol_dir"/cabal.project \
-       --builddir="$out_dir/yolc" \
+  runyol --project-file="$yol_dir"/cabal.project \
+         --builddir="$out_dir/yolc" \
     || build_failed=1
 
   [ -z "$build_failed" ] || die "Failed to build yol module: $1"

@@ -1,6 +1,7 @@
 module YulDSL.Core.YulObject where
 
-import           YulDSL.Core.YulCat (YulCode)
+import           Data.List          (intercalate)
+import           YulDSL.Core.YulCat (AnyFn, YulCat (..), YulCode (..))
 
 -- | A Yul Object per spec.
 --
@@ -11,4 +12,15 @@ data YulObject = MkYulObject { yulObjectName :: String
                              , yulObjectCode :: YulCode
                              , yulSubObjects :: [YulObject]
                              -- , TODO support object data
-                             } deriving Show
+                             }
+
+instance Show YulObject where
+  show o = "-- Functions:\n\n"
+           <> intercalate "\n\n" (fmap show (yulFunctions.yulObjectCode $ o))
+           <> "\n\n-- Init code:\n\n"
+           <> (show.yulInitCode.yulObjectCode) o
+
+exportFunctions :: String -> [AnyFn] -> YulObject
+exportFunctions name fns = MkYulObject name (MkYulCode fns create_dispatcher) []
+  where create_dispatcher = YulId -- TODO
+  -- TODO dependency analysis of fns

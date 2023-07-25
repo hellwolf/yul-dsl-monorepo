@@ -37,6 +37,7 @@ library
   exposed-modules:  YulDSL.Core.ContractABI.Internal
                     YulDSL.Core.ContractABI.Types
                     YulDSL.Core.ContractABI.Serialization
+                    YulDSL.Core.ContractABI.ABIType
                     YulDSL.Core.ContractABI
                     YulDSL.Core.Coerce
                     YulDSL.Core.YulCat

@@ -37,7 +37,7 @@ foo2 = defun "foo2" \(x1 :> x2 :> u) ->
   ignore u & yulConst true
 
 foo3 :: Fn (UINT256 :> UINT256 :> ()) (UINT256, BOOL)
-foo3 = defun "foo3" \(x1 :> x2 :> u) ->
+foo3 = defun' \(x1 :> x2 :> u) ->
   (to_addr' 0xdeadbeef <=@ x1 + x2) &
   ignore u & yulConst (24, true)
 
@@ -79,12 +79,8 @@ rangeSum = defun "rangeSum" \(a :> b :> c) ->
   --         ifThenElse (x1' ?== x2') (yulCoerce x1) (yulCoerce x2)
   --         -- (copy x2 & split & \(x2, x2') -> go x2 x2')
 
-object = MkYulObject "Basic"
-         (MkYulCode
-           [ MkAnyFn foo
-           , MkAnyFn foo2
-           , MkAnyFn foo3
-           , MkAnyFn rangeSum
-           ]
-           emptyYulCat)
-         []
+object = exportFunctions "Basic" [ MkAnyFn foo
+                                 , MkAnyFn foo2
+                                 , MkAnyFn foo3
+                                 , MkAnyFn rangeSum
+                                 ]

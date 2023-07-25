@@ -4,7 +4,7 @@ import           BasePrelude
 import qualified Data.Text                as T
 
 import qualified YulDSL.CodeGen.PlantUML
-import YulDSL.Core (YulO2, Fn (..), YulCode (..), YulObject (..))
+import YulDSL.Core (YulO2, Fn (..), YulObject (..))
 
 import __YOL_MOD_NAME__
 
@@ -16,16 +16,13 @@ default (String)
 compilers :: [(ObjectCompiler, FnCompiler)]
 compilers = [
   -- Show mode
-  ( \o -> "module __YOL_MOD_NAME__ where\n"
-          <> foldr (flip (<>).(<>"\n\n").("  "<>).show) "" (yulFunctions (yulObjectCode o))
-          <> "// Init code:"
-          <> show (yulInitCode (yulObjectCode o))
-  , \fn -> "__YOL_MOD_NAME__." <> show fn <> "\n"
+  ( \o -> "module __YOL_MOD_NAME__ where\n\n" <> show o
+  , \fn -> "module __YOL_MOD_NAME__ where\n\n" <> show fn
   ),
   -- PlantUML mode
   ( \_ -> "Unsupported"
-  , \(Defun name cat) -> T.unpack (YulDSL.CodeGen.PlantUML.compile name cat) ++
-                         "' " <> replicate 98 '-' <> "\n"
+  , \(MkFn name cat) -> T.unpack (YulDSL.CodeGen.PlantUML.compile name cat) ++
+                        "' " <> replicate 98 '-' <> "\n"
   )]
 
 main :: IO ()

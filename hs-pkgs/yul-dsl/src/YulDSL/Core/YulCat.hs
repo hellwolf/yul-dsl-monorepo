@@ -84,7 +84,7 @@ data YulCat a b where
   YulCoerce :: forall a b. (YulO2 a b, YulCoercible a b) => YulCat a b
   --
   YulId   :: forall a.       YulO2 a a     => YulCat a a
-  YulComp :: forall a b c.   YulO3 a b c   => YulCat c b -> YulCat a c -> YulCat a b
+  YulComp :: forall a b c.   YulO3 a b c   => YulCat b c -> YulCat a b -> YulCat a c
   YulProd :: forall a b c d. YulO4 a b c d => YulCat a b -> YulCat c d -> YulCat (a, c) (b, d)
   YulSwap :: forall a b.     YulO2 a b     => YulCat (a, b) (b, a)
   YulDis  :: forall a.       YulO1 a       => YulCat a ()
@@ -164,13 +164,13 @@ showFnSpec (MkFn name _) = "function " <> name
 instance Show (YulCat a b) where
   show YulCoerce             = "(coerce" <> abi_type_name' @a <> abi_type_name' @b <> ")"
   show YulId                 = "(id" <> abi_type_name' @a <> abi_type_name' @b <> ")"
-  show (YulComp c d)         = show c <> "∗" <> show d -- not using "∘" to reverse the visual order
+  show (YulComp bc ab)       = show bc <> "∘" <> show ab
   show (YulProd c d)         = "(⊗(" <> show c <> ")(" <> show d <> "))"
   show YulSwap               = "(swap" <> abi_type_name' @a <> abi_type_name' @b <> ")"
   show YulDis                = "(dis" <> abi_type_name' @a <> ")"
   show YulDup                = "(dup" <> abi_type_name' @a <> ")"
   show (YulEmbed x)          = "{" <> show x <> "}" -- TODO: x should be escaped ideally, especially for equality checks
-  show (YulApFun (MkFn n _)) = "(apfun" <> n <> ")"-- TODO: use auto_fname
+  show (YulApFun (MkFn n _)) = "(apfun" <> n <> ")"
   show YulITE                = "(ite" <> abi_type_name' @a <> ")"
   show YulNot                = "not"
   show YulAnd                = "and"

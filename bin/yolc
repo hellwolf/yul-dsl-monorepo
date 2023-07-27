@@ -11,7 +11,7 @@
 opt_verbose=; function when_verbose() { [[ -n "$opt_verbose" ]]; }
 is_nix_dist=
 dist_path=
-out_mode=0
+out_mode=2
 out_dir="$PWD"/build
 declare -a yol_modules=()
 
@@ -21,7 +21,7 @@ yolc, the YulDSL commandline transpiler.
 
 Usage: yolc [options] yol_module_spec...
 
--m [output_mode] Valid output modes: show (default), plantuml
+-m [output_mode] Valid output modes: show, plantuml, yul (default)
 -h               Display this help and exit
 -v               Output more information about what is going on
 
@@ -38,15 +38,16 @@ function die() {
   exit 1
 }
 
-function runyol () {
-  when_verbose && {
-    echo "+ runyol" "$@";
-    cabal run runyol "$@"
-  } || {
-    # remove build
+function runyol() {
+  if when_verbose; then
+    echo "+ runyol" "$@"
+    cabal build runyol "$@" && \
+      cabal run runyol "$@"
+  else
+    # silent the stdout of the build process
     cabal build runyol "$@" >/dev/null && \
-    cabal run runyol "$@"
-  }
+      cabal run runyol "$@"
+  fi
 }
 
 function main() {
@@ -58,6 +59,9 @@ function main() {
     case $o in
       m)
         case "$OPTARG" in
+          yul)
+            out_mode=2
+            ;;
           plantuml)
             out_mode=1
             ;;
@@ -133,10 +137,10 @@ function build_yol_module() {
   # parse `syms`
   cmpl_syms=$(echo -n "$rest" | sed -e 's|\s*,\s*| |g')
   if [ -z "$cmpl_syms" ]; then
-    cmpl_mode=fst # object mode
+    cmpl_mode=objectMode # object mode
     cmpl_syms=object
   else
-    cmpl_mode=snd # fn mode
+    cmpl_mode=fnMode # fn mode
   fi
 
   # prepare the build directory
@@ -166,11 +170,13 @@ EOF
     sed -e "s|__YOL_PKG_NAME__|$pkg_name|g"
   } < "$dist_path"/templates/runyol.cabal > "$yol_dir"/runyol.cabal
 
-  local csyms
-  csyms=$(for i in $cmpl_syms;do echo -n "putStrLn($cmpl_mode (compilers !! $out_mode) $i);";done)
+  local actions
+  actions=$(for i in $cmpl_syms; do
+              echo -n "putStrLn($cmpl_mode (compilers !! $out_mode) $i);"
+            done)
   {
     sed -e "s|__YOL_MOD_NAME__|${mod_name}|g" \
-        -e "s|__COMPILE_SYMBOLS__|${csyms}|g"
+        -e "s|__COMPILE_ACTIONS__|${actions}|g"
   } < "$dist_path"/templates/RunYol.hs > "$yol_dir"/RunYol.hs
 
   when_verbose && {

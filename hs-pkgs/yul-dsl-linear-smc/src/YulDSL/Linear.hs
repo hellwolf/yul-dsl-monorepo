@@ -165,16 +165,20 @@ sputAt to v = mkUnit v & \(v', u) -> yulConst to u & \a -> sput a v'
 (<=@) = sputAt
 infixr 1 <==, <=@
 
--- Port List
+-- Port List Type Arithmetic
 
+-- | Reduce single-complex-port type to multiple-ports type.
+--
+--   Note: closed type family is used so that overlapping instances are allowed.
 type family YulPortReduce (a :: Type) :: Type where
-  -- YulPortReduce (YulP r ()) = ()
-  YulPortReduce (YulP r (a :> as)) = YulPortReduce (YulP r a) :> YulPortReduce (YulP r as)
-  -- YulPortReduce (YulP r [a]) = [YulPortReduce (YulP r a)]
-  -- YulPortReduce (YulP r (a, b)) = YulPortReduce (YulP r a) :> YulPortReduce(YulP r b) :> YulP r ()
-  YulPortReduce (YulP r a) = YulP r a
+  YulPortReduce (YulP r (a ⊗ b))  = YulPortReduce (YulP r a) :> YulPortReduce (YulP r b)
+  YulPortReduce (YulP r (a :> b)) = YulPortReduce (YulP r a) :> YulPortReduce (YulP r b)
+  YulPortReduce (YulP r [a])      = [YulPortReduce (YulP r a)]
+  YulPortReduce (YulP r a)        = YulP r a
 
+-- | Reduce and merge inhabitants of yul port types using `YulPortReduce`.
 class YulObj a => YulPortReducible a where
+  -- | Reduce single-complex port to multiple ports.
   yul_port_reduce :: forall r. YulObj r
                   => YulP r a ⊸ YulPortReduce (YulP r a)
   -- | Default instance for irreducible yul ports as base cases.
@@ -182,8 +186,10 @@ class YulObj a => YulPortReducible a where
                           => YulP r a ⊸ YulPortReduce (YulP r a)
   yul_port_reduce = id
 
+  -- | Merge multiple orts to a single-complex port.
   yul_port_merge :: forall r. YulObj r
                  => YulPortReduce (YulP r a) ⊸ YulP r a
+  -- | Default instance for irreducible yul ports as base cases.
   default yul_port_merge :: (YulObj r, YulP r a ~ YulPortReduce (YulP r a))
                          => YulPortReduce (YulP r a) ⊸ YulP r a
   yul_port_merge = id

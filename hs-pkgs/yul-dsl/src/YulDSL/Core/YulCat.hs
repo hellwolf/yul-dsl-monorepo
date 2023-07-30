@@ -84,7 +84,7 @@ data YulCat a b where
   YulCoerce :: forall a b. (YulO2 a b, YulCoercible a b) => YulCat a b
   --
   YulId   :: forall a.       YulO2 a a     => YulCat a a
-  YulComp :: forall a b c.   YulO3 a b c   => YulCat b c -> YulCat a b -> YulCat a c
+  YulComp :: forall a b c.   YulO3 a b c   => YulCat c b -> YulCat a c -> YulCat a b
   YulProd :: forall a b c d. YulO4 a b c d => YulCat a b -> YulCat c d -> YulCat (a, c) (b, d)
   YulSwap :: forall a b.     YulO2 a b     => YulCat (a, b) (b, a)
   YulDis  :: forall a.       YulO1 a       => YulCat a ()
@@ -96,24 +96,24 @@ data YulCat a b where
   YulEmbed :: forall a  . YulO1 a   => a -> YulCat () a
   -- | Apply the yul function over an object @a@.
   YulApFun :: forall a b. YulO2 a b => Fn a b -> YulCat a b
+  -- | If-then-else.
+  YulITE   :: forall a  . YulO1 a   => YulCat (BOOL, (a, a)) a
   -- | Mapping over a list.
   YulMap   :: forall a b. YulO2 a b => YulCat a b -> YulCat [a] [b]
   -- | Folding over a list from the left.
   YulFoldl :: forall a b. YulO2 a b => YulCat (b, a) b -> YulCat [a] b
   -- | EVM Call.
   YulCall  :: forall a b. YulO2 a b => YulCat ((CallSpec a b), a) (Maybe b)
-  -- | If-then-else.
-  YulITE   :: forall a  . YulO1 a   => YulCat (BOOL, (a, a)) a
 
   -- YulVal Primitives
   --
-  -- * Boolean Operatiosn
+  -- * Boolean Operations
   YulNot :: YulCat BOOL BOOL
   YulAnd :: YulCat (BOOL, BOOL) BOOL
   YulOr  :: YulCat (BOOL, BOOL) BOOL
   -- * Num Types
-  YulNumNeg :: forall a. YulNum a => YulCat a a
   YulNumAdd :: forall a. YulNum a => YulCat (a, a) a
+  YulNumNeg :: forall a. YulNum a => YulCat a a
   -- * Number comparison with a three-way boolean-switches (LT, EQ, GT).
   YulNumCmp :: forall a b. (YulNum a, YulObj b) => (b, b, b) -> YulCat (a, a) b
   -- * Contract ABI Serialization
@@ -137,10 +137,10 @@ mkFn' :: forall a b. YulO2 a b => YulCat a b -> Fn a b
 mkFn' c = MkFn ("_" <> digest_yul_cat c) c
 
 -- | Existential wrapper of the `YulCat`.
-data AnyYulCat = forall a b. MkAnyYulCat (YulCat a b)
+data AnyYulCat = forall a b. YulO2 a b => MkAnyYulCat (YulCat a b)
 
 -- | Existential wrapper of the `Fn`.
-data AnyFn = forall a b. MkAnyFn (Fn a b)
+data AnyFn = forall a b. YulO2 a b => MkAnyFn (Fn a b)
 
 -- | YulCat are embedded in the yul code blocks.
 data YulCode = MkYulCode { yulFunctions :: [AnyFn]
@@ -164,8 +164,8 @@ showFnSpec (MkFn name _) = "function " <> name
 instance Show (YulCat a b) where
   show YulCoerce             = "(coerce" <> abi_type_name' @a <> abi_type_name' @b <> ")"
   show YulId                 = "(id" <> abi_type_name' @a <> abi_type_name' @b <> ")"
-  show (YulComp bc ab)       = show bc <> "∘" <> show ab
-  show (YulProd c d)         = "(⊗(" <> show c <> ")(" <> show d <> "))"
+  show (YulComp cb ac)       = show cb <> "∘" <> show ac
+  show (YulProd ab cd)       = "(⊗(" <> show ab <> ")(" <> show cd <> "))"
   show YulSwap               = "(swap" <> abi_type_name' @a <> abi_type_name' @b <> ")"
   show YulDis                = "(dis" <> abi_type_name' @a <> ")"
   show YulDup                = "(dup" <> abi_type_name' @a <> ")"
@@ -175,8 +175,8 @@ instance Show (YulCat a b) where
   show YulNot                = "not"
   show YulAnd                = "and"
   show YulOr                 = "or"
-  show YulNumNeg             = "(neg" <> abi_type_name' @a <> ")"
   show YulNumAdd             = "(add" <> abi_type_name' @a <> ")"
+  show YulNumNeg             = "(neg" <> abi_type_name' @a <> ")"
   show (YulNumCmp (i,j,k))   = "(cmp(" <> show i <> ")(" <> show j <> ")(" <> show k <> "))"
   show YulSGet               = "(sget" <> abi_type_name' @a <> ")"
   show YulSPut               = "(sput" <> abi_type_name' @a <> ")"

@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE DerivingStrategies #-}
 
 {-|
@@ -13,7 +14,6 @@ This module exposes the internal of the ABI types, so that serialization can use
 
 module YulDSL.Core.ContractABI.Internal where
 
-import           Data.Word       (Word32)
 import           GHC.Natural     (Natural)
 import           GHC.TypeNats    (Nat)
 
@@ -34,7 +34,7 @@ newtype BYTES = BYTES ByteString deriving newtype (Eq)
 
 -- External Call Specification:
 
-newtype Selector = MkSelector Word32
+type Selector = INTx False 4
 
 data CallSpec a b = ExternalCall ADDR Selector
                   | DelegateCall ADDR Selector

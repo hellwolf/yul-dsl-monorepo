@@ -13,7 +13,7 @@ is_nix_dist=
 dist_path=
 out_mode=2
 out_dir="$PWD"/build
-declare -a yol_modules=()
+declare -a runyol_extra_opts=(-O0)
 
 function help() {
   cat <<EOF
@@ -41,12 +41,12 @@ function die() {
 function runyol() {
   if when_verbose; then
     echo "+ runyol" "$@"
-    cabal build runyol "$@" && \
-      cabal run runyol "$@"
+    cabal build "${runyol_extra_opts[@]}" runyol "$@" && \
+      cabal run "${runyol_extra_opts[@]}" runyol "$@"
   else
     # silent the stdout of the build process
-    cabal build runyol "$@" >/dev/null && \
-      cabal run runyol "$@"
+    cabal build "${runyol_extra_opts[@]}" runyol "$@" >/dev/null && \
+      cabal run "${runyol_extra_opts[@]}" runyol "$@"
   fi
 }
 

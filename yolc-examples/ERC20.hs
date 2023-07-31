@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-missing-signatures #-}
+
 module ERC20 where
 
 -- | ERC20 balance storage location for the account.
@@ -19,3 +21,8 @@ erc20_transfer = defun "transfer" \(from :> to :> amount :> u) ->
     (\amount -> passAp to erc20_balance_of & \(to, balance) ->
         erc20_balance_storage to <== balance + amount)) &
   ignore u & yulConst true
+
+object = mkYulObject "ERC20" ctor
+  [ externalFn erc20_transfer
+  ]
+  where ctor = YulId

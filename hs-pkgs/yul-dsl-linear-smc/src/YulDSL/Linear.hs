@@ -160,10 +160,10 @@ sput toP valP = encode YulSPut (merge (toP, valP))
 sputAt :: forall v r. (YulObj r, YulVal v)
        => ADDR -> YulP r v ⊸ YulP r ()
 sputAt to v = mkUnit v & \(v', u) -> yulConst to u & \a -> sput a v'
-(<=@) :: forall v r. (YulObj r, YulVal v)
+(<==@) :: forall v r. (YulObj r, YulVal v)
       => ADDR -> YulP r v ⊸ YulP r ()
-(<=@) = sputAt
-infixr 1 <==, <=@
+(<==@) = sputAt
+infixr 1 <==, <==@
 
 -- Port List Type Arithmetic
 

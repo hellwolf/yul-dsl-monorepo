@@ -38,8 +38,7 @@ module YulDSL.Core.YulCat
   ( YulObj, YulO1, YulO2, YulO3, YulO4, YulO5
   , YulVal, YulNum
   , YulCat (..), AnyYulCat (..)
-  , Fn (..), mkFn', AnyFn (..), showFnSpec
-  , YulCode (..)
+  , Fn (..), FnName, mkFn', AnyFn (..), showFnSpec
   ) where
 
 -- base
@@ -115,7 +114,7 @@ data YulCat a b where
   YulNumAdd :: forall a. YulNum a => YulCat (a, a) a
   YulNumNeg :: forall a. YulNum a => YulCat a a
   -- * Number comparison with a three-way boolean-switches (LT, EQ, GT).
-  YulNumCmp :: forall a b. (YulNum a, YulObj b) => (b, b, b) -> YulCat (a, a) b
+  YulNumCmp :: forall a. YulNum a => (BOOL, BOOL, BOOL) -> YulCat (a, a) BOOL
   -- * Contract ABI Serialization
   YulAbiEnc :: YulObj a => YulCat a BYTES
   YulAbiDec :: YulObj a => YulCat BYTES (Maybe a)
@@ -141,11 +140,6 @@ data AnyYulCat = forall a b. YulO2 a b => MkAnyYulCat (YulCat a b)
 
 -- | Existential wrapper of the `Fn`.
 data AnyFn = forall a b. YulO2 a b => MkAnyFn (Fn a b)
-
--- | YulCat are embedded in the yul code blocks.
-data YulCode = MkYulCode { yulFunctions :: [AnyFn]
-                         , yulInitCode  :: YulCat () ()
-                         }
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Show Instances & Utilities

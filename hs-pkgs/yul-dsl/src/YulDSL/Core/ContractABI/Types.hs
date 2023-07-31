@@ -25,7 +25,7 @@ module YulDSL.Core.ContractABI.Types
   ( -- * Primitive Types
 
     -- ** BOOL
-    BOOL, true, false, if'
+    BOOL (..), true, false, if'
 
     -- ** ADDR
   , ADDR, zero_address, max_addr, to_addr, to_addr', addr_to_integer
@@ -55,7 +55,7 @@ module YulDSL.Core.ContractABI.Types
     -- * Composite Types
   , (:>)(..)
 
-  , Selector (..), CallSpec (..)
+  , Selector, CallSpec (..)
 
     -- * Show Instance Examples
     -- $show_instance_examples
@@ -275,12 +275,12 @@ instance Show BOOL where
   show (BOOL True)  = "true"
   show (BOOL False) = "false"
 instance Show ADDR where
-  show (ADDR a) = "0x" ++ _lpad0 40 (showHex a) "" ++ "::ADDR"
+  show (ADDR a) = "0x" ++ _lpad0 40 (showHex a) "" ++ "/*::ADDR*/"
 instance (Typeable s, KnownNat n) => Show (INTx s n) where
-  show (INT (Just a)) = show a ++ "::" ++ intx_typename @(INTx s n)
-  show (INT Nothing)  = "NaN" ++ "::" ++ intx_typename @(INTx s n)
+  show (INT (Just a)) = show a ++ "/*::" ++ intx_typename @(INTx s n) ++ "*/"
+  show (INT Nothing)  = "NaN" ++ "/*::" ++ intx_typename @(INTx s n) ++ "*/"
 instance Show BYTES where
-  show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . unpack) a ++ "::BYTES"
+  show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . unpack) a ++ "/*::BYTES*/"
 
 {- $range_check_examples
 
@@ -291,11 +291,11 @@ __INTx Types__
 >>> (min_intx @INT96, max_intx @INT96)
 >>> to_intx (-128) :: INT8
 >>> to_intx 128 :: INT8
-(-2147483648::INT32,2147483647::INT32)
-(0::UINT32,4294967295::UINT32)
-(-39614081257132168796771975168::INT96,39614081257132168796771975167::INT96)
--128::INT8
-NaN::INT8
+(-2147483648/*::INT32*/,2147483647/*::INT32*/)
+(0/*::UINT32*/,4294967295/*::UINT32*/)
+(-39614081257132168796771975168/*::INT96*/,39614081257132168796771975167/*::INT96*/)
+-128/*::INT8*/
+NaN/*::INT8*/
 
 __Num Operators__
 
@@ -303,19 +303,19 @@ __Num Operators__
 >>> (to_intx 255 :: UINT8) + (to_intx 1 :: UINT8)
 >>> (to_intx 32 :: UINT8) * (to_intx 2 :: UINT8)
 >>> (to_intx 32 :: UINT8) * (to_intx 8 :: UINT8)
-8::UINT8
-NaN::UINT8
-64::UINT8
-NaN::UINT8
+8/*::UINT8*/
+NaN/*::UINT8*/
+64/*::UINT8*/
+NaN/*::UINT8*/
 
 >>> negate (to_intx 32 :: UINT8)
 >>> negate (to_intx 32 :: INT8)
 >>> negate (to_intx (-128) :: INT8)
 >>> abs (to_intx (-128) :: INT8)
-NaN::UINT8
--32::INT8
-NaN::INT8
-NaN::INT8
+NaN/*::UINT8*/
+-32/*::INT8*/
+NaN/*::INT8*/
+NaN/*::INT8*/
 
 -}
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds    #-}
 {-# LANGUAGE GADTs        #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -43,6 +44,7 @@ module YulDSL.Core.YulCat
 
 -- base
 import           Data.Char               (ord)
+import           Data.Kind               (Type)
 import           Data.Typeable           (Typeable)
 import           GHC.Integer             (xorInteger)
 import           GHC.TypeNats            (KnownNat)
@@ -94,7 +96,7 @@ data YulCat a b where
   -- | Embed a constant value.
   YulEmbed :: forall a  . YulO1 a   => a -> YulCat () a
   -- | Apply the yul function over an object @a@.
-  YulApFun :: forall a b. YulO2 a b => Fn a b -> YulCat a b
+  YulApFun :: forall a b p. YulO2 a b => Fn a b p -> YulCat a b
   -- | If-then-else.
   YulITE   :: forall a  . YulO1 a   => YulCat (BOOL, (a, a)) a
   -- | Mapping over a list.
@@ -128,25 +130,26 @@ data YulCat a b where
 type FnName = String
 
 -- | Yul function object.
-data Fn a b where
-  MkFn :: forall a b. YulO2 a b => FnName -> YulCat a b -> Fn a b
+type Fn :: Type -> Type -> FnPerm -> Type
+data Fn a b p where
+  MkFn :: forall a b. YulO2 a b => FnName -> YulCat a b -> Fn a b FullFn
 
 -- | Make a function with generated function name
-mkFn' :: forall a b. YulO2 a b => YulCat a b -> Fn a b
+mkFn' :: forall a b. YulO2 a b => YulCat a b -> Fn a b FullFn
 mkFn' c = MkFn ("_" <> digest_yul_cat c) c
 
 -- | Existential wrapper of the `YulCat`.
 data AnyYulCat = forall a b. YulO2 a b => MkAnyYulCat (YulCat a b)
 
 -- | Existential wrapper of the `Fn`.
-data AnyFn = forall a b. YulO2 a b => MkAnyFn (Fn a b)
+data AnyFn = forall a b p. YulO2 a b => MkAnyFn (Fn a b p)
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Show Instances & Utilities
 ------------------------------------------------------------------------------------------------------------------------
 
 -- | Print function specification.
-showFnSpec :: forall a b. YulO2 a b => Fn a b -> String
+showFnSpec :: forall a b p. YulO2 a b => Fn a b p -> String
 showFnSpec (MkFn name _) = "function " <> name
   <> "(" <> abi_type_name @a <> ") -> " <> abi_type_name @b
 
@@ -189,8 +192,36 @@ digest_yul_cat = printf "%x" . digest_c8 . B.pack . show
 instance Eq AnyFn where
   (MkAnyFn (MkFn a a')) == (MkAnyFn (MkFn b b')) = a == b && digest_yul_cat a' == digest_yul_cat b'
 
-instance Show (Fn a b) where
+instance Show (Fn a b p) where
   show fn@(MkFn _ cat) = showFnSpec fn <> ": " <> show cat
 
 instance Show AnyFn where
   show (MkAnyFn fn) = show fn
+
+-- TODO: YulCat Permissions
+
+data YulStoragePerm = YulStorageRO | YulStorageWO | YulStorageRW | YulStorageNoAccess
+data YulCallPerm = YulAllowAnyCall | YulAllowStaticCall | YulNoCallAllowed
+
+data FnPerm = FnPerm YulStoragePerm YulCallPerm
+
+type FullFn :: FnPerm
+type FullFn = 'FnPerm 'YulStorageRW 'YulAllowAnyCall
+-- type FullFn = FnPerm YulStorageRW YulAllowAnyCall
+-- type PureFn = FnPerm YulStorageNoAccess YulNoCallAllowed
+-- type ViewFn = FnPerm YulStorageRO YulAllowStaticCall
+
+class YulStorageReadAllowed a
+class YulStorageWriteAllowed a
+class YulTransactionCallAllowed a
+class YulStaticCallAllowed a
+
+instance YulStorageReadAllowed '(YulStorageRO, a)
+instance YulStorageReadAllowed '(YulStorageRW, a)
+instance YulStorageWriteAllowed '(YulStorageWO, a)
+instance YulStorageWriteAllowed '(YulStorageRW, a)
+instance YulTransactionCallAllowed '(a, YulAllowAnyCall)
+instance YulStaticCallAllowed '(a, YulAllowAnyCall)
+instance YulStaticCallAllowed '(a, YulAllowStaticCall)
+
+-- data CodeLocation = InternalCode | RemoteCode ADDR

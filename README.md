@@ -41,3 +41,13 @@ STILL WORK IN PROGRESS
 ----------------------
 
 Contact me if you are interested in testing this project out soon!
+
+## TODOs
+
+- MVP
+  - YulCat Pure Value Operations
+  - YuLCat Permissions Control
+  - Rethink n-ary tuple constructor (:>)
+  - ApFun to support internal|external|delegated|static_call
+- v1
+  - Support Effectful Programming

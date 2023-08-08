@@ -259,7 +259,7 @@ create_dispatcher :: Indenter -> [ScopedFn] -> CatState Code
 create_dispatcher ind fns = do
   code_cases <- return . T.intercalate "" =<< (mapM case_fn . fmap fromJust . filter isJust . fmap dispatchable) fns
   return $
-    ind "{ // Dispatcher" <>
+    "{ // Dispatcher\n" <>
     ind' "switch selector()" <>
     code_cases <>
     ind' "default { revert(0, 0) }" <>
@@ -291,9 +291,10 @@ compile_object ind (MkYulObject { yulObjectName = n
                                 }) = do
   let ind' = indent ind
       ind'' = indent ind'
+      ind''' = indent ind''
   code_ctor <- compile_cat ind'' ctor ([], [])
-  code_dispatcher <- create_dispatcher (indent ind'') fns
-  code_fns <- mapM (compile_fn (indent ind'')) (fmap removeScope fns)
+  code_dispatcher <- create_dispatcher ind''' fns
+  code_fns <- mapM (compile_fn ind''') (fmap removeScope fns)
   code_subos <- mapM (compile_object ind') subos
   return $
     ind ("object \"" <> T.pack n <> "\" {") <>
@@ -312,7 +313,7 @@ compile_object ind (MkYulObject { yulObjectName = n
       ind' "object \"runtime\" {" <>
       (
         ind'' "code {" <>
-        code_dispatcher <>
+        ind''' code_dispatcher <>
         T.intercalate "\n" code_fns <>
         ind'' "}"
       ) <>

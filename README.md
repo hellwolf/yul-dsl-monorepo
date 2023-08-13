@@ -45,9 +45,13 @@ Contact me if you are interested in testing this project out soon!
 ## TODOs
 
 - MVP
-  - YulCat Pure Value Operations
-  - YuLCat Permissions Control
+  - YuLCat Permissions Control.
+  - ApFun to support internal|external|delegated|static_call.
+  - Various function creators: fn (plain category), lfn (linear functions), cfn (categorical functions)
+    - YulCat Pure Value Operations.
   - Rethink n-ary tuple constructor (:>)
-  - ApFun to support internal|external|delegated|static_call
+    - :%> for linear functions, and (:|>) for categorical functions.
+  - Composite "struct" type support.
+  - Full ABI Codec.
 - v1
   - Support Effectful Programming

@@ -42,16 +42,57 @@ STILL WORK IN PROGRESS
 
 Contact me if you are interested in testing this project out soon!
 
-## TODOs
+TODOs
+-----
 
-- MVP
-  - YuLCat Permissions Control.
-  - ApFun to support internal|external|delegated|static_call.
-  - Various function creators: fn (plain category), lfn (linear functions), cfn (categorical functions)
-    - YulCat Pure Value Operations.
-  - Rethink n-ary tuple constructor (:>)
-    - :%> for linear functions, and (:|>) for categorical functions.
-  - Composite "struct" type support.
-  - Full ABI Codec.
-- v1
-  - Support Effectful Programming
+## Framework Features
+
+- Flexible & Solidity-Contract-ABI-Compatible Fundamental Types
+  - Value Types:
+    - [x] `ADDR`, `BOOL`, `INTx s n`.
+  - Composite Types:
+    - [-] `::>`, chaining tuple constructor.
+    - [ ] `BYTES`, arbitrary bytes.
+    - [ ] `[a]`, list.
+    - [ ] `deriving TUPLE`, deriving tuple generically.
+  - Function Types:
+    - [ ] `SEL`, selector data type.
+    - [ ] `CALL SEL ADDR`, Solidity-Contract-ABI-compatible selector for external function calls.
+    - [ ] `FUN a b`, internal function reference ??
+- YulCat:
+  - [ ] `Category` instance for the base library, in order to use `(>>>)`.
+  - [ ] Type-Level Function Permission Tags.
+  - [ ] `YulMap, YulFoldl`, control structure for lists.
+  - [ ] `YulCall`, external function calls. (external|delegated|static_call ??)
+- Eval Monad:
+  - [ ] Contract ABI Codec in Haskell.
+  - [ ] Test all `YulCat` constructors.
+- Multi-Style Functions:
+  - `fn`, point-free categorical functions.
+    - [ ] Composition of different styles.
+  - `vfn`, value functions.
+    - [ ] Num typeclass instances.
+  - `lfn`, linearly-typed functions.
+    - [ ] Selection of linear combinators.
+- CodeGen
+  - [ ] Contract ABI Codec in Yul.
+  - [ ] Object constructor.
+
+## Development Environment
+
+- Stunt Contract Support:
+  - [ ] Generator.
+- QuickCheck integration:
+  - [ ] Testing using Eval monad.
+  - [ ] `yolc test` pipeline support.
+- Foundry testing integration
+  - [ ] Testing using stunt contract.
+  - [ ] `yolc test` pipeline support.
+- Foundry deployment integration
+  - [ ] Deploy stunt contract.
+  - [ ] Etherscan verification pipeline.
+
+Future Ideas
+------------
+
+- Effect System?

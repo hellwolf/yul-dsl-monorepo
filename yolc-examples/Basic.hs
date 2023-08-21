@@ -15,34 +15,34 @@ const_42 = decode (yulConst (to_intx 42)) :: YulCat () UINT256
 ------------------------------------------------------------------------------------------------------------------------
 
 nop :: Fn () ()
-nop = defun "noop" \(u) -> u
+nop = defun' \(u) -> u
 
 -- FIXME defun cannot express this:
 -- ignoreFn :: YulPortReducible a => Fn a ()
 -- ignoreFn = defun "ignoreFn" \a -> yulConst () a
 
 mkConst :: YulPortReducible a => a -> Fn () a
-mkConst a = defun "mkConst" \u -> yulConst a u
+mkConst a = defun' \u -> yulConst a u
 
 -- | A function that takes a UInt input and store its value doubled at a fixed storage location.
-foo :: Fn UINT256 BOOL
-foo = defun "foo" \x ->
+foo :: ExportedFn UINT256 BOOL
+foo = externalFn "foo" $ lfn $ \x ->
   (copy x & split & \(x1, x2) ->
       to_addr' 0xdeadbeef <==@ x1 + x2
   ) & yulConst true
 
-foo2 :: Fn (UINT256 :> UINT256 :> ()) BOOL
-foo2 = defun "foo2" \(x1 :> x2 :> u) ->
+foo2 :: ExportedFn (UINT256 :> UINT256 :> ()) BOOL
+foo2 = externalFn "foo2" $ lfn $ \(x1 :> x2 :> u) ->
   (to_addr' 0xdeadbeef <==@ x1 + x2) &
   ignore u & yulConst true
 
-foo3 :: Fn (UINT256 :> UINT256 :> ()) (UINT256, BOOL)
-foo3 = defun' \(x1 :> x2 :> u) ->
+foo3 :: ExportedFn (UINT256 :> UINT256 :> ()) (UINT256, BOOL)
+foo3 = externalFn "foo3" $ defun' $ \(x1 :> x2 :> u) ->
   (to_addr' 0xdeadbeef <==@ x1 + x2) &
   ignore u & yulConst (24, true)
 
-rangeSum :: Fn (UINT256 :> UINT256 :> UINT256) UINT256
-rangeSum = defun "rangeSum" \(a :> b :> c) ->
+rangeSum :: ExportedFn (UINT256 :> UINT256 :> UINT256) UINT256
+rangeSum = libraryFn "rangeFun" $ defun' $ \(a :> b :> c) ->
   dup2P a & \(a, a') ->
   dup2P b & \(b, b') ->
   dup2P c & \(c, c') ->
@@ -80,9 +80,9 @@ rangeSum = defun "rangeSum" \(a :> b :> c) ->
   --         -- (copy x2 & split & \(x2, x2') -> go x2 x2')
 
 object = mkYulObject "Basic" ctor
-         [ externalFn foo
-         , externalFn foo2
-         , externalFn foo3
-         , externalFn rangeSum
+         [ MkAnyExportedFn foo
+         , MkAnyExportedFn foo2
+         , MkAnyExportedFn foo3
+         , MkAnyExportedFn rangeSum
          ]
          where ctor = YulId -- empty constructor

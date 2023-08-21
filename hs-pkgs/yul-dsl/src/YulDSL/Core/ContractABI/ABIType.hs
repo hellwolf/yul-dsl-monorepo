@@ -47,6 +47,11 @@ instance ABIType BYTES where
   abi_type_count_vars = 1
   abi_type_show_vars a = [show a]
 
+instance (ABIType a, ABIType b) => ABIType (FUNC a b) where
+  abi_type_name = "FUNC"
+  abi_type_count_vars = 1
+  abi_type_show_vars a = [show a]
+
 -- Composite types:
 
 instance forall a b. (ABIType a, ABIType b) => ABIType (a, b) where
@@ -68,5 +73,3 @@ instance ABIType a => ABIType [a] where
 -- | A 'abi_type_name' variant, enclosing name with "@()".
 abi_type_name' :: forall a. ABIType a => String
 abi_type_name' = "@(" <> abi_type_name @a <> ")"
-
--- External Call Specifications:

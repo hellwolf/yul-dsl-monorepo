@@ -55,7 +55,8 @@ module YulDSL.Core.ContractABI.Types
     -- * Composite Types
   , (:>)(..)
 
-  , Selector, CallSpec (..)
+  , FuncSig, Sel4Bytes, SEL, mkTypedSelector, mkRawSelector
+  , FuncStorage (..), FuncEffect (..), FUNC (..)
 
     -- * Show Instance Examples
     -- $show_instance_examples
@@ -187,8 +188,21 @@ type UINT248 = INTx False 31;type INT248 = INTx True 31
 type UINT256 = INTx False 32;type INT256 = INTx True 32
 
 -- BYTES type utilities
-
 -- TODO
+
+-- Selector utilities
+
+-- | Create a solidity-compatible selector based on types.
+mkTypedSelector :: forall a b. String -> SEL
+mkTypedSelector n = SEL (Just n, 0) -- FIXME create selector
+
+mkRawSelector :: Sel4Bytes -> SEL
+mkRawSelector b = SEL (Nothing, b)
+
+-- | Create a solidity-compatible selector based on the plain signature.
+-- sigToSelector :: String -> SEL
+-- mkSelector s = SEL (Just s, 0) -- FIXME Signature parsing
+
 
 ------------------------------------------------------------------------------------------------------------------------
 -- ABI Value Types
@@ -282,6 +296,13 @@ instance (Typeable s, KnownNat n) => Show (INTx s n) where
 instance Show BYTES where
   show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . unpack) a ++ "/*::BYTES*/"
 
+instance Show SEL where
+  show (SEL (Just s, c))  = "0x" <> showHex c " /*::" ++ s ++ "*/"
+  show (SEL (Nothing, c)) = "0x" <> showHex c ""
+
+instance Show (FUNC a b) where
+  show _              = error "TODO Show FUNC"
+
 {- $range_check_examples
 
 __INTx Types__
@@ -317,6 +338,10 @@ NaN/*::UINT8*/
 NaN/*::INT8*/
 NaN/*::INT8*/
 
+>>> show (SEL (Nothing, 69))
+>>> show (SEL (Just "foo", 0)) -- TODO 4bytes needs to be generated
+"0x45"
+"0x0 /*::foo*/"
 -}
 
 ------------------------------------------------------------------------------------------------------------------------

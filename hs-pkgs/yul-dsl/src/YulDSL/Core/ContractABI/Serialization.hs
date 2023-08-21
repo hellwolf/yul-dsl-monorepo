@@ -19,8 +19,8 @@ This module provides a faithful codec for the /Contract ABI/ types.
 
 module YulDSL.Core.ContractABI.Serialization where
 
-import           Data.ByteString                   (ByteString)
-import qualified Data.Serialize                    as S
+import           Data.ByteString                  (ByteString)
+import qualified Data.Serialize                   as S
 import           GHC.Generics
 
 import           YulDSL.Core.ContractABI.Internal
@@ -40,6 +40,18 @@ deriving newtype instance S.Serialize (INTx s n)
 
 deriving instance Generic BYTES
 deriving newtype instance S.Serialize BYTES
+
+deriving instance Generic SEL
+deriving newtype instance S.Serialize SEL
+
+deriving instance Generic FuncStorage
+deriving anyclass instance S.Serialize FuncStorage
+
+deriving instance Generic FuncEffect
+deriving anyclass instance S.Serialize FuncEffect
+
+deriving instance Generic (FUNC a b)
+deriving newtype instance S.Serialize (FUNC a b)
 
 deriving instance Generic (a :> b)
 deriving anyclass instance (ABISerialize a, ABISerialize b) => S.Serialize (a :> b)

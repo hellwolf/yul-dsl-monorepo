@@ -2,7 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module YulDSL.CodeGen.Yul
-  ( compileFn
+  ( compileCat
+  , compileFn
   , compileObject
   ) where
 
@@ -136,25 +137,26 @@ run_stcat :: Indenter -> AnyYulCat -> [Val] -> CatState (Code, [Val])
 run_stcat ind (MkAnyYulCat cat) vals_a = go cat where
   go :: forall a b. YulO2 a b =>
         YulCat a b -> CatState (Code, [Val])
-  go YulCoerce             = return (coerce_vals ind (Proxy @a) (Proxy @b) vals_a, vals_a)
-  go YulId                 = ret_nocode vals_a
-  go (YulSwap @m @n)       = ret_nocode (swap_vals (Proxy @m) (Proxy @n) vals_a)
-  go YulDis                = ret_nocode (dis_vals (Proxy @a) vals_a)
-  go YulDup                = go_dup (Proxy @a)
-  go (YulComp cb ac)       = go_comp cb ac
-  go (YulProd ab cd)       = go_prod ab cd
-  go YulSGet               = ret_1expr $ "sload(" <> vals_to_code vals_a <> ")"
-  go YulSPut               = return (ind ("sstore(" <> vals_to_code vals_a <> ")"), [])
-  go (YulEmbed a)          = return ("", fmap (ValExpr . T.pack) (abi_type_show_vars a))
-  go (YulApFun (MkFn n _)) = go_apfun n (Proxy @a) (Proxy @b)
-  go YulITE                = go_ite (Proxy @b)
-  go YulNot                = ret_1expr $ "not(" <> vals_to_code vals_a <> ")"
-  go YulAnd                = ret_1expr $ "and(" <> vals_to_code vals_a <> ")"
-  go YulOr                 = ret_1expr $ "or(" <> vals_to_code vals_a <> ")"
-  go YulNumAdd             = ret_1expr $ "add(" <> vals_to_code vals_a <> ")"
-  go YulNumNeg             = ret_1expr $ "sub(0, " <> vals_to_code vals_a <> ")"
-  go (YulNumCmp @m cmp)    = go_num_cmp cmp (Proxy @m)
-  go _                     = error $ "run_stcat " <> abi_type_name @a <> " ~> " <> abi_type_name @b
+  go YulCoerce          = return (coerce_vals ind (Proxy @a) (Proxy @b) vals_a, vals_a)
+  go YulId              = ret_nocode vals_a
+  go (YulSwap @m @n)    = ret_nocode (swap_vals (Proxy @m) (Proxy @n) vals_a)
+  go YulDis             = ret_nocode (dis_vals (Proxy @a) vals_a)
+  go YulDup             = go_dup (Proxy @a)
+  go (YulComp cb ac)    = go_comp cb ac
+  go (YulProd ab cd)    = go_prod ab cd
+  go YulSGet            = ret_1expr $ "sload(" <> vals_to_code vals_a <> ")"
+  go YulSPut            = return (ind ("sstore(" <> vals_to_code vals_a <> ")"), [])
+  go (YulEmbed a)       = return ("", fmap (ValExpr . T.pack) (abi_type_show_vars a))
+  -- go (YulCall c)        = go_call c
+  go (YulJump c)        = go_jump (Proxy @a) (Proxy @b) c
+  go YulITE             = go_ite (Proxy @b)
+  go YulNot             = ret_1expr $ "not(" <> vals_to_code vals_a <> ")"
+  go YulAnd             = ret_1expr $ "and(" <> vals_to_code vals_a <> ")"
+  go YulOr              = ret_1expr $ "or(" <> vals_to_code vals_a <> ")"
+  go YulNumAdd          = ret_1expr $ "add(" <> vals_to_code vals_a <> ")"
+  go YulNumNeg          = ret_1expr $ "sub(0, " <> vals_to_code vals_a <> ")"
+  go (YulNumCmp @m cmp) = go_num_cmp cmp (Proxy @m)
+  go _                  = error $ "run_stcat " <> abi_type_name @a <> " ~> " <> abi_type_name @b
   -- go (YulMap (MkFn n _)) = _
   -- go (YulFoldl (MkFn n _)) = _
   -- go (YulCall (MkFn n _)) = _
@@ -197,13 +199,14 @@ run_stcat ind (MkAnyYulCat cat) vals_a = go cat where
     return ( log_debug "prod" (Proxy @(a,b)) (Proxy @(c,d)) <>
              wrap_let_vars code_vars ( code_ab <> code_cd )
            , vars_b1 <> vars_b2 )
-  go_apfun :: forall a b. YulO2 a b
-           => String -> Proxy a -> Proxy b -> CatState (Code, [Val])
-  go_apfun n _ _ = do
+  go_jump :: forall a b. YulO2 a b
+           => Proxy a -> Proxy b -> String -> CatState (Code, [Val])
+  go_jump _ _ n = do
     vals_b <- return . fmap LetVar =<< mk_let_vars (Proxy @b)
     forget_vars -- we do in-place declaration immediately
     return ( log_debug "apfun" (Proxy @a) (Proxy @b) <>
-             ind ("let " <> vals_to_code vals_b <> " := " <> T.pack n <> "(" <> vals_to_code vals_a <> ")")
+             ind ("let " <> vals_to_code vals_b <> " := " <>
+                  T.pack n <> "(" <> vals_to_code vals_a <> ")")
            , vals_b )
   go_ite :: forall a. YulO1 a
            => Proxy a -> CatState (Code, [Val])
@@ -242,22 +245,30 @@ compile_cat ind acat (vars_a, vars_r) = do
     assign_vars ind' vars_r vals_b <>
     ind "}"
 
-compile_fn :: Indenter -> AnyFn -> CatState Code
-compile_fn ind (MkAnyFn (MkFn n cat :: Fn a b)) = do
-  vars_a <- mk_let_vars (Proxy @a)
-  vars_b <- mk_let_vars (Proxy @b)
-  forget_vars -- these variables will not be declared separately
-  code <- compile_cat ind cat (vars_a, vars_b)
-  return $
-    ind ("function " <> T.pack n <>
-         "(" <> T.intercalate ", " vars_a <> ")" <>
-         (case vars_b of [] -> ""; _ -> " -> " <> T.intercalate ", " vars_b)
-        ) <>
-    ind code
+compile_fn :: forall a b. (ABIType a, ABIType b) => Indenter -> ExportedFn a b -> CatState Code
+compile_fn ind fn =
+  let cat = removeScope fn
+      fname = case fn of (ExternalFn _ _ _) -> digestYulCat cat
+                         (LibraryFn n _)    -> n
+  in do
+    vars_a <- mk_let_vars (Proxy @a)
+    vars_b <- mk_let_vars (Proxy @b)
+    forget_vars -- these variables will not be declared separately
+    code <- compile_cat ind cat (vars_a, vars_b)
+    return $
+      ind ("function " <> T.pack fname <>
+           "(" <> T.intercalate ", " vars_a <> ")" <>
+           (case vars_b of [] -> ""; _ -> " -> " <> T.intercalate ", " vars_b)
+          ) <>
+      ind code
 
-create_dispatcher :: Indenter -> [ScopedFn] -> CatState Code
+compile_any_fn :: Indenter -> AnyExportedFn -> CatState Code
+compile_any_fn ind (MkAnyExportedFn fn) = compile_fn ind fn
+
+create_dispatcher :: Indenter -> [AnyExportedFn] -> CatState Code
 create_dispatcher ind fns = do
-  code_cases <- return . T.intercalate "" =<< (mapM case_fn . fmap fromJust . filter isJust . fmap dispatchable) fns
+  code_cases <- (mapM case_fn . fmap fromJust . filter isJust . fmap dispatchable) fns
+                >>= return . T.intercalate ""
   return $
     "{ // Dispatcher\n" <>
     ind' "switch selector()" <>
@@ -269,22 +280,22 @@ create_dispatcher ind fns = do
     ind "}"
   where ind' = indent ind
         ind'' = indent ind'
-        dispatchable (ExternalFn sel fn) = Just (sel, fn)
-        dispatchable (StaticFn   sel fn) = Just (sel, fn)
-        dispatchable (InternalFn _)      = Nothing
-        case_fn (_ {- FIXME use selector instead -}, (MkAnyFn (MkFn n _ :: Fn a b))) = do
+        dispatchable (MkAnyExportedFn (ExternalFn _ sel c)) = Just (sel, MkAnyYulCat c)
+        dispatchable (MkAnyExportedFn (LibraryFn _ _))      = Nothing
+        case_fn (s, (MkAnyYulCat (c :: YulCat a b))) = do
           vars_a <- mk_let_vars (Proxy @a)
           vars_b <- mk_let_vars (Proxy @b)
           code_vars <- declare_vars ind''
           return $
-            ind' ("case " <> (T.pack . show) n <> "{") <>
+            ind' ("case " <> T.pack (show s) <> "{") <>
             code_vars <>
             ind'' "// TODO, abi decoding of input" <>
-            ind'' (T.intercalate "," vars_b <> " := "<> T.pack n <> "(" <> T.intercalate "," vars_a <> ")") <>
+            ind'' (T.intercalate "," vars_b <> " := " <>
+                   T.pack (digestYulCat c) <> "(" <> T.intercalate "," vars_a <> ")") <>
             ind' "}"
 
 compile_object :: Indenter -> YulObject -> CatState Code
-compile_object ind (MkYulObject { yulObjectName = n
+compile_object ind (MkYulObject { yulObjectName = oname
                                 , yulObjectCtor = ctor
                                 , yulObjectFunctions = fns
                                 , yulSubObjects = subos
@@ -294,10 +305,10 @@ compile_object ind (MkYulObject { yulObjectName = n
       ind''' = indent ind''
   code_ctor <- compile_cat ind'' ctor ([], [])
   code_dispatcher <- create_dispatcher ind''' fns
-  code_fns <- mapM (compile_fn ind''') (fmap removeScope fns)
-  code_subos <- mapM (compile_object ind') subos
+  code_fns <- mapM (compile_any_fn ind''') fns -- exported functions
+  code_subos <- mapM (compile_object ind') subos -- sub objects
   return $
-    ind ("object \"" <> T.pack n <> "\" {") <>
+    ind ("object \"" <> T.pack oname <> "\" {") <>
     ( -- object init
       ind' "code {" <>
       (
@@ -326,9 +337,13 @@ compile_object ind (MkYulObject { yulObjectName = n
 -- Module Exports:
 ------------------------------------------------------------------------------------------------------------------------
 
--- | Compiling the yul function.
-compileFn :: forall a b. YulO2 a b => Fn a b -> Code
-compileFn fn = evalState (compile_fn init_ind (MkAnyFn fn)) init_catst
+-- | Compiling the yul morphism.
+compileCat :: forall a b p. YulO2 a b => YulCat a b -> Code
+compileCat c = evalState (compile_cat init_ind c ([], [])) init_catst
+
+-- | Compiling the yul exported function.
+compileFn :: forall a b p. YulO2 a b => ExportedFn a b -> Code
+compileFn fn = evalState (compile_fn init_ind fn) init_catst
 
 -- | Compiling the yul object.
 compileObject :: YulObject -> Code

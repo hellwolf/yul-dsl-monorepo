@@ -6,26 +6,34 @@ import           YulDSL.Core.ContractABI
 import           YulDSL.Core.YulCat
 
 
-data ScopedFn = ExternalFn Selector AnyFn | StaticFn Selector AnyFn | InternalFn AnyFn
+data ExportedFn a b = ExternalFn FuncEffect SEL (YulCat a b)
+                    | LibraryFn String (YulCat a b)
 
-externalFn :: forall a b. YulO2 a b => Fn a b -> ScopedFn
-externalFn = (ExternalFn 0). MkAnyFn
+data AnyExportedFn = forall a b. (ABIType a, ABIType b) => MkAnyExportedFn (ExportedFn a b)
 
-staticFn :: forall a b. YulO2 a b => Fn a b -> ScopedFn
-staticFn = (StaticFn 0) . MkAnyFn
+externalFn :: forall a b p. YulO2 a b => String -> YulCat a b -> ExportedFn a b
+externalFn fname = ExternalFn FuncTx (mkTypedSelector @a @b fname)
 
-internalFn :: forall a b. YulO2 a b => Fn a b -> ScopedFn
-internalFn = InternalFn . MkAnyFn
+staticFn :: forall a b p. YulO2 a b => String -> YulCat a b -> ExportedFn a b
+staticFn fname = ExternalFn FuncStatic (mkTypedSelector @a @b fname)
 
-removeScope :: ScopedFn -> AnyFn
-removeScope (ExternalFn _ f) = f
-removeScope (StaticFn   _ f) = f
-removeScope (InternalFn f)   = f
+libraryFn :: forall a b p. YulO2 a b => String -> YulCat a b -> ExportedFn a b
+libraryFn name = LibraryFn name
 
-instance Show ScopedFn where
-  show (ExternalFn _ f) = "external " <> show f
-  show (StaticFn _ f)   = "static "   <> show f
-  show (InternalFn f)   = "internal " <> show f
+removeScope :: ExportedFn a b -> YulCat a b
+removeScope (ExternalFn _ _ c) = c
+removeScope (LibraryFn _ c)    = c
+
+show_fn_spec :: forall a b. YulO2 a b => String -> YulCat a b -> String
+show_fn_spec s _ = "function " <> s <> "(" <> abi_type_name @a <> ") -> " <> abi_type_name @b
+
+instance (ABIType a, ABIType b) => Show (ExportedFn a b) where
+  show (ExternalFn FuncTx s c)     = "external " <> show_fn_spec (show s) c
+  show (ExternalFn FuncStatic s c) = "static " <> show_fn_spec (show s) c
+  show (LibraryFn n c)             = "internal "   <> show_fn_spec n c
+
+instance Show AnyExportedFn where
+  show (MkAnyExportedFn fn) = show fn
 
 -- | A Yul Object per spec.
 --
@@ -34,7 +42,7 @@ instance Show ScopedFn where
 --   * Specification: https://docs.soliditylang.org/en/latest/yul.html#specification-of-yul-object
 data YulObject = MkYulObject { yulObjectName      :: String
                              , yulObjectCtor      :: YulCat () ()
-                             , yulObjectFunctions :: [ScopedFn]
+                             , yulObjectFunctions :: [AnyExportedFn]
                              , yulSubObjects      :: [YulObject]
                              -- , TODO support object data
                              }
@@ -45,7 +53,7 @@ instance Show YulObject where
            <> "\n\n-- Init code:\n\n"
            <> (show . yulObjectCtor) o
 
-mkYulObject :: String -> YulCat () () -> [ScopedFn] -> YulObject
+mkYulObject :: String -> YulCat () () -> [AnyExportedFn] -> YulObject
 mkYulObject name ctor fns = MkYulObject { yulObjectName = name
                                         , yulObjectCtor = ctor
                                         , yulObjectFunctions = fns

@@ -56,14 +56,12 @@ TODOs
     - [ ] `[a]`, list.
     - [ ] `deriving TUPLE`, deriving tuple generically.
   - Function Types:
-    - [ ] `SEL`, selector data type.
-    - [ ] `CALL SEL ADDR`, Solidity-Contract-ABI-compatible selector for external function calls.
-    - [ ] `FUN a b`, internal function reference ??
+    - [x] `FUNC a b`, external function reference.
+    - [x] `SEL`, selector data type; selector creator
 - YulCat:
   - [ ] `Category` instance for the base library, in order to use `(>>>)`.
   - [ ] Type-Level Function Permission Tags.
   - [ ] `YulMap, YulFoldl`, control structure for lists.
-  - [ ] `YulCall`, external function calls. (external|delegated|static_call ??)
 - Eval Monad:
   - [ ] Contract ABI Codec in Haskell.
   - [ ] Test all `YulCat` constructors.

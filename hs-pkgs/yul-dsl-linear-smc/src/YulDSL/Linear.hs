@@ -207,17 +207,17 @@ instance forall a as. (YulPortReducible a, YulPortReducible as) => YulPortReduci
                       \(a, as) -> yul_port_reduce a :> yul_port_reduce as
   yul_port_merge (a :> as) = merge (yul_port_merge a, yul_port_merge as) & yulCoerce @(a ⊗ as) @(a :> as)
 
-defun :: forall a b. (YulO2 a b, YulPortReducible a)
-      => String
-      -> (forall r. YulObj r => YulPortReduce (YulP r a) ⊸ YulP r b)
-      -> Fn a b
-defun name f = MkFn name $ decode (f . yul_port_reduce)
-
-defun' :: forall a b. (YulO2 a b, YulPortReducible a)
+lfn :: forall a b p. (YulO2 a b, YulPortReducible a)
       => (forall r. YulObj r => YulPortReduce (YulP r a) ⊸ YulP r b)
-      -> Fn a b
-defun' f = mkFn' $ decode (f . yul_port_reduce)
+      -> YulCat a b
+lfn f = decode (f . yul_port_reduce)
 
-apfun :: forall a b r. (YulPortReducible a, YulO3 a b r)
-      => Fn a b -> YulPortReduce (YulP r a) ⊸ YulP r b
-apfun fn a = encode (YulApFun fn) (yul_port_merge @a a)
+defun' :: forall a b p. (YulO2 a b, YulPortReducible a)
+      => (forall r. YulObj r => YulPortReduce (YulP r a) ⊸ YulP r b)
+      -> YulCat a b
+defun' f = decode (f . yul_port_reduce)
+
+apfun :: forall a b p r. (YulPortReducible a, YulO3 a b r)
+      => ExportedFn a b -> YulPortReduce (YulP r a) ⊸ YulP r b
+apfun (LibraryFn fname _) a = encode (YulJump fname) (yul_port_merge @a a)
+-- apfun (ExternalFn _ _ _) _  = error "FIXME callFn external function"

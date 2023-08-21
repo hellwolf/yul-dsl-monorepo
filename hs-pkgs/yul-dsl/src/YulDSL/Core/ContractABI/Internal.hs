@@ -34,8 +34,20 @@ newtype BYTES = BYTES ByteString deriving newtype (Eq)
 
 -- External Call Specification:
 
-type Selector = INTx False 4
+-- | External function signature.
+type FuncSig = Maybe String
 
-data CallSpec a b = ExternalCall ADDR Selector
-                  | DelegateCall ADDR Selector
-                  | StaticCall   ADDR Selector
+-- | Selector value type.
+type Sel4Bytes = INTx False 4
+
+-- | Selector value type with the optional function signature tagged.
+newtype SEL = SEL (FuncSig, Sel4Bytes)
+
+-- | Storage location for the external function call.
+data FuncStorage = FuncExternal | FuncDelegated
+
+-- | Effect type for the external function call.
+data FuncEffect = FuncTx | FuncStatic
+
+-- | External function specification.
+newtype FUNC a b = FUNC (FuncStorage, FuncEffect, SEL, ADDR)

@@ -21,8 +21,10 @@ module YulDSL.Core.ContractABI
   ( module YulDSL.Core.ContractABI.Types
   , module YulDSL.Core.ContractABI.Serialization
   , module YulDSL.Core.ContractABI.ABIType
+  , module YulDSL.Core.ContractABI.Coerce
   ) where
 
 import           YulDSL.Core.ContractABI.ABIType
+import           YulDSL.Core.ContractABI.Coerce
 import           YulDSL.Core.ContractABI.Serialization
 import           YulDSL.Core.ContractABI.Types

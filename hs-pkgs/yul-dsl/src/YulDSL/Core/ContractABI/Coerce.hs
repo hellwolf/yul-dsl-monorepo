@@ -16,11 +16,12 @@ It is the code separated out in order to isolate the usage of UndecidableInstanc
 
 -}
 
-module YulDSL.Core.Coerce
+module YulDSL.Core.ContractABI.Coerce
   ( YulCoercible
   ) where
 
-import           YulDSL.Core.ContractABI
+import           YulDSL.Core.ContractABI.ABIType (ABIType)
+import           YulDSL.Core.ContractABI.Types
 
 -- | Family of objects that have the same bytes representations.
 class (ABIType a, ABIType b) => YulCoercible a b

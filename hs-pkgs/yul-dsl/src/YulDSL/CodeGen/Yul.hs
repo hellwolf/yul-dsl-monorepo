@@ -245,7 +245,7 @@ compile_cat ind acat (vars_a, vars_r) = do
     assign_vars ind' vars_r vals_b <>
     ind "}"
 
-compile_fn :: forall a b. (ABIType a, ABIType b) => Indenter -> ExportedFn a b -> CatState Code
+compile_fn :: forall a b. (ABIType a, ABIType b) => Indenter -> Fn a b -> CatState Code
 compile_fn ind fn =
   let cat = removeScope fn
       fname = case fn of (ExternalFn _ _ _) -> digestYulCat cat
@@ -262,10 +262,10 @@ compile_fn ind fn =
           ) <>
       ind code
 
-compile_any_fn :: Indenter -> AnyExportedFn -> CatState Code
-compile_any_fn ind (MkAnyExportedFn fn) = compile_fn ind fn
+compile_any_fn :: Indenter -> AnyFn -> CatState Code
+compile_any_fn ind (MkAnyFn fn) = compile_fn ind fn
 
-create_dispatcher :: Indenter -> [AnyExportedFn] -> CatState Code
+create_dispatcher :: Indenter -> [AnyFn] -> CatState Code
 create_dispatcher ind fns = do
   code_cases <- (mapM case_fn . fmap fromJust . filter isJust . fmap dispatchable) fns
                 >>= return . T.intercalate ""
@@ -280,8 +280,8 @@ create_dispatcher ind fns = do
     ind "}"
   where ind' = indent ind
         ind'' = indent ind'
-        dispatchable (MkAnyExportedFn (ExternalFn _ sel c)) = Just (sel, MkAnyYulCat c)
-        dispatchable (MkAnyExportedFn (LibraryFn _ _))      = Nothing
+        dispatchable (MkAnyFn (ExternalFn _ sel c)) = Just (sel, MkAnyYulCat c)
+        dispatchable (MkAnyFn (LibraryFn _ _))      = Nothing
         case_fn (s, (MkAnyYulCat (c :: YulCat a b))) = do
           vars_a <- mk_let_vars (Proxy @a)
           vars_b <- mk_let_vars (Proxy @b)
@@ -342,7 +342,7 @@ compileCat :: forall a b p. YulO2 a b => YulCat a b -> Code
 compileCat c = evalState (compile_cat init_ind c ([], [])) init_catst
 
 -- | Compiling the yul exported function.
-compileFn :: forall a b p. YulO2 a b => ExportedFn a b -> Code
+compileFn :: forall a b p. YulO2 a b => Fn a b -> Code
 compileFn fn = evalState (compile_fn init_ind fn) init_catst
 
 -- | Compiling the yul object.

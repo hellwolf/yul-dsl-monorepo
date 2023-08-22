@@ -39,8 +39,8 @@ library
                     YulDSL.Core.ContractABI.Types
                     YulDSL.Core.ContractABI.Serialization
                     YulDSL.Core.ContractABI.ABIType
+                    YulDSL.Core.ContractABI.Coerce
                     YulDSL.Core.ContractABI
-                    YulDSL.Core.Coerce
                     YulDSL.Core.YulCat
                     YulDSL.Core.YulObject
                     YulDSL.Core

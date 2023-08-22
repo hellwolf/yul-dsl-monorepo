@@ -194,7 +194,7 @@ type UINT256 = INTx False 32;type INT256 = INTx True 32
 
 -- | Create a solidity-compatible selector based on types.
 mkTypedSelector :: forall a b. String -> SEL
-mkTypedSelector n = SEL (Just n, 0) -- FIXME create selector
+mkTypedSelector n = SEL (Just (n, ""), 0) -- FIXME create selector
 
 mkRawSelector :: Sel4Bytes -> SEL
 mkRawSelector b = SEL (Nothing, b)
@@ -297,8 +297,8 @@ instance Show BYTES where
   show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . unpack) a ++ "/*::BYTES*/"
 
 instance Show SEL where
-  show (SEL (Just s, c))  = "0x" <> showHex c " /*::" ++ s ++ "*/"
-  show (SEL (Nothing, c)) = "0x" <> showHex c ""
+  show (SEL (Just (fname, args), c)) = "0x" <> showHex c " /*::" ++ fname ++ "(" ++ args ++ ")*/"
+  show (SEL (Nothing, c))            = "0x" <> showHex c ""
 
 instance Show (FUNC a b) where
   show _              = error "TODO Show FUNC"

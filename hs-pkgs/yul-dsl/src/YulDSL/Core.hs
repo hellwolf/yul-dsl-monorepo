@@ -20,12 +20,10 @@ The Core of the YulDSL is the 'YulDSL.Core.ContractABI' & 'YulDSL.Core.YulDSL' m
 
 module YulDSL.Core
   ( module YulDSL.Core.ContractABI
-  , module YulDSL.Core.Coerce
   , module YulDSL.Core.YulCat
   , module YulDSL.Core.YulObject
   ) where
 
-import           YulDSL.Core.Coerce
 import           YulDSL.Core.ContractABI
 import           YulDSL.Core.YulCat
 import           YulDSL.Core.YulObject

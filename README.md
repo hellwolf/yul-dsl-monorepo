@@ -47,46 +47,54 @@ TODOs
 
 ## Framework Features
 
-- Flexible & Solidity-Contract-ABI-Compatible Fundamental Types
-  - Value Types:
-    - [x] `ADDR`, `BOOL`, `INTx s n`.
-  - Composite Types:
-    - [-] `::>`, chaining tuple constructor.
-    - [ ] `BYTES`, arbitrary bytes.
-    - [ ] `[a]`, list.
-    - [ ] `deriving TUPLE`, deriving tuple generically.
-  - Function Types:
-    - [x] `FUNC a b`, external function reference.
-    - [x] `SEL`, selector data type; selector creator
-- YulCat:
-  - [ ] `Category` instance for the base library, in order to use `(>>>)`.
-  - [ ] Type-Level Function Permission Tags.
-  - [ ] `YulMap, YulFoldl`, control structure for lists.
+- YulDSL Core
+  - ContractABI: Solidity-Contract-ABI-Compatible Types
+    - Value Types:
+      - [x] `ADDR`, `BOOL`, `INTx s n`.
+    - Composite Types:
+      - [-] :M: `::>`, chaining tuple constructor.
+      - [ ] :L: `BYTES`, arbitrary bytes.
+      - [ ] :L: `[a]`, list.
+      - [ ] :XL: `deriving TUPLE`, deriving tuple generically.
+    - Function Types:
+      - [x] :S: `FUNC a b`, external function reference.
+      - [-] :M: `SEL`, selector data type; selector creators.
+    - [ ] :S: Cleanup inline-REPL docs.
+  - YulCat
+    - [ ] :M: Type-Level Function Permission Tags.
+    - [ ] :M: `YulMap, YulFoldl`, control structure for lists.
+  - YulObject
+    - [ ] :S: Module documentation.
 - Eval Monad:
-  - [ ] Contract ABI Codec in Haskell.
-  - [ ] Test all `YulCat` constructors.
-- Multi-Style Functions:
-  - `fn`, point-free categorical functions.
-    - [ ] Composition of different styles.
-  - `vfn`, value functions.
-    - [ ] Num typeclass instances.
-  - `lfn`, linearly-typed functions.
-    - [ ] Selection of linear combinators.
+  - [ ] :L: Test all `ContractABI` types and `YulCat` constructors through Eval monad.
+  - [ ] :XXL: **FULL** `ContractABI` Codec in Haskell.
+- Linearly-typed YulDSL Prelude:
+  - [ ] :S: Num typeclass instances for `YulNum n => YulDSL m n`.
+  - [ ] :S: `(>>>)` operator for the `YulDSL` for the left-to-right composition.
+  - [ ] :S: Multi-style functions:
+    - `lfn`, linearly-typed functions.
+    - `vfn`, value functions.
+    - `fn`, point-free categorical functions, allowing composition of all styles.
+  - [ ] :L: Curating a prelude of linear combinators.
 - CodeGen
-  - [ ] Contract ABI Codec in Yul.
-  - [ ] Object constructor.
+  - Yul
+    - [ ] :M: Object constructor.
+    - [ ] :XXL: **FULL** `ContractABI` Codec in Yul.
+  - PlantUML
+    - [ ] :L: **FULL** PlantUML support.
 
 ## Development Environment
 
-- Stunt Contract Support:
-  - [ ] Generator.
-- QuickCheck integration:
+- QuickCheck integration
   - [ ] Testing using Eval monad.
   - [ ] `yolc test` pipeline support.
 - Foundry testing integration
   - [ ] Testing using stunt contract.
   - [ ] `yolc test` pipeline support.
+- Stunt Contract Support
+  - [ ] Generator.
 - Foundry deployment integration
+  - [ ] `yolc deploy` pipeline.
   - [ ] Deploy stunt contract.
   - [ ] Etherscan verification pipeline.
 

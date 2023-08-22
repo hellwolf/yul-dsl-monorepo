@@ -31,11 +31,10 @@ newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer) deriving newtype (Ord,
 -- | ABI bytes reference type.
 newtype BYTES = BYTES ByteString deriving newtype (Eq)
 
+-- External Call Specification Value
 
--- External Call Specification:
-
--- | External function signature.
-type FuncSig = Maybe String
+-- | External function signature. This optional information does not have run-time representation.
+type FuncSig = Maybe (String {- function name -}, String {- arguments -})
 
 -- | Selector value type.
 type Sel4Bytes = INTx False 4

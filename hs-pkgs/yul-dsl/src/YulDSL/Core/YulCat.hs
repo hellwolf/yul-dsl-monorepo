@@ -39,7 +39,6 @@ module YulDSL.Core.YulCat
   ( YulObj, YulO1, YulO2, YulO3, YulO4, YulO5
   , YulVal, YulNum
   , YulCat (..), AnyYulCat (..), digestYulCat
-  , Fn, AnyFn (..)
   ) where
 
 -- base
@@ -51,7 +50,6 @@ import           Text.Printf             (printf)
 -- byteString
 import qualified Data.ByteString.Char8   as B
 --
-import           YulDSL.Core.Coerce
 import           YulDSL.Core.ContractABI
 
 -- | All objects in the 'YulCat' category is simply a 'ABIType'.
@@ -193,11 +191,3 @@ instance YulStorageWriteAllowed '(YulStorageRW, a)
 instance YulTransactionCallAllowed '(a, YulAllowAnyCall)
 instance YulStaticCallAllowed '(a, YulAllowAnyCall)
 instance YulStaticCallAllowed '(a, YulAllowStaticCall)
-
--- data CodeLocation = InternalCode | RemoteCode ADDR
-
--- | Unrestricted morphisms.
-type Fn a b = YulCat a b
-
--- | Existential wrapper of the `Fn`.
-data AnyFn = forall a b p. YulO2 a b => MkAnyFn (YulCat a b)

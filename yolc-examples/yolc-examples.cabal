@@ -20,8 +20,8 @@ common yol-module-options
                           OverloadedStrings
                           UnicodeSyntax
     mixins:               base hiding (Prelude),
-                          base (Prelude as BasePrelude),
-                          yul-dsl-linear-smc (Prelude.YulDSL as Prelude),
+                          base (Prelude as Prelude.Base),
+                          yul-dsl-linear-smc (Prelude.YulDSL.LinearSMC as Prelude),
                           yul-dsl-linear-smc
     build-depends:        base >= 4.13 && < 666,
                           text >= 2.0.1,

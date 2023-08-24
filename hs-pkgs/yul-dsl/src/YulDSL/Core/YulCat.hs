@@ -38,7 +38,8 @@ The classification objects in the YulCat symmetrical monoidal category:
 module YulDSL.Core.YulCat
   ( YulObj, YulO1, YulO2, YulO3, YulO4, YulO5
   , YulVal, YulNum
-  , YulCat (..), AnyYulCat (..), digestYulCat
+  , YulCat (..), AnyYulCat (..), (>.>), (<.<)
+  , digestYulCat
   ) where
 
 -- base
@@ -75,7 +76,10 @@ class (YulVal a, Num a) => YulNum a
 
 instance (Typeable s, KnownNat n) => YulNum (INTx s n)
 
--- | A category of GADT-style DSL for Yul that constructs morphisms between its objects (YulObj).
+-- | A GADT-style DSL of Yul that constructs morphisms between objects (YulObj) of the "Yul Category".
+--
+--  Note: - The inhabitants of this are actually morphisms of the Yul category. "Cat" is just a nice sounding moniker,
+--  while the actual category is "Yul Category".
 data YulCat a b where
   -- SMC Primitives
   --
@@ -91,7 +95,7 @@ data YulCat a b where
   -- Control Flow Primitives
   --
   -- | Embed a constant value.
-  YulEmbed :: forall a    . YulO1 a     => a -> YulCat () a
+  YulEmbed :: forall m a  . YulO2 m a   => a -> YulCat m a
   -- | Call a yul internal function by named reference.
   YulJump  :: forall a b  . YulO2 a b   => String -> YulCat a b
   -- | Call a external function.
@@ -123,8 +127,18 @@ data YulCat a b where
   YulSGet :: forall a. YulVal a => YulCat ADDR a
   YulSPut :: forall a. YulVal a => YulCat (ADDR, a) ()
 
--- | Existential wrapper of the `YulCat`.
+-- | Existential wrapper of the 'YulCat'.
 data AnyYulCat = forall a b. YulO2 a b => MkAnyYulCat (YulCat a b)
+
+-- | Left to right composition of 'YulCat'.
+(>.>) :: forall a b c. YulO3 a b c => YulCat a b -> YulCat b c -> YulCat a c
+m >.> n = n `YulComp` m
+
+-- | Right-to-left composition of 'YulCat'.
+(<.<) :: forall a b c. YulO3 a b c => YulCat b c -> YulCat a b -> YulCat a c
+(<.<) = YulComp
+
+infixr 1 >.>, <.<
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Show Instances & Utilities

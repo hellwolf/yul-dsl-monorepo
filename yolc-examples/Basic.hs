@@ -15,18 +15,18 @@ const_42 = decode (yulConst (to_intx 42)) :: YulCat () UINT256
 ------------------------------------------------------------------------------------------------------------------------
 
 nop :: YulCat () ()
-nop = defun' \(u) -> u
+nop = lfn \(u) -> u
 
--- FIXME defun cannot express this:
+-- FIXME lfn cannot express this?:
 -- ignoreFn :: YulPortReducible a => Fn a ()
--- ignoreFn = defun "ignoreFn" \a -> yulConst () a
+-- ignoreFn = lfn "ignoreFn" \a -> yulConst () a
 
 mkConst :: YulPortReducible a => a -> YulCat () a
-mkConst a = defun' \u -> yulConst a u
+mkConst a = lfn \u -> yulConst a u
 
 -- | A function that takes a UInt input and store its value doubled at a fixed storage location.
 foo :: Fn UINT256 BOOL
-foo = externalFn "foo" $ lfn $ \x ->
+foo = externalFn "foo" $ lfn \x ->
   (copy x & split & \(x1, x2) ->
       to_addr' 0xdeadbeef <==@ x1 + x2
   ) & yulConst true
@@ -37,27 +37,27 @@ foo2 = externalFn "foo2" $ lfn $ \(x1 :> x2 :> u) ->
   ignore u & yulConst true
 
 foo3 :: Fn (UINT256 :> UINT256 :> ()) (UINT256, BOOL)
-foo3 = externalFn "foo3" $ defun' $ \(x1 :> x2 :> u) ->
+foo3 = externalFn "foo3" $ lfn \(x1 :> x2 :> u) ->
   (to_addr' 0xdeadbeef <==@ x1 + x2) &
   ignore u & yulConst (24, true)
 
 rangeSum :: Fn (UINT256 :> UINT256 :> UINT256) UINT256
-rangeSum = libraryFn "rangeFun" $ defun' $ \(a :> b :> c) ->
+rangeSum = libraryFn "rangeFun" $ lfn \(a :> b :> c) ->
   dup2P a & \(a, a') ->
   dup2P b & \(b, b') ->
   dup2P c & \(c, c') ->
   dup2P (a + b) & \ (d, d') ->
   mkUnit a' & \(a', u) ->
-  a' + ifThenElse (d <? c) (apfun rangeSum (d' :> b' :> c')) (yulConst 0 u)
+  a' + ifThenElse (d <? c) (apFn rangeSum (d' :> b' :> c')) (yulConst 0 u)
 
 -- idVar :: Fn UINT256 UINT256
--- idVar = defun "idVar" \a -> a' + a'
+-- idVar = lfn "idVar" \a -> a' + a'
 --   where a' = mkVar a
 --   -- mkUnit a & \(a, u) ->
 --   -- unVar (mkVar a) u
 
 -- rangeSum' :: Fn (UINT256 :> UINT256 :> UINT256) UINT256
--- rangeSum' = defun "rangeSum1" \(a :> b :> c) ->
+-- rangeSum' = lfn "rangeSum1" \(a :> b :> c) ->
 --   mkUnit a & \(a, u) ->
 --   let a' = mkVar a
 --       b' = mkVar b
@@ -69,10 +69,10 @@ rangeSum = libraryFn "rangeFun" $ defun' $ \(a :> b :> c) ->
 --  enumFromThenTo a b c
 
 -- safeHead :: Fn [UINT256] UINT256
--- safeHead = defun "safeHead" \xs -> head xs
+-- safeHead = lfn "safeHead" \xs -> head xs
 
 -- safeHead :: Fn ([UINT256] :> ()) (One UINT256)
--- safeHead = defun "safeHead" \(xs :> ()) -> yulCoerce (head xs)
+-- safeHead = lfn "safeHead" \(xs :> ()) -> yulCoerce (head xs)
   -- where go :: forall r. YulObj r => Uint256P r ⊸ Uint256P r ⊸ Uint256P r
   --       go x1 x2 = copy x1 & split & \(x1, x1') ->
   --         copy x2 & split & \(x2, x2') ->

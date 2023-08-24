@@ -14,7 +14,7 @@ Categories required for being a symmetric monoidal category.
 
 -}
 
-module YulDSL.Linear.Categories () where
+module YulDSL.LinearSMC.Categories () where
 
 -- constraints
 import           Data.Constraint              (Dict (..))

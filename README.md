@@ -50,32 +50,35 @@ TODOs
 - YulDSL Core
   - ContractABI: Solidity-Contract-ABI-Compatible Types
     - Value Types:
-      - [x] `ADDR`, `BOOL`, `INTx s n`.
+      - [-] `ADDR`, `BOOL`, `INTx s n`.
     - Composite Types:
       - [-] :M: `::>`, chaining tuple constructor.
       - [ ] :L: `BYTES`, arbitrary bytes.
       - [ ] :L: `[a]`, list.
+      - [ ] :XL: `TUPLE`, tuple type.
       - [ ] :XL: `deriving TUPLE`, deriving tuple generically.
     - Function Types:
-      - [x] :S: `FUNC a b`, external function reference.
+      - [ ] :S: `FUNC a b`, external function reference.
       - [-] :M: `SEL`, selector data type; selector creators.
     - [ ] :S: Cleanup inline-REPL docs.
   - YulCat
+    - [x] `(>.>)` operator for the `YulDSL` morphism left-to-right composition.
     - [ ] :M: Type-Level Function Permission Tags.
     - [ ] :M: `YulMap, YulFoldl`, control structure for lists.
   - YulObject
     - [ ] :S: Module documentation.
 - Eval Monad:
-  - [ ] :L: Test all `ContractABI` types and `YulCat` constructors through Eval monad.
+  - [ ] :L: Support all `YulDSL` constructors.
   - [ ] :XXL: **FULL** `ContractABI` Codec in Haskell.
-- Linearly-typed YulDSL Prelude:
-  - [ ] :S: Num typeclass instances for `YulNum n => YulDSL m n`.
-  - [ ] :S: `(>>>)` operator for the `YulDSL` for the left-to-right composition.
-  - [ ] :S: Multi-style functions:
-    - `lfn`, linearly-typed functions.
-    - `vfn`, value functions.
-    - `fn`, point-free categorical functions, allowing composition of all styles.
-  - [ ] :L: Curating a prelude of linear combinators.
+- YulDSL Linear-SMC Frontend:
+  - YulCat Combinators
+    - [-] 🚧 :S: Num typeclass instances for `YulNum n => YulCat m n`.
+  - Yul Port Combinators
+  - Multi-style functions:
+    - [x] `lfn`, linearly-typed functions.
+    - [ ] 🚧 :L: `vfn`, value functions.
+    - [ ] 🚧 :S: composition of all styles.
+  - [ ] :L: Curating a prelude of linear smc combinators.
 - CodeGen
   - Yul
     - [ ] :M: Object constructor.

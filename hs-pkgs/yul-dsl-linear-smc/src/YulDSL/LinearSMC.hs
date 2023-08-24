@@ -18,7 +18,7 @@ This module provides extra combinators to program 'YulDSL' in linear-types, in a
 
 -}
 
-module YulDSL.Linear where
+module YulDSL.LinearSMC where
 
 -- base
 import           Data.Kind                    (Type)
@@ -31,10 +31,10 @@ import           Control.Category.Linear      (P, copy, decode, discard, encode,
 -- yul-dsl
 import           YulDSL.Core
 --
-import           YulDSL.Linear.Categories     ()
+import           YulDSL.LinearSMC.Categories  ()
 
 ------------------------------------------------------------------------------------------------------------------------
--- Extra SMC Linear Combinators
+-- Extra Linear SMC Combinators
 ------------------------------------------------------------------------------------------------------------------------
 
 copy' :: forall k con r a.
@@ -62,13 +62,47 @@ passAp :: forall k con r a b.
 passAp i f = copyAp' i id f
 
 ------------------------------------------------------------------------------------------------------------------------
--- YulDSL Linear Combinators
+-- YulCat Combinators
 ------------------------------------------------------------------------------------------------------------------------
+
+--
+-- YulNum values
+--
+
+instance (YulObj m, YulNum a) => Additive (YulCat m a) where
+  a + b = YulNumAdd `YulComp` YulProd a b `YulComp` YulDup
+
+instance (YulObj m, YulNum a) => AddIdentity (YulCat m a) where
+  zero = YulEmbed (fromIntegral (0 :: Integer))
+
+instance (YulObj r, YulNum a) => AdditiveGroup (YulCat r a) where
+  negate a = YulNumNeg `YulComp` a
+
+--
+-- Function utilities
+--
+
+type family YulCatReduce (a :: Type) :: Type where
+  YulCatReduce (k a (a1 ⊗ a2)) = YulCatReduce (k a a1) :> YulCatReduce (k a a2)
+  YulCatReduce (k a (a1 :> a2)) = YulCatReduce (k a a1) :> YulCatReduce (k a a2)
+  YulCatReduce (k a [a'])       = [YulCatReduce (k a a')]
+  YulCatReduce (k a a)          = YulCat a a
+
+vfn :: forall a b p. (YulO2 a b, YulPortReducible a)
+    => (YulCatReduce (YulCat a a) -> YulCat a b)
+    -> YulCat a b
+vfn = undefined
+
+------------------------------------------------------------------------------------------------------------------------
+-- Yul Port Combinators
+------------------------------------------------------------------------------------------------------------------------
+
+--
+-- Yul port Types
+--
 
 -- | Polymorphic port type for linear function APIs of YulDSL
 type YulP r a = P YulCat r a
-
--- Port Types
 
 type UnitP    r = YulP r ()
 type AddrP    r = YulP r ADDR
@@ -77,58 +111,29 @@ type Uint256P r = YulP r UINT256
 type Int256P  r = YulP r INT256
 type BytesP   r = YulP r BYTES
 
-dup2P :: YulO2 a r => YulP r a ⊸ (YulP r a, YulP r a)
-dup2P = split . copy
+yulConst :: forall a b r. YulO3 r a b
+         => a -> (YulP r b ⊸ YulP r a)
+yulConst a = \b -> encode (YulEmbed a) (discard b)
+
+coerceP :: forall a b r. (YulO3 r a b, YulCoercible a b)
+        => YulP r a ⊸ YulP r b
+coerceP = encode YulCoerce
+
+--
+-- YulNum utilities
+--
 
 instance (YulNum a, YulObj r) => Additive (YulP r a) where
   a + b = encode YulNumAdd (merge (a, b))
 
 instance (YulNum a, YulObj r) => AddIdentity (YulP r a) where
+  -- Note: uni-port is forbidden in linear-smc, but linear-base AdditiveGroup requires this instance.
   zero = error "unit not supported for Ports"
 
 instance (YulNum a, YulObj r) => AdditiveGroup (YulP r a) where
   negate = encode YulNumNeg
-  a - b = encode YulNumAdd (merge (a, negate b))
-
--- Vars
-
--- newtype Var r a = MkVar { getVar :: UnitP r ⊸ YulP r a }
---
--- mkVar :: forall a r. YulO2 a r => YulP r a ⊸ Var r a
--- mkVar a = MkVar (\u -> ignore u a)
---
--- -- useVar :: forall a r. YulO2 a r => Var r a
---
--- --
--- -- unVar :: forall a r. YulO2 a r => Var a -> UnitP r ⊸ YulP r a
--- -- unVar a = encode a
---
--- instance (YulObj r, YulNum a) => Additive (Var r a) where
---   a + b = (\u -> copy u & split & \(u1, u2) -> a u1 + b u2)
---
--- instance (YulObj r, YulNum a) => AddIdentity (Var r a) where
---   zero = (\u -> yulConst 0 u)
---
--- instance (YulObj r, YulNum a) => AdditiveGroup (Var r a) where
---   a - b = (\u -> copy u & split & \(u1, u2) -> a u1 - b u2)
-
--- Utilities
-
-yulCoerce :: forall a b r. (YulO3 r a b, YulCoercible a b)
-     => YulP r a ⊸ YulP r b
-yulCoerce = encode YulCoerce
-
--- Control Flow
-
-yulConst :: forall a b r. YulO3 r a b
-         => a -> (YulP r b ⊸ YulP r a)
-yulConst a = \b -> encode (YulEmbed a) (discard b)
-
-ifThenElse :: forall a r. YulO2 a r
-           => BoolP r ⊸ YulP r a ⊸ YulP r a ⊸ YulP r a
-ifThenElse i a b = encode YulITE (merge (i, merge(a, b)))
-
--- YulVal utilities
+dup2P :: YulO2 a r => YulP r a ⊸ (YulP r a, YulP r a)
+dup2P = split . copy
 
 (<?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
 a <? b = encode (YulNumCmp (true, false, false)) (merge (a, b))
@@ -144,7 +149,15 @@ a ==? b = encode (YulNumCmp (false, true, false)) (merge (a, b))
 a /=? b = encode (YulNumCmp (true, false, true)) (merge (a, b))
 infixr 4 <?, <=?, >?, >=?, ==?, /=?
 
--- Storage
+-- Control flow utilities
+
+ifThenElse :: forall a r. YulO2 a r
+           => BoolP r ⊸ YulP r a ⊸ YulP r a ⊸ YulP r a
+ifThenElse i a b = encode YulITE (merge (i, merge(a, b)))
+
+--
+-- Storage utilities
+--
 
 sget :: forall v r. (YulObj r, YulVal v)
      => YulP r ADDR ⊸ YulP r  v
@@ -165,13 +178,15 @@ sputAt to v = mkUnit v & \(v', u) -> yulConst to u & \a -> sput a v'
 (<==@) = sputAt
 infixr 1 <==, <==@
 
+--
 -- Port List Type Arithmetic
+--
 
 -- | Reduce single-complex-port type to multiple-ports type.
 --
 --   Note: closed type family is used so that overlapping instances are allowed.
 type family YulPortReduce (a :: Type) :: Type where
-  YulPortReduce (YulP r (a ⊗ b))  = YulPortReduce (YulP r a) :> YulPortReduce (YulP r b)
+  YulPortReduce (YulP r (a ⊗ b)) = YulPortReduce (YulP r a) :> YulPortReduce (YulP r b)
   YulPortReduce (YulP r (a :> b)) = YulPortReduce (YulP r a) :> YulPortReduce (YulP r b)
   YulPortReduce (YulP r [a])      = [YulPortReduce (YulP r a)]
   YulPortReduce (YulP r a)        = YulP r a
@@ -195,7 +210,6 @@ class YulObj a => YulPortReducible a where
   yul_port_merge = id
 
 -- Irreducible yul ports:
-
 instance YulPortReducible () where
 instance YulPortReducible ADDR
 instance YulPortReducible BOOL
@@ -203,21 +217,21 @@ instance (Typeable s, KnownNat n) => YulPortReducible (INTx s n)
 instance YulPortReducible BYTES
 
 instance forall a as. (YulPortReducible a, YulPortReducible as) => YulPortReducible (a :> as) where
-  yul_port_reduce p = yulCoerce @(a :> as) @(a ⊗ as) p & split &
+  yul_port_reduce p = coerceP @(a :> as) @(a ⊗ as) p & split &
                       \(a, as) -> yul_port_reduce a :> yul_port_reduce as
-  yul_port_merge (a :> as) = merge (yul_port_merge a, yul_port_merge as) & yulCoerce @(a ⊗ as) @(a :> as)
+  yul_port_merge (a :> as) = merge (yul_port_merge a, yul_port_merge as) & coerceP @(a ⊗ as) @(a :> as)
 
-defun' :: forall a b p. (YulO2 a b, YulPortReducible a)
-      => (forall r. YulObj r => YulPortReduce (YulP r a) ⊸ YulP r b)
-      -> YulCat a b
-defun' f = decode (f . yul_port_reduce)
+--
+-- Function utilities
+--
 
+-- | Define a `YulCat` morphism from a linear port function.
 lfn :: forall a b p. (YulO2 a b, YulPortReducible a)
-      => (forall r. YulObj r => YulPortReduce (YulP r a) ⊸ YulP r b)
-      -> YulCat a b
+    => (forall r. YulObj r => YulPortReduce (YulP r a) ⊸ YulP r b)
+    -> YulCat a b
 lfn f = decode (f . yul_port_reduce)
 
-apfun :: forall a b p r. (YulPortReducible a, YulO3 a b r)
+apFn :: forall a b p r. (YulPortReducible a, YulO3 a b r)
       => Fn a b -> YulPortReduce (YulP r a) ⊸ YulP r b
-apfun (LibraryFn fname _) a = encode (YulJump fname) (yul_port_merge @a a)
--- apfun (ExternalFn _ _ _) _  = error "FIXME callFn external function"
+apFn (LibraryFn fname _) a = encode (YulJump fname) (yul_port_merge @a a)
+-- apFn (ExternalFn _ _ _)  a = coerce a

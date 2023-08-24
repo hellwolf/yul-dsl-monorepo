@@ -39,6 +39,6 @@ library
                     cereal >= 0.5.8,
                     constraints >= 0.13,
                     containers >= 0.6.7
-  exposed-modules:  YulDSL.Linear.Categories
-                    YulDSL.Linear
-                    Prelude.YulDSL
+  exposed-modules:  YulDSL.LinearSMC.Categories
+                    YulDSL.LinearSMC
+                    Prelude.YulDSL.LinearSMC

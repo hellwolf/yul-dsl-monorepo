@@ -5,8 +5,8 @@ module ERC20 where
 -- | ERC20 balance storage location for the account.
 -- TODO should use hashing of course.
 erc20_balance_storage :: forall r. YulObj r => AddrP r ⊸ AddrP r
-erc20_balance_storage account = mkUnit account & \(account, unit) -> yulCoerce $
-  yulCoerce account + yulConst (to_intx @UINT256 0x42) unit
+erc20_balance_storage account = mkUnit account & \(account, unit) -> coerceP $
+  coerceP account + yulConst (to_intx @UINT256 0x42) unit
 
 -- | ERC20 balance of the account.
 erc20_balance_of :: YulObj r => AddrP r ⊸ Uint256P r

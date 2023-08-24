@@ -143,7 +143,7 @@ max_intx = INT . Just $
 
 -- | Convert integer to the INTx type.
 to_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => Integer -> a
-to_intx = fromInteger
+to_intx = fromIntegral
 
 instance (Typeable s, KnownNat n) => Bounded (INTx s n) where
   minBound = min_intx

@@ -11,11 +11,11 @@ This module packages all the goodies prelude-worthy for programming "YulDSL" in 
 
 -}
 
-module Prelude.YulDSL
+module Prelude.YulDSL.LinearSMC
 ( module Prelude.Linear
 , module Control.Category.Linear
-  , module YulDSL.Core
-, module YulDSL.Linear
+, module YulDSL.Core
+, module YulDSL.LinearSMC
 ) where
 
 -- linear-base
@@ -24,4 +24,4 @@ import           Prelude.Linear
 import           Control.Category.Linear
 --
 import           YulDSL.Core
-import           YulDSL.Linear
+import           YulDSL.LinearSMC

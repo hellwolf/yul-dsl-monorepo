@@ -1,6 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE DerivingStrategies  #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
@@ -53,7 +55,7 @@ module YulDSL.Core.ContractABI.Types
   , ABIValue(..)
 
     -- * Composite Types
-  , (:>)(..)
+  , (:>)(..), Destruct, DeTuple
 
   , FuncSig, Sel4Bytes, SEL, mkTypedSelector, mkRawSelector
   , FuncStorage (..), FuncEffect (..), FUNC (..)
@@ -64,10 +66,11 @@ module YulDSL.Core.ContractABI.Types
 
 import           Data.Bits                        (shift)
 import           Data.ByteString                  (unpack)
+import           Data.Functor.Const               (Const (..))
 import           Data.Maybe                       (fromJust)
 import           Data.Typeable                    (Proxy (..), Typeable, typeRep)
 import           GHC.Natural                      (Natural, naturalFromInteger, naturalToInteger)
-import           GHC.TypeNats                     (KnownNat, Nat, natVal)
+import           GHC.TypeNats                     (KnownNat, Nat, natVal, type (+))
 import           Numeric                          (showHex)
 
 import           YulDSL.Core.ContractABI.Internal
@@ -344,21 +347,41 @@ NaN/*::INT8*/
 "0x0 /*::foo*/"
 -}
 
-------------------------------------------------------------------------------------------------------------------------
--- N-ary product
+----------------------------i--------------------------------------------------------------------------------------------
+-- N-ary product, or currying tuple
 --
--- TODO: should use sop-core instead?
+-- TODO: should use sop-core or tuple packages instead?
 ------------------------------------------------------------------------------------------------------------------------
 
--- | Type constructor (:>) and data constructor pun for creating heterogeneous list.
+-- | Type constructor (:>) and its data constructor pun for creating currying n-ary product.
 data a :> b = a :> b
 -- | Operator (:>) being right associative allows bracket-free syntax.
 infixr :>
 
-instance Show a => Show (a :> ()) where
-  show (a :> ()) = show a
+type family Destruct (c :: k -> k -> k) (a :: k) :: k where
+  Destruct c (m (a1, a2))   = Destruct c (m a1) `c` Destruct c (m a2)
+  Destruct c (m (a1 :> a2)) = Destruct c (m a1) `c` Destruct c (m a2)
+  Destruct c (m a)          = m a
 
-instance {-# OVERLAPPABLE #-} (Show a, Show b) => Show (a :> b) where
+type DeTuple ma = Destruct (:>) ma
+
+type DeTupleM m a = Destruct (:>) (m a)
+
+data NatBuilder where
+  NatPlus  :: NatBuilder -> NatBuilder -> NatBuilder
+  NatConst :: forall a. NatBuilder -> a -> NatBuilder
+  NatVal   :: Nat -> NatBuilder
+
+type family NatBuild (n :: NatBuilder) :: Nat where
+  NatBuild (NatPlus  a b) = NatBuild a + NatBuild b
+  NatBuild (NatConst a _) = NatBuild a
+  NatBuild (NatVal   a  ) = a
+
+type CountStruct a = NatBuild (Destruct NatPlus (NatConst (NatVal 1) a))
+
+data STRUCT a = STRUCT a
+
+instance (Show a, Show b) => Show (a :> b) where
   show (a :> b) = "(" <> show a <> "," <> show b <> ")"
 
 {- $show_instance_examples

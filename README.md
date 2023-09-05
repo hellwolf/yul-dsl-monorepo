@@ -49,22 +49,30 @@ TODOs
 
 - YulDSL Core
   - ContractABI: Solidity-Contract-ABI-Compatible Types
-    - Value Types:
-      - [-] `ADDR`, `BOOL`, `INTx s n`.
-    - Composite Types:
-      - [-] :M: `::>`, chaining tuple constructor.
+    - Primitive Types:
+      - [x] Value types: `ADDR`, `BOOL`, `INTx s n`.
       - [ ] :L: `BYTES`, arbitrary bytes.
-      - [ ] :L: `[a]`, list.
-      - [ ] :XL: `TUPLE`, tuple type.
-      - [ ] :XL: `deriving TUPLE`, deriving tuple generically.
+    - Composite Types:
+      - [ ] 🚧 :L: the `TUPLE t` type; with n-ary product (`:*`) and n-tuple types `(,..)` forms of `t`.
+      - [ ] :M: `ARRAY n a`, length-indexed array type.
+      - [ ] :M: `LIST n a`, length-indexed list type.
+      - [ ] :M: `MAP a`.
     - Function Types:
-      - [ ] :S: `FUNC a b`, external function reference.
-      - [-] :M: `SEL`, selector data type; selector creators.
-    - [ ] :S: Cleanup inline-REPL docs.
+      - [x] :S: `FUNC a b`, external function reference with storage tag and effect tag.
+      - [ ] :M: `SEL`, selector data type; selector creators.
+    - Named Tuple Element:
+      - [ ] :M: `t :@ "name"` to name a tuple element.
+    - Reference Kind:
+      - [ ] :M: `data REF = VREF | MREF | SREF`.
+    - **Completeness:**
+      - [ ] :M: **CLEAN-UP** inline-REPL docs.
+      - [ ] :S: **FULL** Test coverage.
   - YulCat
     - [x] `(>.>)` operator for the `YulDSL` morphism left-to-right composition.
-    - [ ] :M: Type-Level Function Permission Tags.
+    - [ ] :M: `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
+    - [ ] :M: `YulView`, for indexed or named position.
     - [ ] :M: `YulMap, YulFoldl`, control structure for lists.
+    - [ ] :M: `YulGet, YulPut` using `REF`, and remove `YulSet, YulSPut`.
   - YulObject
     - [ ] :S: Module documentation.
 - Eval Monad:
@@ -74,11 +82,17 @@ TODOs
   - YulCat Combinators
     - [-] 🚧 :S: Num typeclass instances for `YulNum n => YulCat m n`.
   - Yul Port Combinators
+    - [ ]  :S: N-tuple from to `NP P t`.
+  - Value Function Combinators
+    - [ ]  :S: N-tuple form to `NP (YulCat a) t`.
   - Multi-style functions:
     - [x] `lfn`, linearly-typed functions.
     - [ ] 🚧 :L: `vfn`, value functions.
     - [ ] 🚧 :S: composition of all styles.
-  - [ ] :L: Curating a prelude of linear smc combinators.
+  - Prelude:
+    - [ ] :L: Curation.
+  - **Completeness:**
+    - [ ] :S: **FULL** Test coverage.
 - CodeGen
   - Yul
     - [ ] :M: Object constructor.

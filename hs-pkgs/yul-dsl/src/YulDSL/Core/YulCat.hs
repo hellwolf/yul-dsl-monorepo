@@ -44,6 +44,7 @@ module YulDSL.Core.YulCat
 
 -- base
 import           Data.Char               (ord)
+import           Data.Kind               (Constraint, Type)
 import           Data.Typeable           (Typeable)
 import           GHC.Integer             (xorInteger)
 import           GHC.TypeNats            (KnownNat)
@@ -54,7 +55,8 @@ import qualified Data.ByteString.Char8   as B
 import           YulDSL.Core.ContractABI
 
 -- | All objects in the 'YulCat' category is simply a 'ABIType'.
-type YulObj  = ABIType
+type YulObj :: Type -> Constraint
+type YulObj = ABIType
 
 -- Convenient aliases for declaring YulObj constraints.
 

@@ -32,7 +32,7 @@ foo = externalFn "foo" $ lfn \x ->
   ) & yulConst true
 
 foo2 :: Fn (UINT256 :> UINT256 :> ()) BOOL
-foo2 = externalFn "foo2" $ lfn $ \(x1 :> x2 :> u) ->
+foo2 = externalFn "foo2" $ lfn \(x1 :> x2 :> u) ->
   (to_addr' 0xdeadbeef <==@ x1 + x2) &
   ignore u & yulConst true
 
@@ -42,13 +42,19 @@ foo3 = externalFn "foo3" $ lfn \(x1 :> x2 :> u) ->
   ignore u & yulConst (24, true)
 
 rangeSum :: Fn (UINT256 :> UINT256 :> UINT256) UINT256
-rangeSum = libraryFn "rangeFun" $ lfn \(a :> b :> c) ->
+rangeSum = libraryFn "rangeSum" $ lfn \(a :> b :> c) ->
   dup2P a & \(a, a') ->
   dup2P b & \(b, b') ->
   dup2P c & \(c, c') ->
   dup2P (a + b) & \ (d, d') ->
   mkUnit a' & \(a', u) ->
   a' + ifThenElse (d <? c) (apFn rangeSum (d' :> b' :> c')) (yulConst 0 u)
+
+rangeSum2 :: Fn (UINT256 :> UINT256 :> UINT256) UINT256
+rangeSum2 = libraryFn "rangeSum2" $ vfn \(a :> b :> c) ->
+  a + b + c
+  >.> lfn \a ->
+  dup2P a & \(a, a') -> a + a'
 
 -- idVar :: Fn UINT256 UINT256
 -- idVar = lfn "idVar" \a -> a' + a'

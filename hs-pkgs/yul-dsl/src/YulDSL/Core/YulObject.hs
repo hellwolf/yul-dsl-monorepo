@@ -9,7 +9,7 @@ import           YulDSL.Core.YulCat
 data Fn a b = ExternalFn FuncEffect SEL (YulCat a b)
             | LibraryFn String (YulCat a b)
 
-data AnyFn = forall a b. (ABIType a, ABIType b) => MkAnyFn (Fn a b)
+data AnyFn = forall a b. YulO2 a b => MkAnyFn (Fn a b)
 
 externalFn :: forall a b p. YulO2 a b => String -> YulCat a b -> Fn a b
 externalFn fname = ExternalFn FuncTx (mkTypedSelector @a @b fname)
@@ -27,7 +27,7 @@ removeScope (LibraryFn _ c)    = c
 show_fn_spec :: forall a b. YulO2 a b => String -> YulCat a b -> String
 show_fn_spec s _ = "function " <> s <> "(" <> abi_type_name @a <> ") -> " <> abi_type_name @b
 
-instance (ABIType a, ABIType b) => Show (Fn a b) where
+instance YulO2 a b => Show (Fn a b) where
   show (ExternalFn FuncTx s c)     = "external " <> show_fn_spec (show s) c
   show (ExternalFn FuncStatic s c) = "static " <> show_fn_spec (show s) c
   show (LibraryFn n c)             = "internal "   <> show_fn_spec n c

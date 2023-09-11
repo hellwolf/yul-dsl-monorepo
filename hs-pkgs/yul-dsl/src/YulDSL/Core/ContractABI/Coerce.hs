@@ -20,7 +20,6 @@ module YulDSL.Core.ContractABI.Coerce
   ( YulCoercible
   ) where
 
-import           YulDSL.Core.ContractABI.ABIType (ABIType)
 import           YulDSL.Core.ContractABI.Types
 
 -- | Family of objects that have the same bytes representations.
@@ -31,5 +30,5 @@ instance {-# OVERLAPPABLE #-} (ABIType a, ABIType b, YulCoercible b a) => YulCoe
 instance {-# OVERLAPPING #-} YulCoercible UINT256 ADDR
 
 instance {-# OVERLAPPING #-} ABIType a => YulCoercible (a, ()) a
-instance {-# OVERLAPPING #-} (ABIType a, ABIType as)  => YulCoercible (a :> as) (a, as)
+instance {-# OVERLAPPING #-} (ABIType a, ABIType as)  => YulCoercible (a :* as) (a, as)
 instance {-# OVERLAPPING #-} (ABIType a, ABIType b, ABIType c) => YulCoercible (a, (b, c)) ((a, b), c)

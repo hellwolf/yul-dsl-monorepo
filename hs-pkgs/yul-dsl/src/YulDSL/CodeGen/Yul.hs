@@ -234,7 +234,7 @@ run_stcat ind (MkAnyYulCat cat) vals_a = go cat where
               => Code -> Code -> Proxy a -> CatState (Code, [Val])
   go_num_cmp' op1 op2 _ = assert (length vals_a == 2) (return ("", [ValExpr $ op1 <> vals_to_code vals_a <> op2 ]))
 
-compile_cat :: forall a b. (ABIType a, ABIType b) => Indenter -> YulCat a b -> ([Var], [Var]) -> CatState Code
+compile_cat :: forall a b. YulO2 a b => Indenter -> YulCat a b -> ([Var], [Var]) -> CatState Code
 compile_cat ind acat (vars_a, vars_r) = do
   let ind' = indent ind
   (code, vals_b) <- run_stcat ind' (MkAnyYulCat acat) (fmap LetVar vars_a)
@@ -245,7 +245,7 @@ compile_cat ind acat (vars_a, vars_r) = do
     assign_vars ind' vars_r vals_b <>
     ind "}"
 
-compile_fn :: forall a b. (ABIType a, ABIType b) => Indenter -> Fn a b -> CatState Code
+compile_fn :: forall a b. YulO2 a b => Indenter -> Fn a b -> CatState Code
 compile_fn ind fn =
   let cat = removeScope fn
       fname = case fn of (ExternalFn _ _ _) -> digestYulCat cat

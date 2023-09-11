@@ -1,8 +1,7 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE DerivingStrategies   #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DerivingStrategies  #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
@@ -24,16 +23,29 @@ types and functions here.
 -}
 
 module YulDSL.Core.ContractABI.Types
-  ( -- * Primitive Types
+  ( -- * ABI Typeclasses
+
+    -- ** ABI Serialization
+  ABISerialize, abi_encode, abi_decode
+
+    -- ** ABI Types
+  , ABIType (..), abi_type_name'
+
+    -- ** ABI Static Value Types
+  , SVALUE, def_sval, max_sval
+  , ABIValue(..)
+
+    -- * Primitive Types
 
     -- ** BOOL
-    BOOL (..), true, false, if'
+  , BOOL (..), true, false, if'
 
     -- ** ADDR
   , ADDR, zero_address, max_addr, to_addr, to_addr', addr_to_integer
 
     -- ** INTx
-  , INTx, intx_sign, intx_nbits, min_intx, max_intx, to_intx
+  , KnownNat
+  , INTx, intx_sign, intx_nbits, min_intx, max_intx, to_intx, intx_typename
 
     -- *** Assorted INTx Types
   , UINT8,UINT16,UINT24,UINT32,UINT40,UINT48,UINT56,UINT64
@@ -50,12 +62,10 @@ module YulDSL.Core.ContractABI.Types
     -- ** BYTES
   , BYTES(..)
 
-    -- * ABI Value Types
-  , SVALUE, def_sval, max_sval
-  , ABIValue(..)
-
     -- * Composite Types
-  , (:>)(..), Destruct, DeTuple
+
+    -- ** N-ary Products
+  , module Data.NProducts
 
   , FuncSig, Sel4Bytes, SEL, mkTypedSelector, mkRawSelector
   , FuncStorage (..), FuncEffect (..), FUNC (..)
@@ -64,22 +74,108 @@ module YulDSL.Core.ContractABI.Types
     -- $show_instance_examples
   ) where
 
-import           Data.Bits                        (shift)
-import           Data.ByteString                  (unpack)
-import           Data.Functor.Const               (Const (..))
-import           Data.Maybe                       (fromJust)
-import           Data.Typeable                    (Proxy (..), Typeable, typeRep)
-import           GHC.Natural                      (Natural, naturalFromInteger, naturalToInteger)
-import           GHC.TypeNats                     (KnownNat, Nat, natVal, type (+))
-import           Numeric                          (showHex)
-
-import           YulDSL.Core.ContractABI.Internal
+-- base
+import           Data.Bits       (shift)
+import           Data.Maybe      (fromJust)
+import           Data.Typeable   (Proxy (..), Typeable, typeRep)
+import           GHC.Generics    (Generic)
+import           GHC.Natural     (Natural, naturalFromInteger, naturalToInteger)
+import           GHC.TypeNats    (KnownNat, Nat, natVal)
+import           Numeric         (showHex)
+-- bytestring
+import           Data.ByteString (ByteString, unpack)
+-- constraints
+import           Data.Constraint (Dict (..))
+-- cereal
+import qualified Data.Serialize  as S
+-- (this)
+import           Data.NProducts
 
 ------------------------------------------------------------------------------------------------------------------------
--- Primitive (Solidity) ABI Types
+-- Serialization
+--
+-- TODO implement Contract ABI compatible serialization.
 ------------------------------------------------------------------------------------------------------------------------
 
--- ADDR type utilities
+-- | ABI serialization class. FIXME: currently an alias to Serialize from cereal library.
+type ABISerialize = S.Serialize
+
+-- | ABI encoder.
+abi_encode :: ABISerialize a => a -> ByteString
+abi_encode = S.encode
+
+-- | ABI decoder.
+abi_decode :: ABISerialize a => ByteString -> Maybe a
+abi_decode a = case S.decode a of
+                 Right b -> Just b
+                 Left _  -> Nothing
+
+------------------------------------------------------------------------------------------------------------------------
+-- ABI Typeclasses
+------------------------------------------------------------------------------------------------------------------------
+
+-- | Contract ABI type class for all primitive and composite ABI types.
+class (Show a, Typeable a, ABISerialize a) => ABIType a where
+  -- | Possible breakdown of the product object type.
+  maybe_prod_objs :: forall b c. a ~ (b, c) => Dict (ABIType b, ABIType c)
+  maybe_prod_objs = error "maybe_prod_objs: not a product object"
+
+  abi_type_name :: String
+
+  abi_type_count_vars :: Int
+
+  abi_type_show_vars :: a -> [String]
+
+-- | A 'abi_type_name' variant, enclosing name with "@()".
+abi_type_name' :: forall a. ABIType a => String
+abi_type_name' = "@(" <> abi_type_name @a <> ")"
+
+-- | Unit type of ABI Types
+instance ABIType () where
+  abi_type_name = "∅"
+  abi_type_count_vars = 0
+  abi_type_show_vars _ = []
+
+-- | Raw storage value for ABI value types.
+newtype SVALUE = SVALUE Natural deriving newtype (Eq, Show)
+
+-- | Default storage value.
+def_sval :: SVALUE
+def_sval = SVALUE 0
+
+-- | Maximum storage value.
+max_sval :: SVALUE
+max_sval = SVALUE (2 ^ (256 :: Natural) - 1)
+
+-- | ABI (static) value types.
+class ABIValue a where
+  from_svalue :: SVALUE -> a
+  to_svalue :: a -> SVALUE
+
+------------------------------------------------------------------------------------------------------------------------
+-- * Primitive Types
+------------------------------------------------------------------------------------------------------------------------
+
+-- ** ADDR
+--
+
+-- | ABI address value type.
+newtype ADDR = ADDR Natural deriving newtype (Ord, Eq)
+
+instance ABIType ADDR where
+  abi_type_name = "ADDR"
+  abi_type_count_vars = 1
+  abi_type_show_vars a = [show a]
+
+instance ABIValue ADDR where
+  from_svalue (SVALUE a) = to_addr' a
+  to_svalue (ADDR a) = SVALUE a
+
+instance Show ADDR where
+  show (ADDR a) = "0x" ++ _lpad0 40 (showHex a) "" ++ "/*::ADDR*/"
+
+deriving instance Generic ADDR
+deriving newtype instance S.Serialize ADDR
 
 -- | The proverbial zero address.
 zero_address :: ADDR
@@ -103,7 +199,30 @@ to_addr' = fromJust . to_addr
 addr_to_integer :: ADDR -> Integer
 addr_to_integer (ADDR a) = naturalToInteger a
 
--- BOOL type utilities
+-- * BOOL
+--
+
+-- | ABI boolean value type.
+newtype BOOL = BOOL Bool deriving newtype (Eq)
+
+instance ABIType BOOL where
+  abi_type_name = "BOOL"
+  abi_type_count_vars = 1
+  abi_type_show_vars a = [show a]
+
+instance ABIValue BOOL where
+  from_svalue (SVALUE 0) = false
+  from_svalue (SVALUE _) = true
+
+  to_svalue (BOOL False) = SVALUE 0
+  to_svalue (BOOL True)  = SVALUE 1
+
+instance Show BOOL where
+  show (BOOL True)  = "true"
+  show (BOOL False) = "false"
+
+deriving instance Generic BOOL
+deriving newtype instance S.Serialize BOOL
 
 -- | True value for 'BOOL'.
 true :: BOOL
@@ -118,19 +237,73 @@ if' :: BOOL -> a -> a -> a
 if' (BOOL True) x _  = x
 if' (BOOL False) _ y = y
 
--- INTx type utilities
+-- * Intx
+--
 
--- | Show the canonical type name for the INTX type. Use type application on @a@.
-intx_typename :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => String
-intx_typename = (if intx_sign @a then "" else "U") ++ "INT" ++ show (intx_nbits @a)
+-- | ABI integer value types, where @s@ is for signess and @n@ is the multiple of 8 bits
+newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer) deriving newtype (Ord, Eq)
 
--- | Number of bits for the INTx type. Use type application on @a@.
-intx_nbits :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownNat n) => Int
-intx_nbits = fromEnum (8 * natVal (Proxy @n))
+instance forall s n. (Typeable s, KnownNat n) => ABIType (INTx s n) where
+  abi_type_name = (if typeRep (Proxy @s) == typeRep (Proxy @True)
+                   then "INT" else "UINT") <> show (natVal (Proxy @n) * 8)
 
--- | Sign of the INTx type. Use type application on @a@.
-intx_sign :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => Bool
-intx_sign = typeRep (Proxy @s) == typeRep (Proxy @True)
+  abi_type_count_vars = 1
+  abi_type_show_vars a = [show a]
+
+
+instance (Typeable s, KnownNat n) => ABIValue (INTx s n) where
+  from_svalue (SVALUE a) = fromIntegral a
+
+  to_svalue (INT (Just a)) = SVALUE (naturalFromInteger a) -- assert (a <= max_sval)
+  to_svalue (INT Nothing)  = def_sval
+
+instance (Typeable s, KnownNat n) => Show (INTx s n) where
+  show (INT (Just a)) = show a ++ "/*::" ++ intx_typename @(INTx s n) ++ "*/"
+  show (INT Nothing)  = "NaN" ++ "/*::" ++ intx_typename @(INTx s n) ++ "*/"
+
+deriving instance Generic (INTx s n)
+deriving newtype instance S.Serialize (INTx s n)
+
+instance Enum (INTx s n) where
+  fromEnum (INT (Just a)) = fromEnum a
+  fromEnum (INT Nothing)  =0
+  toEnum = INT . Just . toEnum
+
+instance (Typeable s, KnownNat n) => Real (INTx s n) where
+  toRational (INT (Just a)) = toRational a
+  toRational (INT Nothing)  = toRational (0 :: Integer)
+
+instance (Typeable s, KnownNat n) => Integral (INTx s n) where
+  toInteger (INT (Just a)) = toInteger a
+  toInteger (INT Nothing)  = toInteger (0 :: Integer)
+
+  quotRem _              (INT (Just 0)) = (INT Nothing, INT Nothing)
+  quotRem (INT (Just a)) (INT (Just b)) = let (c, d) = quotRem a b in (INT (Just c), INT (Just d))
+  quotRem _              _              = (INT Nothing, INT Nothing)
+
+instance (Typeable s, KnownNat n) => Num (INTx s n) where
+  (INT (Just a)) + (INT (Just b)) = fromInteger (a + b)
+  _ + _                           = INT Nothing
+
+  (INT (Just a)) * (INT (Just b)) = fromInteger (a * b)
+  _ * _                           = INT Nothing
+
+  negate (INT (Just a)) = fromInteger (negate a)
+  negate _              = INT Nothing
+
+  abs (INT (Just a)) = fromInteger (abs a)
+  abs _              = INT Nothing
+
+  signum (INT (Just a)) = INT (Just (signum a))
+  signum _              = INT Nothing
+
+  fromInteger a = let a' = INT (Just (fromInteger a))
+                  in if a' >= min_intx @(INTx s n) && a' <= max_intx @(INTx s n)
+                     then a' else INT Nothing
+
+instance (Typeable s, KnownNat n) => Bounded (INTx s n) where
+  minBound = min_intx
+  maxBound = max_intx
 
 -- | Minimum value of the INTx type. Use type application on @a@.
 min_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => a
@@ -144,13 +317,21 @@ max_intx = INT . Just $
   if intx_sign @(INTx s n) then (1 `shift` (nbits - 1)) - 1 else (1 `shift` nbits) - 1
   where nbits = intx_nbits @(INTx s n)
 
+-- | Sign of the INTx type. Use type application on @a@.
+intx_sign :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => Bool
+intx_sign = typeRep (Proxy @s) == typeRep (Proxy @True)
+
+-- | Number of bits for the INTx type. Use type application on @a@.
+intx_nbits :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownNat n) => Int
+intx_nbits = fromEnum (8 * natVal (Proxy @n))
+
+-- | Show the canonical type name for the INTX type. Use type application on @a@.
+intx_typename :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => String
+intx_typename = (if intx_sign @a then "" else "U") ++ "INT" ++ show (intx_nbits @a)
+
 -- | Convert integer to the INTx type.
 to_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => Integer -> a
 to_intx = fromIntegral
-
-instance (Typeable s, KnownNat n) => Bounded (INTx s n) where
-  minBound = min_intx
-  maxBound = max_intx
 
 -- Assorted integer types:
 --
@@ -190,10 +371,51 @@ type UINT240 = INTx False 30;type INT240 = INTx True 30
 type UINT248 = INTx False 31;type INT248 = INTx True 31
 type UINT256 = INTx False 32;type INT256 = INTx True 32
 
--- BYTES type utilities
+-- * BYTES
 -- TODO
 
--- Selector utilities
+-- | ABI bytes reference type.
+newtype BYTES = BYTES ByteString deriving newtype (Eq)
+
+instance ABIType BYTES where
+  abi_type_name = "BYTES"
+  abi_type_count_vars = 1
+  abi_type_show_vars a = [show a]
+
+instance Show BYTES where
+  show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . unpack) a ++ "/*::BYTES*/"
+
+deriving instance Generic BYTES
+deriving newtype instance S.Serialize BYTES
+
+------------------------------------------------------------------------------------------------------------------------
+-- Function Types
+------------------------------------------------------------------------------------------------------------------------
+
+-- * SEL
+--
+
+-- | External function signature. This optional information does not have run-time representation.
+type FuncSig = Maybe (String {- function name -}, String {- arguments -})
+
+-- | Selector value type.
+type Sel4Bytes = INTx False 4
+
+-- | Selector value type with the optional function signature tagged.
+newtype SEL = SEL (FuncSig, Sel4Bytes)
+
+instance ABIType SEL where
+  abi_type_name = "SEL"
+  abi_type_count_vars = 1
+  abi_type_show_vars (SEL (_, b))  = [show b]
+--  abi_type_show_vars (SEL (Just (sig, args), _)) = [sig]
+
+instance Show SEL where
+  show (SEL (Just (fname, args), c)) = "0x" <> showHex c " /*::" ++ fname ++ "(" ++ args ++ ")*/"
+  show (SEL (Nothing, c))            = "0x" <> showHex c ""
+
+deriving instance Generic SEL
+deriving newtype instance S.Serialize SEL
 
 -- | Create a solidity-compatible selector based on types.
 mkTypedSelector :: forall a b. String -> SEL
@@ -206,105 +428,51 @@ mkRawSelector b = SEL (Nothing, b)
 -- sigToSelector :: String -> SEL
 -- mkSelector s = SEL (Just s, 0) -- FIXME Signature parsing
 
+-- * FUNC
 
-------------------------------------------------------------------------------------------------------------------------
--- ABI Value Types
-------------------------------------------------------------------------------------------------------------------------
+-- | Storage location for the external function call.
+data FuncStorage = FuncExternal | FuncDelegated
 
--- | Raw storage value for ABI value types.
-newtype SVALUE = SVALUE Natural deriving newtype (Eq, Show)
+-- | Effect type for the external function call.
+data FuncEffect = FuncTx | FuncStatic
 
--- | Default storage value.
-def_sval :: SVALUE
-def_sval = SVALUE 0
+-- | External function specification.
+newtype FUNC a b = FUNC (FuncStorage, FuncEffect, SEL, ADDR)
 
--- | Maximum storage value.
-max_sval :: SVALUE
-max_sval = SVALUE (2 ^ (256 :: Natural) - 1)
-
--- | ABI value type class.
-class ABIValue a where
-  from_svalue :: SVALUE -> a
-  to_svalue :: a -> SVALUE
-
-instance ABIValue ADDR where
-  from_svalue (SVALUE a) = to_addr' a
-  to_svalue (ADDR a) = SVALUE a
-
-instance ABIValue BOOL where
-  from_svalue (SVALUE 0) = false
-  from_svalue (SVALUE _) = true
-
-  to_svalue (BOOL False) = SVALUE 0
-  to_svalue (BOOL True)  = SVALUE 1
-
-instance (Typeable s, KnownNat n) => ABIValue (INTx s n) where
-  from_svalue (SVALUE a) = fromIntegral a
-
-  to_svalue (INT (Just a)) = SVALUE (naturalFromInteger a) -- assert (a <= max_sval)
-  to_svalue (INT Nothing)  = def_sval
-
--- Num-related instances for INTx types:
-
-instance Enum (INTx s n) where
-  fromEnum (INT (Just a)) = fromEnum a
-  fromEnum (INT Nothing)  =0
-  toEnum = INT . Just . toEnum
-
-instance (Typeable s, KnownNat n) => Num (INTx s n) where
-  (INT (Just a)) + (INT (Just b)) = fromInteger (a + b)
-  _ + _                           = INT Nothing
-
-  (INT (Just a)) * (INT (Just b)) = fromInteger (a * b)
-  _ * _                           = INT Nothing
-
-  negate (INT (Just a)) = fromInteger (negate a)
-  negate _              = INT Nothing
-
-  abs (INT (Just a)) = fromInteger (abs a)
-  abs _              = INT Nothing
-
-  signum (INT (Just a)) = INT (Just (signum a))
-  signum _              = INT Nothing
-
-  fromInteger a = let a' = INT (Just (fromInteger a))
-                  in if a' >= min_intx @(INTx s n) && a' <= max_intx @(INTx s n)
-                     then a' else INT Nothing
-
-instance (Typeable s, KnownNat n) => Real (INTx s n) where
-  toRational (INT (Just a)) = toRational a
-  toRational (INT Nothing)  = toRational (0 :: Integer)
-
-instance (Typeable s, KnownNat n) => Integral (INTx s n) where
-  toInteger (INT (Just a)) = toInteger a
-  toInteger (INT Nothing)  = toInteger (0 :: Integer)
-
-  quotRem _              (INT (Just 0)) = (INT Nothing, INT Nothing)
-  quotRem (INT (Just a)) (INT (Just b)) = let (c, d) = quotRem a b in (INT (Just c), INT (Just d))
-  quotRem _              _              = (INT Nothing, INT Nothing)
-
--- Show instances:
-
-_lpad0 :: Int -> ShowS -> ShowS
-_lpad0 n s = showString (reverse (take n (reverse (s "") ++ repeat '0')))
-
-instance Show BOOL where
-  show (BOOL True)  = "true"
-  show (BOOL False) = "false"
-instance Show ADDR where
-  show (ADDR a) = "0x" ++ _lpad0 40 (showHex a) "" ++ "/*::ADDR*/"
-instance (Typeable s, KnownNat n) => Show (INTx s n) where
-  show (INT (Just a)) = show a ++ "/*::" ++ intx_typename @(INTx s n) ++ "*/"
-  show (INT Nothing)  = "NaN" ++ "/*::" ++ intx_typename @(INTx s n) ++ "*/"
-instance Show BYTES where
-  show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . unpack) a ++ "/*::BYTES*/"
-
-instance Show SEL where
-  show (SEL (Just (fname, args), c)) = "0x" <> showHex c " /*::" ++ fname ++ "(" ++ args ++ ")*/"
-  show (SEL (Nothing, c))            = "0x" <> showHex c ""
+instance forall a b. (ABIType a, ABIType b) => ABIType (FUNC a b) where
+  abi_type_name = "FUNC"
+  abi_type_count_vars = 1
+  abi_type_show_vars a = [show a]
 
 instance Show (FUNC a b) where
   show _              = error "TODO Show FUNC"
+
+deriving instance Generic FuncStorage
+deriving anyclass instance S.Serialize FuncStorage
+
+deriving instance Generic FuncEffect
+deriving anyclass instance S.Serialize FuncEffect
+
+deriving instance Generic (FUNC a b)
+deriving newtype instance S.Serialize (FUNC a b)
+
+------------------------------------------------------------------------------------------------------------------------
+-- Tuple Types (Product, N-ary Products & N-Tuples)
+------------------------------------------------------------------------------------------------------------------------
+
+instance forall a b. (ABIType a, ABIType b) => ABIType (a, b) where
+  maybe_prod_objs = Dict
+  abi_type_name = "(" <> abi_type_name @a <> "×" <> abi_type_name @b <> ")"
+  abi_type_count_vars = abi_type_count_vars @a + abi_type_count_vars @b
+  abi_type_show_vars (a, b) = abi_type_show_vars a <> abi_type_show_vars b
+
+instance forall a b. (ABIType a, ABIType b) => ABIType (a :* b) where
+  abi_type_name = "(" <> abi_type_name @a <> ":*" <> abi_type_name @b <> ")"
+  abi_type_count_vars = abi_type_count_vars @a + abi_type_count_vars @b
+  abi_type_show_vars (a :* b) = abi_type_show_vars a <> abi_type_show_vars b
+
+deriving instance Generic (a :* b)
+deriving anyclass instance (ABISerialize a, ABISerialize b) => S.Serialize (a :* b)
 
 {- $range_check_examples
 
@@ -347,43 +515,6 @@ NaN/*::INT8*/
 "0x0 /*::foo*/"
 -}
 
-----------------------------i--------------------------------------------------------------------------------------------
--- N-ary product, or currying tuple
---
--- TODO: should use sop-core or tuple packages instead?
-------------------------------------------------------------------------------------------------------------------------
-
--- | Type constructor (:>) and its data constructor pun for creating currying n-ary product.
-data a :> b = a :> b
--- | Operator (:>) being right associative allows bracket-free syntax.
-infixr :>
-
-type family Destruct (c :: k -> k -> k) (a :: k) :: k where
-  Destruct c (m (a1, a2))   = Destruct c (m a1) `c` Destruct c (m a2)
-  Destruct c (m (a1 :> a2)) = Destruct c (m a1) `c` Destruct c (m a2)
-  Destruct c (m a)          = m a
-
-type DeTuple ma = Destruct (:>) ma
-
-type DeTupleM m a = Destruct (:>) (m a)
-
-data NatBuilder where
-  NatPlus  :: NatBuilder -> NatBuilder -> NatBuilder
-  NatConst :: forall a. NatBuilder -> a -> NatBuilder
-  NatVal   :: Nat -> NatBuilder
-
-type family NatBuild (n :: NatBuilder) :: Nat where
-  NatBuild (NatPlus  a b) = NatBuild a + NatBuild b
-  NatBuild (NatConst a _) = NatBuild a
-  NatBuild (NatVal   a  ) = a
-
-type CountStruct a = NatBuild (Destruct NatPlus (NatConst (NatVal 1) a))
-
-data STRUCT a = STRUCT a
-
-instance (Show a, Show b) => Show (a :> b) where
-  show (a :> b) = "(" <> show a <> "," <> show b <> ")"
-
 {- $show_instance_examples
 
 >>> show true
@@ -404,3 +535,6 @@ instance (Show a, Show b) => Show (a :> b) where
 "0x0102::BYTES"
 
 -}
+
+_lpad0 :: Int -> ShowS -> ShowS
+_lpad0 n s = showString (reverse (take n (reverse (s "") ++ repeat '0')))

@@ -3,14 +3,12 @@
 
 module TestCommon where
 
-import           Data.Functor                      ((<&>))
-import           Data.Typeable                     (Typeable)
-import           GHC.Natural                       (naturalFromInteger)
-import           GHC.TypeNats                      (KnownNat)
+import           Data.Functor                  ((<&>))
+import           Data.Typeable                 (Typeable)
+import           GHC.Natural                   (naturalFromInteger)
 
 import           Test.QuickCheck
 
-import           YulDSL.Core.ContractABI.Internal
 import           YulDSL.Core.ContractABI.Types
 
 instance Arbitrary ADDR where

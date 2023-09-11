@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
@@ -17,7 +18,7 @@ Categories required for being a symmetric monoidal category.
 module YulDSL.LinearSMC.Categories () where
 
 -- constraints
-import           Data.Constraint              (Dict (..))
+import           Data.Constraint              (Dict (Dict))
 -- linear-smc
 import           Control.Category.Constrained (Cartesian (dis, dup), Category (..), Monoidal (..), ProdObj (..))
 --

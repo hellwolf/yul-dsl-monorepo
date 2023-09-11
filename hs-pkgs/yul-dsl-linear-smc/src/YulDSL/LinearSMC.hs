@@ -30,7 +30,7 @@ import           Control.Category.Constrained (Cartesian, Category (Obj), O2, O3
 import           Control.Category.Linear      (P, copy, decode, discard, encode, merge, mkUnit, split)
 -- yul-dsl
 import           YulDSL.Core
---
+-- import Linear-SMC instances
 import           YulDSL.LinearSMC.Categories  ()
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -82,11 +82,11 @@ instance (YulObj r, YulNum a) => AdditiveGroup (YulCat r a) where
 -- Function utilities
 --
 
-destruct :: YulCat a a -> DeTuple (YulCat a a)
+destruct :: YulCat a a -> AtomizeNP (YulCat a a)
 destruct = undefined
 
 vfn :: forall a b p. (YulO2 a b, YulPortReducible a)
-    => (DeTuple (YulCat a a) -> YulCat a b)
+    => (AtomizeNP (YulCat a a) -> YulCat a b)
     -> YulCat a b
 vfn fn = undefined
 
@@ -182,15 +182,15 @@ infixr 1 <==, <==@
 -- | Reduce and merge inhabitants of yul port types using `YulPortReduce`.
 class YulObj a => YulPortReducible a where
   -- | Reduce single-complex port to multiple ports.
-  yul_port_reduce :: forall r. YulObj r => YulP r a ⊸ DeTuple (YulP r a)
+  yul_port_reduce :: forall r. YulObj r => YulP r a ⊸ AtomizeNP (YulP r a)
   -- | Default instance for irreducible yul ports as base cases.
-  default yul_port_reduce :: (YulObj r, YulP r a ~ DeTuple (YulP r a)) => YulP r a ⊸ DeTuple (YulP r a)
+  default yul_port_reduce :: (YulObj r, YulP r a ~ AtomizeNP (YulP r a)) => YulP r a ⊸ AtomizeNP (YulP r a)
   yul_port_reduce = id
 
   -- | Merge multiple orts to a single-complex port.
-  yul_port_merge :: forall r. YulObj r => DeTuple (YulP r a) ⊸ YulP r a
+  yul_port_merge :: forall r. YulObj r => AtomizeNP (YulP r a) ⊸ YulP r a
   -- | Default instance for irreducible yul ports as base cases.
-  default yul_port_merge :: (YulObj r, YulP r a ~ DeTuple (YulP r a)) => DeTuple (YulP r a) ⊸ YulP r a
+  default yul_port_merge :: (YulObj r, YulP r a ~ AtomizeNP (YulP r a)) => AtomizeNP (YulP r a) ⊸ YulP r a
   yul_port_merge = id
 
 -- Irreducible yul ports:
@@ -200,11 +200,11 @@ instance YulPortReducible BOOL
 instance (Typeable s, KnownNat n) => YulPortReducible (INTx s n)
 instance YulPortReducible BYTES
 
-instance forall a as. (YulPortReducible a, YulPortReducible as) => YulPortReducible (a :> as) where
-  yul_port_reduce p = coerceP @(a :> as) @(a ⊗ as) p & split &
-                      \(a, as) -> yul_port_reduce a :> yul_port_reduce as
-  yul_port_merge (a :> as) = merge (yul_port_merge a, yul_port_merge as) &
-                             coerceP @(a ⊗ as) @(a :> as)
+instance forall a as. (YulPortReducible a, YulPortReducible as) => YulPortReducible (a :* as) where
+  yul_port_reduce p = coerceP @(a :* as) @(a ⊗ as) p & split &
+                      \(a, as) -> yul_port_reduce a :* yul_port_reduce as
+  yul_port_merge (a :* as) = merge (yul_port_merge a, yul_port_merge as) &
+                             coerceP @(a ⊗ as) @(a :* as)
 
 --
 -- Function utilities
@@ -212,11 +212,11 @@ instance forall a as. (YulPortReducible a, YulPortReducible as) => YulPortReduci
 
 -- | Define a `YulCat` morphism from a linear port function.
 lfn :: forall a b p. (YulO2 a b, YulPortReducible a)
-    => (forall r. YulObj r => DeTuple (YulP r a) ⊸ YulP r b)
+    => (forall r. YulObj r => AtomizeNP (YulP r a) ⊸ YulP r b)
     -> YulCat a b
 lfn f = decode (f . yul_port_reduce)
 
 apFn :: forall a b p r. (YulPortReducible a, YulO3 a b r)
-      => Fn a b -> DeTuple (YulP r a) ⊸ YulP r b
+      => Fn a b -> AtomizeNP (YulP r a) ⊸ YulP r b
 apFn (LibraryFn fname _) a = encode (YulJump fname) (yul_port_merge @a a)
 -- apFn (ExternalFn _ _ _)  a = coerce a

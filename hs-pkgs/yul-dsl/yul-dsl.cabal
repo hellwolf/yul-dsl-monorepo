@@ -35,10 +35,8 @@ library
                     constraints >= 0.13,
                     containers >= 0.6.7,
                     mtl >= 2.3.1
-  exposed-modules:  YulDSL.Core.ContractABI.Internal
+  exposed-modules:  Data.NProducts
                     YulDSL.Core.ContractABI.Types
-                    YulDSL.Core.ContractABI.Serialization
-                    YulDSL.Core.ContractABI.ABIType
                     YulDSL.Core.ContractABI.Coerce
                     YulDSL.Core.ContractABI
                     YulDSL.Core.YulCat

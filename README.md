@@ -50,23 +50,29 @@ TODOs
 - YulDSL Core
   - ContractABI: Solidity-Contract-ABI-Compatible Types
     - Primitive Types:
-      - [x] Value types: `ADDR`, `BOOL`, `INTx s n`.
-      - [ ] :L: `BYTES`, arbitrary bytes.
-    - Composite Types:
-      - [ ] 🚧 :L: the `TUPLE t` type; with n-ary product (`:*`) and n-tuple types `(,..)` forms of `t`.
-      - [ ] :M: `ARRAY n a`, length-indexed array type.
-      - [ ] :M: `LIST n a`, length-indexed list type.
-      - [ ] :M: `MAP a`.
-    - Function Types:
-      - [x] :S: `FUNC a b`, external function reference with storage tag and effect tag.
-      - [ ] :M: `SEL`, selector data type; selector creators.
-    - Named Tuple Element:
-      - [ ] :M: `t :@ "name"` to name a tuple element.
-    - Reference Kind:
-      - [ ] :M: `data REF = VREF | MREF | SREF`.
+      - [x] Simple Static value types: `ADDR`, `BOOL`, `INTx s n`.
+      - [ ] :S: `type BYTESnn = BYTES_N n`, static bytes value type.
+      - [ ] :L: `BYTES(l?) n?`, optionally-length-indexed dynamic bytes type.
+      - [ ] :M: `STRING`, dynamic utf-8 string type.
+      - [ ] :M: `ARRAY(l?) (True|False) n? a, DARR, SARR`, optionally-length-indexed dynamic or static array type.
+    - Derivative Types:
+      - Tuple Types
+        - [ ] 🚧 :L: `:*`, n-ary product.
+        - [ ] 🚧 :M: `(,..)`, n-tuple types for function specification.
+        - [ ] 🚧 :S: `TUPLE a`, demarcation tuple type.
+      - Function Types:
+        - [ ] :M: `SEL`, selector data type; selector creators.
+        - [x] :S: `FUNC a b`, external function reference with storage tag and effect tag.
+      - Lenses:
+        - [ ] :M: `a :@ "name"` to name a tuple element.
+    - Reference
+      - [ ] :M: `data REF = VREF | MREF | SREF SLOC; data SLOC = SLOT s o | SNAME name;`.
     - **Completeness:**
       - [ ] :M: **CLEAN-UP** inline-REPL docs.
       - [ ] :S: **FULL** Test coverage.
+  - Storage Data Types:
+      - [ ] :M: `LIST(l?) n? a`, optionally-length-indexed singly-linked list type.
+      - [ ] :M: `MAP k v`, key-value storage.
   - YulCat
     - [x] `(>.>)` operator for the `YulDSL` morphism left-to-right composition.
     - [ ] :M: `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
@@ -88,7 +94,7 @@ TODOs
   - Multi-style functions:
     - [x] `lfn`, linearly-typed functions.
     - [ ] 🚧 :L: `vfn`, value functions.
-    - [ ] 🚧 :S: composition of all styles.
+    - [ ] 🚧 :M: composition of all styles.
   - Prelude:
     - [ ] :L: Curation.
   - **Completeness:**

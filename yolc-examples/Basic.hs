@@ -31,27 +31,27 @@ foo = externalFn "foo" $ lfn \x ->
       to_addr' 0xdeadbeef <==@ x1 + x2
   ) & yulConst true
 
-foo2 :: Fn (UINT256 :> UINT256 :> ()) BOOL
-foo2 = externalFn "foo2" $ lfn \(x1 :> x2 :> u) ->
+foo2 :: Fn (UINT256 :* UINT256 :* ()) BOOL
+foo2 = externalFn "foo2" $ lfn \(x1 :* x2 :* u) ->
   (to_addr' 0xdeadbeef <==@ x1 + x2) &
   ignore u & yulConst true
 
-foo3 :: Fn (UINT256 :> UINT256 :> ()) (UINT256, BOOL)
-foo3 = externalFn "foo3" $ lfn \(x1 :> x2 :> u) ->
+foo3 :: Fn (UINT256 :* UINT256 :* ()) (UINT256, BOOL)
+foo3 = externalFn "foo3" $ lfn \(x1 :* x2 :* u) ->
   (to_addr' 0xdeadbeef <==@ x1 + x2) &
   ignore u & yulConst (24, true)
 
-rangeSum :: Fn (UINT256 :> UINT256 :> UINT256) UINT256
-rangeSum = libraryFn "rangeSum" $ lfn \(a :> b :> c) ->
+rangeSum :: Fn (UINT256 :* UINT256 :* UINT256) UINT256
+rangeSum = libraryFn "rangeSum" $ lfn \(a :* b :* c) ->
   dup2P a & \(a, a') ->
   dup2P b & \(b, b') ->
   dup2P c & \(c, c') ->
   dup2P (a + b) & \ (d, d') ->
   mkUnit a' & \(a', u) ->
-  a' + ifThenElse (d <? c) (apFn rangeSum (d' :> b' :> c')) (yulConst 0 u)
+  a' + ifThenElse (d <? c) (apFn rangeSum (d' :* b' :* c')) (yulConst 0 u)
 
-rangeSum2 :: Fn (UINT256 :> UINT256 :> UINT256) UINT256
-rangeSum2 = libraryFn "rangeSum2" $ vfn \(a :> b :> c) ->
+rangeSum2 :: Fn (UINT256 :* UINT256 :* UINT256) UINT256
+rangeSum2 = libraryFn "rangeSum2" $ vfn \(a :* b :* c) ->
   a + b + c
   >.> lfn \a ->
   dup2P a & \(a, a') -> a + a'
@@ -62,23 +62,23 @@ rangeSum2 = libraryFn "rangeSum2" $ vfn \(a :> b :> c) ->
 --   -- mkUnit a & \(a, u) ->
 --   -- unVar (mkVar a) u
 
--- rangeSum' :: Fn (UINT256 :> UINT256 :> UINT256) UINT256
--- rangeSum' = lfn "rangeSum1" \(a :> b :> c) ->
+-- rangeSum' :: Fn (UINT256 :* UINT256 :* UINT256) UINT256
+-- rangeSum' = lfn "rangeSum1" \(a :* b :* c) ->
 --   mkUnit a & \(a, u) ->
 --   let a' = mkVar a
 --       b' = mkVar b
 --       c' = mkVar c
 --       d = a' + b'
 --   in unVar d u
---   -- in ifThenElse (d <? c) (apfun rangeSum' (d :> b :> c)) (zero)
+--   -- in ifThenElse (d <? c) (apfun rangeSum' (d :* b :* c)) (zero)
 
 --  enumFromThenTo a b c
 
 -- safeHead :: Fn [UINT256] UINT256
 -- safeHead = lfn "safeHead" \xs -> head xs
 
--- safeHead :: Fn ([UINT256] :> ()) (One UINT256)
--- safeHead = lfn "safeHead" \(xs :> ()) -> yulCoerce (head xs)
+-- safeHead :: Fn ([UINT256] :* ()) (One UINT256)
+-- safeHead = lfn "safeHead" \(xs :* ()) -> yulCoerce (head xs)
   -- where go :: forall r. YulObj r => Uint256P r ⊸ Uint256P r ⊸ Uint256P r
   --       go x1 x2 = copy x1 & split & \(x1, x1') ->
   --         copy x2 & split & \(x2, x2') ->

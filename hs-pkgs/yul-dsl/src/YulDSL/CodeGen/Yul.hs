@@ -138,6 +138,7 @@ run_stcat ind (MkAnyYulCat cat) vals_a = go cat where
   go :: forall a b. YulO2 a b =>
         YulCat a b -> CatState (Code, [Val])
   go YulCoerce          = return (coerce_vals ind (Proxy @a) (Proxy @b) vals_a, vals_a)
+  go YulSplit           = return (log_debug "split" (Proxy @a) (Proxy @b), vals_a)
   go YulId              = ret_nocode vals_a
   go (YulSwap @m @n)    = ret_nocode (swap_vals (Proxy @m) (Proxy @n) vals_a)
   go YulDis             = ret_nocode (dis_vals (Proxy @a) vals_a)

@@ -57,9 +57,9 @@ TODOs
       - [ ] :M: `ARRAY(l?) (True|False) n? a, DARR, SARR`, optionally-length-indexed dynamic or static array type.
     - Derivative Types:
       - Tuple Types
-        - [ ] 🚧 :L: `:*`, n-ary product.
-        - [ ] 🚧 :M: `(,..)`, n-tuple types for function specification.
+        - [x] :L: `:*`, n-ary product.
         - [ ] 🚧 :S: `TUPLE a`, demarcation tuple type.
+        - [ ] 🔴 :L: `(,..)`, n-tuple types for function specification.
       - Function Types:
         - [ ] :M: `SEL`, selector data type; selector creators.
         - [x] :S: `FUNC a b`, external function reference with storage tag and effect tag.
@@ -85,16 +85,16 @@ TODOs
   - [ ] :L: Support all `YulDSL` constructors.
   - [ ] :XXL: **FULL** `ContractABI` Codec in Haskell.
 - YulDSL Linear-SMC Frontend:
+  - Multi-style functions:
+    - [x] :S: composition of all styles using `(>.>)`.
+    - [ ] :S: Rebindable `IfThenElse`.
   - YulCat Combinators
     - [-] 🚧 :S: Num typeclass instances for `YulNum n => YulCat m n`.
+    - [ ] 🚧 :S: `IfThenElse` instance.
+    - [-] 🚧 :M: `vfn`, value function declaration;
   - Yul Port Combinators
-    - [ ]  :S: N-tuple from to `NP P t`.
-  - Value Function Combinators
-    - [ ]  :S: N-tuple form to `NP (YulCat a) t`.
-  - Multi-style functions:
-    - [x] `lfn`, linearly-typed functions.
-    - [ ] 🚧 :L: `vfn`, value functions.
-    - [ ] 🚧 :M: composition of all styles.
+    - [x] `lfn`, linearly-typed function declarations.
+    - [ ] 🚧 :S: `IfThenElse` instance.
   - Prelude:
     - [ ] :L: Curation.
   - **Completeness:**
@@ -102,6 +102,7 @@ TODOs
 - CodeGen
   - Yul
     - [ ] :M: Object constructor.
+    - [ ] :M: Variable over-copying optimization.
     - [ ] :XXL: **FULL** `ContractABI` Codec in Yul.
   - PlantUML
     - [ ] :L: **FULL** PlantUML support.

@@ -1,5 +1,5 @@
-{-# LANGUAGE ExplicitNamespaces   #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ExplicitNamespaces  #-}
+{-# LANGUAGE IncoherentInstances #-}
 
 {-|
 
@@ -25,10 +25,22 @@ import           YulDSL.Core.ContractABI.Types
 -- | Family of objects that have the same bytes representations.
 class (ABIType a, ABIType b) => YulCoercible a b
 
-instance {-# OVERLAPPABLE #-} (ABIType a, ABIType b, YulCoercible b a) => YulCoercible a b
+instance ABIType a => YulCoercible a a
 
-instance {-# OVERLAPPING #-} YulCoercible UINT256 ADDR
+-- Product type
+--
 
-instance {-# OVERLAPPING #-} ABIType a => YulCoercible (a, ()) a
-instance {-# OVERLAPPING #-} (ABIType a, ABIType as)  => YulCoercible (a :* as) (a, as)
-instance {-# OVERLAPPING #-} (ABIType a, ABIType b, ABIType c) => YulCoercible (a, (b, c)) ((a, b), c)
+instance ABIType a => YulCoercible a (a, ())
+instance ABIType a => YulCoercible (a, ()) a
+instance ABIType a => YulCoercible a ((), a)
+instance ABIType a => YulCoercible ((), a) a
+instance (ABIType a, ABIType b, ABIType c) => YulCoercible (a, (b, c)) ((a, b), c)
+instance (ABIType a, ABIType b, ABIType c) => YulCoercible ((a, b), c) (a, (b, c))
+instance (ABIType a, ABIType as)  => YulCoercible (a, as) (a :* as)
+instance (ABIType a, ABIType as)  => YulCoercible (a :* as) (a, as)
+
+-- Equivalent value types for derivative types
+--
+
+instance YulCoercible UINT256 ADDR
+instance YulCoercible ADDR UINT256

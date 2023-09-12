@@ -7,7 +7,7 @@ module Basic where
 ------------------------------------------------------------------------------------------------------------------------
 
 simple_id = YulId @UINT256
-simple_coerce = YulCoerce @UINT256 @INT256
+simple_coerce = YulCoerce @UINT256 @UINT256
 const_42 = decode (yulConst (to_intx 42)) :: YulCat () UINT256
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -53,8 +53,8 @@ rangeSum = libraryFn "rangeSum" $ lfn \(a :* b :* c) ->
 rangeSum2 :: Fn (UINT256 :* UINT256 :* UINT256) UINT256
 rangeSum2 = libraryFn "rangeSum2" $ vfn \(a :* b :* c) ->
   a + b + c
-  >.> lfn \a ->
-  dup2P a & \(a, a') -> a + a'
+  -- >.> lfn \a ->
+  -- dup2P a & \(a, a') -> a + a'
 
 -- idVar :: Fn UINT256 UINT256
 -- idVar = lfn "idVar" \a -> a' + a'
@@ -90,5 +90,6 @@ object = mkYulObject "Basic" ctor
          , MkAnyFn foo2
          , MkAnyFn foo3
          , MkAnyFn rangeSum
+         , MkAnyFn rangeSum2
          ]
          where ctor = YulId -- empty constructor

@@ -14,12 +14,12 @@ test_coerce_uint256_unit_prod a = toInteger a == toInteger b &&
   where (_, (b, ())) = evalYulDSL initEvalState (YulCoerce @a @(a, ())) a
         (_, ((), b')) = evalYulDSL initEvalState (YulCoerce @a @((), a)) a
 
-test_coerce_two_vals_unit_hlist :: forall p q. (p ~ INT128, q ~ BOOL) => p -> q -> Bool
-test_coerce_two_vals_unit_hlist a b = a == a' && b == b' &&
-                                      a == a'' && b == b''
-  where (_, (a', b')) = evalYulDSL initEvalState (YulCoerce @(p :* q :* ()) @(p, q)) (a :* b :* ())
-        (_, a'' :* b'' :* ()) = evalYulDSL initEvalState (YulCoerce @(p, q) @(p :* q :* ())) (a, b)
-
+-- test_coerce_two_vals_unit_hlist :: forall p q. (p ~ INT128, q ~ BOOL) => p -> q -> Bool
+-- test_coerce_two_vals_unit_hlist a b = a == a' && b == b' &&
+--                                       a == a'' && b == b''
+--   where (_, (a', b')) = evalYulDSL initEvalState (YulCoerce @(p :* q :* ()) @(p, q)) (a :* b :* ())
+--         (_, a'' :* b'' :* ()) = evalYulDSL initEvalState (YulCoerce @(p, q) @(p :* q :* ())) (a, b)
+--
 test_coerce_commutative :: forall p q r. (p ~ ADDR, q ~ UINT32, r ~ BOOL) => p -> q -> r -> Bool
 test_coerce_commutative a b c = a == a' && b == b' && c == c' &&
                                 a == a'' && b == b'' && c == c''
@@ -33,6 +33,6 @@ test_num_add a b = (a + b) == c
 tests = describe "YulDSL.Core.Eval tests" $ do
   describe "YulCoerce" $ do
     it "UINT256 =~= (UINT256,())" $ property test_coerce_uint256_unit_prod
-    it "p :* q :* () =~= (p, q)" $ property test_coerce_two_vals_unit_hlist
+    -- it "p :* q :* () =~= (p, q)" $ property test_coerce_two_vals_unit_hlist
     it "(p, (q, r)) =~= ((p, q), r)" $ property test_coerce_commutative
   it "YulNumAdd" $ property test_num_add

@@ -1,6 +1,7 @@
-{-# LANGUAGE DataKinds    #-}
-{-# LANGUAGE GADTs        #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 {-|
 
@@ -44,6 +45,7 @@ module YulDSL.Core.YulCat
 
 -- base
 import           Data.Char               (ord)
+import           Data.Functor.Identity   (Identity)
 import           Data.Kind               (Constraint, Type)
 import           Data.Typeable           (Typeable)
 import           GHC.Integer             (xorInteger)
@@ -84,9 +86,14 @@ instance (Typeable s, KnownNat n) => YulNum (INTx s n)
 --  Note: - The inhabitants of this are actually morphisms of the Yul category. "Cat" is just a nice sounding moniker,
 --  while the actual category is "Yul Category".
 data YulCat a b where
-  -- SMC Primitives
+  -- Type-level Operations (Zero Runtime Cost)
   --
   YulCoerce :: forall a b. (YulO2 a b, YulCoercible a b) => YulCat a b
+  -- | Split the head element of the type.
+  YulSplit :: forall a r . YulO2 a r => YulCat r ( UnM (HeadANP (AtomizeNP (Identity a)))
+                                                 , UnM (TailANP (AtomizeNP (Identity a))))
+
+  -- SMC Primitives
   --
   YulId   :: forall a.       YulO2 a a     => YulCat a a
   YulComp :: forall a b c.   YulO3 a b c   => YulCat c b -> YulCat a c -> YulCat a b
@@ -98,11 +105,11 @@ data YulCat a b where
   -- Control Flow Primitives
   --
   -- | Embed a constant value.
-  YulEmbed :: forall m a  . YulO2 m a   => a -> YulCat m a
+  YulEmbed :: forall r a  . YulO2 r a   => a -> YulCat r a
   -- | Call a yul internal function by named reference.
   YulJump  :: forall a b  . YulO2 a b   => String -> YulCat a b
   -- | Call a external function.
-  YulCall  :: forall a b m. YulO3 a b m => YulCat m (FUNC a b) -> YulCat a b
+  YulCall  :: forall a b r. YulO3 a b r => YulCat r (FUNC a b) -> YulCat a b
   -- | If-then-else.
   YulITE   :: forall a    . YulO1 a     => YulCat (BOOL, (a, a)) a
   -- | Mapping over a list.

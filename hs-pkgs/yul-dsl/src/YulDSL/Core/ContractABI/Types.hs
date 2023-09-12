@@ -26,7 +26,7 @@ module YulDSL.Core.ContractABI.Types
   ( -- * ABI Typeclasses
 
     -- ** ABI Serialization
-  ABISerialize, abi_encode, abi_decode
+    ABISerialize, abi_encode, abi_decode
 
     -- ** ABI Types
   , ABIType (..), abi_type_name'
@@ -64,8 +64,8 @@ module YulDSL.Core.ContractABI.Types
 
     -- * Composite Types
 
-    -- ** N-ary Products
   , module Data.NProducts
+  , module Data.NTuple
 
   , FuncSig, Sel4Bytes, SEL, mkTypedSelector, mkRawSelector
   , FuncStorage (..), FuncEffect (..), FUNC (..)
@@ -90,6 +90,7 @@ import           Data.Constraint (Dict (..))
 import qualified Data.Serialize  as S
 -- (this)
 import           Data.NProducts
+import           Data.NTuple
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Serialization
@@ -389,7 +390,7 @@ deriving instance Generic BYTES
 deriving newtype instance S.Serialize BYTES
 
 ------------------------------------------------------------------------------------------------------------------------
--- Function Types
+-- External Function Types
 ------------------------------------------------------------------------------------------------------------------------
 
 -- * SEL

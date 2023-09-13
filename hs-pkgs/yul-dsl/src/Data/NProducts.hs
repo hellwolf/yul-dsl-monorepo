@@ -35,7 +35,7 @@ import           GHC.TypeNats (Nat, type (+))
 data a :* b = a :* b
 
 -- | Operator (:*) being right associative allows bracket-free syntax.
-infixr :*
+infixr 5 :*
 
 instance (Show a, Show b) => Show (a :* b) where
   show (a :* b) = "(" <> show a <> "," <> show b <> ")"

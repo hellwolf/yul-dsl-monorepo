@@ -79,7 +79,6 @@ import           Data.Bits       (shift)
 import           Data.Maybe      (fromJust)
 import           Data.Typeable   (Proxy (..), Typeable, typeRep)
 import           GHC.Generics    (Generic)
-import           GHC.Natural     (Natural, naturalFromInteger, naturalToInteger)
 import           GHC.TypeNats    (KnownNat, Nat, natVal)
 import           Numeric         (showHex)
 -- bytestring
@@ -138,7 +137,7 @@ instance ABIType () where
   abi_type_show_vars _ = []
 
 -- | Raw storage value for ABI value types.
-newtype SVALUE = SVALUE Natural deriving newtype (Eq, Show)
+newtype SVALUE = SVALUE Integer deriving newtype (Eq, Show)
 
 -- | Default storage value.
 def_sval :: SVALUE
@@ -146,7 +145,7 @@ def_sval = SVALUE 0
 
 -- | Maximum storage value.
 max_sval :: SVALUE
-max_sval = SVALUE (2 ^ (256 :: Natural) - 1)
+max_sval = SVALUE (2 ^ (256 :: Int) - 1)
 
 -- | ABI (static) value types.
 class ABIValue a where
@@ -161,7 +160,7 @@ class ABIValue a where
 --
 
 -- | ABI address value type.
-newtype ADDR = ADDR Natural deriving newtype (Ord, Eq)
+newtype ADDR = ADDR Integer deriving newtype (Ord, Eq)
 
 instance ABIType ADDR where
   abi_type_name = "ADDR"
@@ -182,7 +181,7 @@ deriving newtype instance S.Serialize ADDR
 zero_address :: ADDR
 zero_address = ADDR 0
 
-_max_addr_nat :: Natural
+_max_addr_nat :: Integer
 _max_addr_nat = (2 ^ (256 :: Int)) - 1
 
 -- | Maximum value of address.
@@ -190,15 +189,15 @@ max_addr :: ADDR
 max_addr = ADDR _max_addr_nat
 
 -- | From integer to ADDR.
-to_addr :: Natural -> Maybe ADDR
-to_addr a = if a <= _max_addr_nat then Just (ADDR a) else Nothing
+to_addr :: Integer -> Maybe ADDR
+to_addr a = if a >= 0 && a <= _max_addr_nat then Just (ADDR a) else Nothing
 
-to_addr' :: Natural -> ADDR
+to_addr' :: Integer -> ADDR
 to_addr' = fromJust . to_addr
 
 -- | Convert address to integer.
 addr_to_integer :: ADDR -> Integer
-addr_to_integer (ADDR a) = naturalToInteger a
+addr_to_integer (ADDR a) = a
 
 -- * BOOL
 --
@@ -253,9 +252,9 @@ instance forall s n. (Typeable s, KnownNat n) => ABIType (INTx s n) where
 
 
 instance (Typeable s, KnownNat n) => ABIValue (INTx s n) where
-  from_svalue (SVALUE a) = fromIntegral a
+  from_svalue (SVALUE a) = fromIntegral a -- FIXME, support signed numbers
 
-  to_svalue (INT (Just a)) = SVALUE (naturalFromInteger a) -- assert (a <= max_sval)
+  to_svalue (INT (Just a)) = SVALUE a -- FIXME, support signed numbers
   to_svalue (INT Nothing)  = def_sval
 
 instance (Typeable s, KnownNat n) => Show (INTx s n) where
@@ -511,9 +510,9 @@ NaN/*::INT8*/
 NaN/*::INT8*/
 
 >>> show (SEL (Nothing, 69))
->>> show (SEL (Just "foo", 0)) -- TODO 4bytes needs to be generated
+>>> show (SEL (Just ("foo", ""), 0)) -- TODO 4bytes needs to be generated
 "0x45"
-"0x0 /*::foo*/"
+"0x0 /*::foo()*/"
 -}
 
 {- $show_instance_examples
@@ -528,12 +527,12 @@ NaN/*::INT8*/
 >>> import Data.ByteString as B
 >>> show (BYTES (B.pack [1,2]))
 "true"
-"0x0000000000000000000000000000000000000042::ADDR"
-"255::UINT8"
-"-8::INT96"
-"NaN::UINT8"
-"0x68656c6c6f2c20776f726c64::BYTES"
-"0x0102::BYTES"
+"0x0000000000000000000000000000000000000042/*::ADDR*/"
+"255/*::UINT8*/"
+"-8/*::INT96*/"
+"NaN/*::UINT8*/"
+"0x68656c6c6f2c20776f726c64/*::BYTES*/"
+"0x0102/*::BYTES*/"
 
 -}
 

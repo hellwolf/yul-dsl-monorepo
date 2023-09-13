@@ -1,7 +1,9 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE AllowAmbiguousTypes    #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE LinearTypes            #-}
+{-# LANGUAGE TypeFamilies           #-}
 
 {-|
 
@@ -40,7 +42,8 @@ module YulDSL.Core.YulCat
   ( YulObj, YulO1, YulO2, YulO3, YulO4, YulO5
   , YulVal, YulNum
   , YulCat (..), AnyYulCat (..), (>.>), (<.<)
-  , digestYulCat
+  , MPOrd (..), IfThenElse (..)
+  , digestYulCat,
   ) where
 
 -- base
@@ -48,6 +51,7 @@ import           Data.Char               (ord)
 import           Data.Functor.Identity   (Identity)
 import           Data.Kind               (Constraint, Type)
 import           Data.Typeable           (Typeable)
+import           GHC.Exts                (Multiplicity (..))
 import           GHC.Integer             (xorInteger)
 import           Text.Printf             (printf)
 -- byteStringb
@@ -56,6 +60,10 @@ import qualified Data.ByteString.Char8   as B
 --
 import           YulDSL.Core.ContractABI
 
+
+------------------------------------------------------------------------------------------------------------------------
+-- Yul Types Hierarchy
+------------------------------------------------------------------------------------------------------------------------
 
 -- | All objects in the 'YulCat' category is simply a 'ABIType'.
 type YulObj :: Type -> Constraint
@@ -81,6 +89,40 @@ class (YulVal a, Num a) => YulNum a
 
 instance (Typeable s, KnownNat n) => YulNum (INTx s n)
 
+------------------------------------------------------------------------------------------------------------------------
+-- Granular Permission Tag
+------------------------------------------------------------------------------------------------------------------------
+
+-- TODO: YulCat Permissions
+
+data YulStoragePerm = YulStorageRO | YulStorageWO | YulStorageRW | YulStorageNoAccess
+data YulCallPerm = YulAllowAnyCall | YulAllowStaticCall | YulNoCallAllowed
+
+data FnPerm = FnPerm YulStoragePerm YulCallPerm
+
+type FullFn :: FnPerm
+type FullFn = 'FnPerm 'YulStorageRW 'YulAllowAnyCall
+-- type FullFn = FnPerm YulStorageRW YulAllowAnyCall
+-- type PureFn = FnPerm YulStorageNoAccess YulNoCallAllowed
+-- type ViewFn = FnPerm YulStorageRO YulAllowStaticCall
+
+class YulStorageReadAllowed a
+class YulStorageWriteAllowed a
+class YulTransactionCallAllowed a
+class YulStaticCallAllowed a
+
+instance YulStorageReadAllowed '(YulStorageRO, a)
+instance YulStorageReadAllowed '(YulStorageRW, a)
+instance YulStorageWriteAllowed '(YulStorageWO, a)
+instance YulStorageWriteAllowed '(YulStorageRW, a)
+instance YulTransactionCallAllowed '(a, YulAllowAnyCall)
+instance YulStaticCallAllowed '(a, YulAllowAnyCall)
+instance YulStaticCallAllowed '(a, YulAllowStaticCall)
+
+------------------------------------------------------------------------------------------------------------------------
+-- The Cat
+------------------------------------------------------------------------------------------------------------------------
+
 -- | A GADT-style DSL of Yul that constructs morphisms between objects (YulObj) of the "Yul Category".
 --
 --  Note: - The inhabitants of this are actually morphisms of the Yul category. "Cat" is just a nice sounding moniker,
@@ -96,8 +138,8 @@ data YulCat a b where
   -- SMC Primitives
   --
   YulId   :: forall a.       YulO2 a a     => YulCat a a
-  YulComp :: forall a b c.   YulO3 a b c   => YulCat c b -> YulCat a c -> YulCat a b
-  YulProd :: forall a b c d. YulO4 a b c d => YulCat a b -> YulCat c d -> YulCat (a, c) (b, d)
+  YulComp :: forall a b c.   YulO3 a b c   => YulCat c b %1 -> YulCat a c %1 -> YulCat a b
+  YulProd :: forall a b c d. YulO4 a b c d => YulCat a b %1 -> YulCat c d %1 -> YulCat (a, c) (b, d)
   YulSwap :: forall a b.     YulO2 a b     => YulCat (a, b) (b, a)
   YulDis  :: forall a.       YulO1 a       => YulCat a ()
   YulDup  :: forall a.       YulO1 a       => YulCat a (a, a)
@@ -125,6 +167,9 @@ data YulCat a b where
   YulOr  :: YulCat (BOOL, BOOL) BOOL
   -- * Num Types
   YulNumAdd :: forall a. YulNum a => YulCat (a, a) a
+  YulNumMul :: forall a. YulNum a => YulCat (a, a) a
+  YulNumAbs :: forall a. YulNum a => YulCat a a
+  YulNumSig :: forall a. YulNum a => YulCat a a
   YulNumNeg :: forall a. YulNum a => YulCat a a
   -- * Number comparison with a three-way boolean-switches (LT, EQ, GT).
   YulNumCmp :: forall a. YulNum a => (BOOL, BOOL, BOOL) -> YulCat (a, a) BOOL
@@ -150,10 +195,6 @@ m >.> n = n `YulComp` m
 
 infixr 1 >.>, <.<
 
-------------------------------------------------------------------------------------------------------------------------
--- Show Instances & Utilities
-------------------------------------------------------------------------------------------------------------------------
-
 -- | It's not as scary as it sounds. It produces a fingerprint for the morphism.
 digestYulCat :: YulCat a b -> String
 digestYulCat = printf "%x" . digest_c8 . B.pack . show
@@ -163,6 +204,43 @@ digestYulCat = printf "%x" . digest_c8 . B.pack . show
         digest_c8 bs = go_digest_c8 (B.splitAt 8 bs)
         go_digest_c8 (b, bs') = c8 (0 :: Integer) (B.unpack b) `xorInteger`
                                 if B.length bs' == 0 then 0 else digest_c8 bs'
+
+------------------------------------------------------------------------------------------------------------------------
+-- Useful Type Classes
+------------------------------------------------------------------------------------------------------------------------
+
+-- | Multi-parameter ordering typeclass where boolean type is @b@
+class MPOrd a b | a -> b where
+  ( <?) :: forall w. a %w -> a %w -> b
+  (<=?) :: forall w. a %w -> a %w -> b
+  ( >?) :: forall w. a %w -> a %w -> b
+  (>=?) :: forall w. a %w -> a %w -> b
+  (==?) :: forall w. a %w -> a %w -> b
+  (/=?) :: forall w. a %w -> a %w -> b
+  infixr 4 <?, <=?, >?, >=?, ==?, /=?
+
+-- | IfThenElse for enabling rebindable syntax.
+class IfThenElse a b where
+  ifThenElse :: forall w. a %w -> b %w -> b %w -> b
+
+instance (YulObj r, YulNum a) => Num (YulCat r a) where
+  a + b = YulNumAdd `YulComp` YulProd a b `YulComp` YulDup
+  a * b = YulNumMul `YulComp` YulProd a b `YulComp` YulDup
+  abs = YulComp YulNumAbs
+  signum = YulComp YulNumSig
+  fromInteger = YulEmbed . fromInteger
+  negate a = YulNumNeg `YulComp` a
+
+instance (YulObj r, YulNum a) => MPOrd (YulCat r a) (YulCat r BOOL) where
+  a  <? b = YulNumCmp (true , false, false) `YulComp` YulProd a b `YulComp` YulDup
+  a <=? b = YulNumCmp (true , true , false) `YulComp` YulProd a b `YulComp` YulDup
+  a  >? b = YulNumCmp (false, false, true ) `YulComp` YulProd a b `YulComp` YulDup
+  a >=? b = YulNumCmp (false, true , true ) `YulComp` YulProd a b `YulComp` YulDup
+  a ==? b = YulNumCmp (false, true , false) `YulComp` YulProd a b `YulComp` YulDup
+  a /=? b = YulNumCmp (true , false, true ) `YulComp` YulProd a b `YulComp` YulDup
+
+instance YulO2 a r => IfThenElse (YulCat r BOOL) (YulCat r a) where
+  ifThenElse = undefined
 
 -- | Bespoke show instance for YulCat.
 --
@@ -189,29 +267,3 @@ instance Show (YulCat a b) where
   show (YulNumCmp (i,j,k)) = "(cmp(" <> show i <> ")(" <> show j <> ")(" <> show k <> "))"
   show YulSGet             = "(sget" <> abi_type_name' @a <> ")"
   show YulSPut             = "(sput" <> abi_type_name' @a <> ")"
-
--- TODO: YulCat Permissions
-
-data YulStoragePerm = YulStorageRO | YulStorageWO | YulStorageRW | YulStorageNoAccess
-data YulCallPerm = YulAllowAnyCall | YulAllowStaticCall | YulNoCallAllowed
-
-data FnPerm = FnPerm YulStoragePerm YulCallPerm
-
-type FullFn :: FnPerm
-type FullFn = 'FnPerm 'YulStorageRW 'YulAllowAnyCall
--- type FullFn = FnPerm YulStorageRW YulAllowAnyCall
--- type PureFn = FnPerm YulStorageNoAccess YulNoCallAllowed
--- type ViewFn = FnPerm YulStorageRO YulAllowStaticCall
-
-class YulStorageReadAllowed a
-class YulStorageWriteAllowed a
-class YulTransactionCallAllowed a
-class YulStaticCallAllowed a
-
-instance YulStorageReadAllowed '(YulStorageRO, a)
-instance YulStorageReadAllowed '(YulStorageRW, a)
-instance YulStorageWriteAllowed '(YulStorageWO, a)
-instance YulStorageWriteAllowed '(YulStorageRW, a)
-instance YulTransactionCallAllowed '(a, YulAllowAnyCall)
-instance YulStaticCallAllowed '(a, YulAllowAnyCall)
-instance YulStaticCallAllowed '(a, YulAllowStaticCall)

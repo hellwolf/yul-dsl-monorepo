@@ -5,7 +5,6 @@ module TestCommon where
 
 import           Data.Functor                  ((<&>))
 import           Data.Typeable                 (Typeable)
-import           GHC.Natural                   (naturalFromInteger)
 
 import           Test.QuickCheck
 
@@ -13,7 +12,7 @@ import           YulDSL.Core.ContractABI.Types
 
 instance Arbitrary ADDR where
   arbitrary = chooseBoundedIntegral (minBound @UINT256, maxBound @UINT256)
-              <&> toInteger <&> naturalFromInteger <&> to_addr'
+              <&> toInteger <&> to_addr'
 
 deriving newtype instance Arbitrary BOOL
 

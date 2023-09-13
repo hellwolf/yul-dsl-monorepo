@@ -51,6 +51,7 @@ TODOs
   - ContractABI: Solidity-Contract-ABI-Compatible Types
     - Primitive Types:
       - [x] Simple Static value types: `ADDR`, `BOOL`, `INTx s n`.
+      - [ ] :S: `SVALUE`, storage value.
       - [ ] :S: `type BYTESnn = BYTES_N n`, static bytes value type.
       - [ ] :L: `BYTES(l?) n?`, optionally-length-indexed dynamic bytes type.
       - [ ] :M: `STRING`, dynamic utf-8 string type.
@@ -69,7 +70,6 @@ TODOs
       - [ ] :M: `data REF = VREF | MREF | SREF SLOC; data SLOC = SLOT s o | SNAME name;`.
     - **Completeness:**
       - [ ] :M: **CLEAN-UP** inline-REPL docs.
-      - [ ] :S: **FULL** Test coverage.
   - Storage Data Types:
       - [ ] :M: `LIST(l?) n? a`, optionally-length-indexed singly-linked list type.
       - [ ] :M: `MAP k v`, key-value storage.
@@ -83,18 +83,18 @@ TODOs
     - [ ] :S: Module documentation.
 - Eval Monad:
   - [ ] :L: Support all `YulDSL` constructors.
-  - [ ] :XXL: **FULL** `ContractABI` Codec in Haskell.
 - YulDSL Linear-SMC Frontend:
   - Multi-style functions:
     - [x] :S: composition of all styles using `(>.>)`.
-    - [ ] :S: Rebindable `IfThenElse`.
+    - [x] :S: `IfThenElse` typeclass, rebindable if-then-else syntax.
   - YulCat Combinators
-    - [-] 🚧 :S: Num typeclass instances for `YulNum n => YulCat m n`.
-    - [ ] 🚧 :S: `IfThenElse` instance.
-    - [-] 🚧 :M: `vfn`, value function declaration;
+    - [x] :S: `Num, MPOrd` instances for `YulNum`.
+    - [x] :S: `IfThenElse` instance.
+    - [-] 🚧 :M: `vfn, ap'vfn`, value function declaration and calling.
   - Yul Port Combinators
-    - [x] `lfn`, linearly-typed function declarations.
-    - [ ] 🚧 :S: `IfThenElse` instance.
+    - [x] :S: `Num, MPOrd` instances for `YulNum`.
+    - [x] :S: `IfThenElse` instance.
+    - [-] 🚧 :M: `lfn, ap'lfn`, linearly-typed function declarations.
   - Prelude:
     - [ ] :L: Curation.
   - **Completeness:**

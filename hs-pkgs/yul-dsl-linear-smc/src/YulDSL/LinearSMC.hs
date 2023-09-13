@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE LinearTypes           #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
@@ -24,8 +25,11 @@ module YulDSL.LinearSMC where
 -- base
 import           Data.Functor.Identity        (Identity)
 import           Data.Typeable                (Typeable)
-import           Prelude.Linear
+import qualified Prelude                      as BasePrelude
 import           Unsafe.Coerce                (unsafeCoerce)
+-- linear-base
+import           Prelude.Linear
+import qualified Unsafe.Linear                as UnsafeLinear
 -- linear-smc
 import           Control.Category.Constrained (Cartesian (..), Category (Obj), O2, O3, O4, type (⊗))
 import           Control.Category.Linear      (P, copy, decode, discard, encode, merge, mkUnit, split)
@@ -37,6 +41,12 @@ import           YulDSL.LinearSMC.Categories  ()
 ------------------------------------------------------------------------------------------------------------------------
 -- Extra Linear SMC Combinators
 ------------------------------------------------------------------------------------------------------------------------
+
+instance FromInteger Integer where
+  fromInteger = id
+
+instance (Typeable s, KnownNat n) => FromInteger (INTx s n) where
+  fromInteger = UnsafeLinear.toLinear BasePrelude.fromInteger
 
 copy' :: forall k con r a.
          ( Cartesian k {-<-}, O2 k r a, con ~ Obj k {->-}
@@ -78,12 +88,6 @@ class YulObj a => YulCatReducible a where
   default yul_cat_reduce :: (YulObj r, YulCat r a ~ AtomizeNP (YulCat r a)) => YulCat r a -> AtomizeNP (YulCat r a)
   yul_cat_reduce = id
 
-  -- | Merge multiple orts to a single-complex port.
-  yul_cat_merge :: forall r. YulObj r => AtomizeNP (YulCat r a) -> YulCat r a
-  -- | Default instance for irreducible yul ports as base cases.
-  default yul_cat_merge :: (YulObj r, YulCat r a ~ AtomizeNP (YulCat r a)) => AtomizeNP (YulCat r a) -> YulCat r a
-  yul_cat_merge = id
-
 -- Irreducible yul cat:
 instance YulCatReducible () where
 instance YulCatReducible ADDR
@@ -99,10 +103,9 @@ instance forall a as. (YulCatReducible a, YulCatReducible as) => YulCatReducible
                                  , UnM (TailANP (AtomizeNP (Identity (a :* as))))))
               @(YulCat (a :* as) (a ⊗ as))
               (YulSplit @(a :* as)) `YulComp` c
-  yul_cat_merge (a :* as) = undefined
 
 --
--- YulNum values
+-- YulNum typeclass instances for the 'linear-base'.
 --
 
 instance (YulObj r, YulNum a) => Additive (YulCat r a) where
@@ -122,6 +125,10 @@ vfn :: forall a b p. (YulO2 a b, YulCatReducible a)
     => (AtomizeNP (YulCat a a) -> YulCat a b)
     -> YulCat a b
 vfn fn = fn (yul_cat_reduce @a YulId)
+
+ap'vfn :: forall a b p r. (YulCatReducible a, YulO3 a b r)
+      => Fn a b -> AtomizeNP (YulCat r a) ⊸ YulCat r b
+ap'vfn = undefined
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Yul Port Combinators
@@ -165,25 +172,21 @@ instance (YulNum a, YulObj r) => AdditiveGroup (YulP r a) where
 dup2P :: YulO2 a r => YulP r a ⊸ (YulP r a, YulP r a)
 dup2P = split . copy
 
-(<?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
-a <? b = encode (YulNumCmp (true, false, false)) (merge (a, b))
-(<=?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
-a <=? b = encode (YulNumCmp (true, true, false)) (merge (a, b))
-(>?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
-a >? b = encode (YulNumCmp (false, false, true)) (merge (a, b))
-(>=?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
-a >=? b = encode (YulNumCmp (false, true, true)) (merge (a, b))
-(==?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
-a ==? b = encode (YulNumCmp (false, true, false)) (merge (a, b))
-(/=?) :: forall a r. (YulNum a, YulObj r) => YulP r a ⊸ YulP r a ⊸ BoolP r
-a /=? b = encode (YulNumCmp (true, false, true)) (merge (a, b))
-infixr 4 <?, <=?, >?, >=?, ==?, /=?
+instance (YulObj r, YulNum a) => MPOrd (YulP r a) (BoolP r) where
+  a  <? b = encode (YulNumCmp (true , false, false)) (merge (a, b))
+  a <=? b = encode (YulNumCmp (true , true , false)) (merge (a, b))
+  a  >? b = encode (YulNumCmp (false, false, true )) (merge (a, b))
+  a >=? b = encode (YulNumCmp (false, true , true )) (merge (a, b))
+  a ==? b = encode (YulNumCmp (false, true , false)) (merge (a, b))
+  a /=? b = encode (YulNumCmp (true , false, true )) (merge (a, b))
 
 -- Control flow utilities
 
-ifThenElse :: forall a r. YulO2 a r
-           => BoolP r ⊸ YulP r a ⊸ YulP r a ⊸ YulP r a
-ifThenElse i a b = encode YulITE (merge (i, merge(a, b)))
+-- ifThenElse :: forall a r. YulO2 a r
+--            => BoolP r ⊸ YulP r a ⊸ YulP r a ⊸ YulP r a
+
+instance YulO2 a r => IfThenElse (YulP r BOOL) (YulP r a) where
+  ifThenElse i a b = encode YulITE (merge (i, merge(a, b)))
 
 --
 -- Storage utilities
@@ -249,7 +252,7 @@ lfn :: forall a b p. (YulO2 a b, YulPortReducible a)
     -> YulCat a b
 lfn f = decode (f . yul_port_reduce)
 
-apFn :: forall a b p r. (YulPortReducible a, YulO3 a b r)
-     => Fn a b -> AtomizeNP (YulP r a) ⊸ YulP r b
-apFn (LibraryFn fname _) a = encode (YulJump fname) (yul_port_merge @a a)
+ap'lfn :: forall a b p r. (YulPortReducible a, YulO3 a b r)
+      => Fn a b -> AtomizeNP (YulP r a) ⊸ YulP r b
+ap'lfn (LibraryFn fname _) a = encode (YulJump fname) (yul_port_merge @a a)
 -- apFn (ExternalFn _ _ _)  a = coerce a

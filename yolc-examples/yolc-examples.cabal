@@ -19,6 +19,8 @@ common yol-module-options
                           ImpredicativeTypes
                           OverloadedStrings
                           UnicodeSyntax
+                          RebindableSyntax
+                          ImplicitPrelude
     mixins:               base hiding (Prelude),
                           base (Prelude as Prelude.Base),
                           yul-dsl-linear-smc (Prelude.YulDSL.LinearSMC as Prelude),

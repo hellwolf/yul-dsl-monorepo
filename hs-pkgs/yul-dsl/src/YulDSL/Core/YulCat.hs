@@ -51,7 +51,6 @@ import           Data.Char               (ord)
 import           Data.Functor.Identity   (Identity)
 import           Data.Kind               (Constraint, Type)
 import           Data.Typeable           (Typeable)
-import           GHC.Exts                (Multiplicity (..))
 import           GHC.Integer             (xorInteger)
 import           Text.Printf             (printf)
 -- byteStringb
@@ -250,8 +249,9 @@ instance YulO2 a r => IfThenElse (YulCat r BOOL) (YulCat r a) where
 instance Show (YulCat a b) where
   show YulCoerce           = "(coerce" <> abi_type_name' @a <> abi_type_name' @b <> ")"
   show YulId               = "(id" <> abi_type_name' @a <> abi_type_name' @b <> ")"
+  show YulSplit            = "(▿" <> abi_type_name' @a <> ")"
   show (YulComp cb ac)     = show cb <> "∘" <> show ac
-  show (YulProd ab cd)     = "(⊗(" <> show ab <> ")(" <> show cd <> "))"
+  show (YulProd ab cd)     = "(▹(" <> show ab <> ")(" <> show cd <> "))"
   show YulSwap             = "(swap" <> abi_type_name' @a <> abi_type_name' @b <> ")"
   show YulDis              = "(dis" <> abi_type_name' @a <> ")"
   show YulDup              = "(dup" <> abi_type_name' @a <> ")"

@@ -63,8 +63,8 @@ test-yul-dsl:
 	$(CABAL_TEST) test yul-dsl $(TEST_OPTIONS)
 
 test-yolc-basic:
-	yolc yolc-examples:Basic
-	yolc yolc-examples:ERC20
+	yolc -m yul yolc-examples:Basic
+	yolc -m yul yolc-examples:ERC20
 
 dev:
 	nodemon -w hs-pkgs -w yolc-examples -e "hs cabal" -x "make $(DEV_TARGETS) || exit 1"

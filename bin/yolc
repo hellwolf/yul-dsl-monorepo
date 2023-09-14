@@ -11,7 +11,7 @@
 opt_verbose=; function when_verbose() { [[ -n "$opt_verbose" ]]; }
 is_nix_dist=
 dist_path=
-out_mode=2
+cmpl_id=2
 out_dir="$PWD"/build
 declare -a runyol_extra_opts=(-O0)
 
@@ -60,13 +60,13 @@ function main() {
       m)
         case "$OPTARG" in
           yul)
-            out_mode=2
+            cmpl_id=2
             ;;
           plantuml)
-            out_mode=1
+            cmpl_id=1
             ;;
           show)
-            out_mode=0
+            cmpl_id=0
             ;;
           *)
             die "Unknown output mode"
@@ -98,7 +98,7 @@ function main() {
 
   when_verbose && {
     echo "Distribution path: $dist_path"
-    echo "Output mode: $out_mode"
+    echo "Output mode: $cmpl_id"
     echo "Output directory: $out_dir"
     echo
   }
@@ -172,7 +172,7 @@ EOF
 
   local actions
   actions=$(for i in $cmpl_syms; do
-              echo -n "putStrLn($cmpl_mode (compilers !! $out_mode) $i);"
+              echo -n "putStrLn $ $cmpl_mode (compilers !! $cmpl_id) $i"
             done)
   {
     sed -e "s|__YOL_MOD_NAME__|${mod_name}|g" \

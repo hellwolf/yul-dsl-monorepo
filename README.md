@@ -59,7 +59,7 @@ TODOs
     - Derivative Types:
       - Tuple Types
         - [x] :L: `:*`, n-ary product.
-        - [ ] 🚧 :S: `TUPLE a`, demarcation tuple type.
+        - [ ] 🚧 :S: `SOLO a`, demarcation solo tuple.
         - [ ] 🔴 :L: `(,..)`, n-tuple types for function specification.
       - Function Types:
         - [ ] :M: `SEL`, selector data type; selector creators.
@@ -75,6 +75,8 @@ TODOs
       - [ ] :M: `MAP k v`, key-value storage.
   - YulCat
     - [x] `(>.>)` operator for the `YulDSL` morphism left-to-right composition.
+    - [ ] :S: `YulMerge, ▵` merge constructor.
+    - [ ] :M: `YulCall, YulJump`, function calls.
     - [ ] :M: `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
     - [ ] :M: `YulView`, for indexed or named position.
     - [ ] :M: `YulMap, YulFoldl`, control structure for lists.
@@ -90,20 +92,18 @@ TODOs
   - YulCat Combinators
     - [x] :S: `Num, MPOrd` instances for `YulNum`.
     - [x] :S: `IfThenElse` instance.
-    - [-] 🚧 :M: `vfn, ap'vfn`, value function declaration and calling.
+    - [-] 🚧 :M: `vfn, ap'vfn`, value function declaration and application.
   - Yul Port Combinators
     - [x] :S: `Num, MPOrd` instances for `YulNum`.
     - [x] :S: `IfThenElse` instance.
-    - [-] 🚧 :M: `lfn, ap'lfn`, linearly-typed function declarations.
+    - [-] 🚧 :M: `lfn, ap'lfn`, linearly-typed function declaration and application.
   - Prelude:
     - [ ] :L: Curation.
-  - **Completeness:**
-    - [ ] :S: **FULL** Test coverage.
 - CodeGen
   - Yul
     - [ ] :M: Object constructor.
     - [ ] :M: Variable over-copying optimization.
-    - [ ] :XXL: **FULL** `ContractABI` Codec in Yul.
+    - [ ] :XL: Full Calldata encoding/decoding.
   - PlantUML
     - [ ] :L: **FULL** PlantUML support.
 

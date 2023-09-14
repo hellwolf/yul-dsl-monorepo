@@ -23,7 +23,6 @@ This module provides extra combinators to program 'YulDSL' in linear-types, in a
 module YulDSL.LinearSMC where
 
 -- base
-import           Data.Functor.Identity        (Identity)
 import           Data.Typeable                (Typeable)
 import qualified Prelude                      as BasePrelude
 import           Unsafe.Coerce                (unsafeCoerce)
@@ -31,7 +30,7 @@ import           Unsafe.Coerce                (unsafeCoerce)
 import           Prelude.Linear
 import qualified Unsafe.Linear                as UnsafeLinear
 -- linear-smc
-import           Control.Category.Constrained (Cartesian (..), Category (Obj), O2, O3, O4, type (⊗))
+import           Control.Category.Constrained (Cartesian (..), Category (Obj, (∘)), O2, O3, O4, type (⊗))
 import           Control.Category.Linear      (P, copy, decode, discard, encode, merge, mkUnit, split)
 -- yul-dsl
 import           YulDSL.Core
@@ -82,11 +81,15 @@ passAp i f = copyAp' i id f
 
 -- | Reduce and merge inhabitants of yul port types using `YulPortReduce`.
 class YulObj a => YulCatReducible a where
-  -- | Reduce single-complex port to multiple ports.
+  -- | Reduce single-complex morphisms to multiple morphisms.
   yul_cat_reduce :: forall r. YulObj r => YulCat r a -> AtomizeNP (YulCat r a)
-  -- | Default instance for irreducible yul ports as base cases.
   default yul_cat_reduce :: (YulObj r, YulCat r a ~ AtomizeNP (YulCat r a)) => YulCat r a -> AtomizeNP (YulCat r a)
   yul_cat_reduce = id
+
+  -- | Merge multiple morphisms to a single morphism.
+  yul_cat_merge :: forall r. YulObj r => AtomizeNP (YulCat r a) -> YulCat r a
+  default yul_cat_merge :: (YulObj r, YulCat r a ~ AtomizeNP (YulCat r a)) => AtomizeNP (YulCat r a) -> YulCat r a
+  yul_cat_merge = id
 
 -- Irreducible yul cat:
 instance YulCatReducible () where
@@ -96,13 +99,15 @@ instance (Typeable s, KnownNat n) => YulCatReducible (INTx s n)
 instance YulCatReducible BYTES
 
 instance forall a as. (YulCatReducible a, YulCatReducible as) => YulCatReducible (a :* as) where
+  -- Using unsafeCoerce to avoid difficult type level proofs
+
   yul_cat_reduce c = yul_cat_reduce @a (exl `YulComp` s) :*
                      yul_cat_reduce @as (exr `YulComp` s)
-    where s = unsafeCoerce -- this feels so dirty
-              @(YulCat (a :* as) ( UnM (HeadANP (AtomizeNP (Identity (a :* as))))
-                                 , UnM (TailANP (AtomizeNP (Identity (a :* as))))))
-              @(YulCat (a :* as) (a ⊗ as))
-              (YulSplit @(a :* as)) `YulComp` c
+    where s = unsafeCoerce @(YulCat (a :* as) _) @_ (YulSplit @(a :* as)) ∘ c
+
+  yul_cat_merge :: forall r. YulObj r => AtomizeNP (YulCat r (a :* as)) -> YulCat r (a :* as)
+  yul_cat_merge c = let (b :* bs) = unsafeCoerce @_ @(AtomizeNP (YulCat r a) :* AtomizeNP (YulCat r as)) c
+                    in YulCoerce ∘ yul_cat_merge @a b ▵ yul_cat_merge @as bs
 
 --
 -- YulNum typeclass instances for the 'linear-base'.
@@ -127,8 +132,9 @@ vfn :: forall a b p. (YulO2 a b, YulCatReducible a)
 vfn fn = fn (yul_cat_reduce @a YulId)
 
 ap'vfn :: forall a b p r. (YulCatReducible a, YulO3 a b r)
-      => Fn a b -> AtomizeNP (YulCat r a) ⊸ YulCat r b
-ap'vfn = undefined
+      => Fn a b -> AtomizeNP (YulCat r a) -> YulCat r b
+ap'vfn (LibraryFn fname _) a = YulJump fname `YulComp` yul_cat_merge @a a
+-- FIXME ap'vfn ExternalFn case
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Yul Port Combinators
@@ -219,13 +225,11 @@ infixr 1 <==, <==@
 class YulObj a => YulPortReducible a where
   -- | Reduce single-complex port to multiple ports.
   yul_port_reduce :: forall r. YulObj r => YulP r a ⊸ AtomizeNP (YulP r a)
-  -- | Default instance for irreducible yul ports as base cases.
   default yul_port_reduce :: (YulObj r, YulP r a ~ AtomizeNP (YulP r a)) => YulP r a ⊸ AtomizeNP (YulP r a)
   yul_port_reduce = id
 
-  -- | Merge multiple orts to a single-complex port.
+  -- | Merge multiple ports to a single-complex port.
   yul_port_merge :: forall r. YulObj r => AtomizeNP (YulP r a) ⊸ YulP r a
-  -- | Default instance for irreducible yul ports as base cases.
   default yul_port_merge :: (YulObj r, YulP r a ~ AtomizeNP (YulP r a)) => AtomizeNP (YulP r a) ⊸ YulP r a
   yul_port_merge = id
 
@@ -255,4 +259,5 @@ lfn f = decode (f . yul_port_reduce)
 ap'lfn :: forall a b p r. (YulPortReducible a, YulO3 a b r)
       => Fn a b -> AtomizeNP (YulP r a) ⊸ YulP r b
 ap'lfn (LibraryFn fname _) a = encode (YulJump fname) (yul_port_merge @a a)
--- apFn (ExternalFn _ _ _)  a = coerce a
+-- ap'lfn (ExternalFn feff sel _)  a = encode (YulCall f) (yul_port_merge @a a)
+--  where f = YulEmbed FUNC(FuncExternal, feff, sel)

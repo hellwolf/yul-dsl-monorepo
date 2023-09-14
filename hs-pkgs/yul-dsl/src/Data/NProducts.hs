@@ -1,6 +1,6 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-|
 
@@ -67,7 +67,7 @@ type family TailANP (a :: Type) :: Type where
 -- Type level function utlities
 --
 
-type family UnM (ma :: Type) = (a :: Type) where UnM (m a) = a
+type family UnM (ma :: Type) :: Type where UnM (m a) = a
 
 data NatBuilder where
   NatPlus  :: NatBuilder -> NatBuilder -> NatBuilder

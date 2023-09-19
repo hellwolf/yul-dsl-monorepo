@@ -14,8 +14,7 @@ erc20_balance_of account = sget (erc20_balance_storage account)
 
 -- | ERC20 transfer function (no negative balance check for simplicity).
 erc20_transfer :: Fn (ADDR :* ADDR :* UINT256) BOOL
-erc20_transfer = externalFn "transfer" do
-  lfn \(from :* to :* amount) ->
+erc20_transfer = lfn "transfer" \(from :* to :* amount) ->
     copyAp amount
     (\amount -> passAp from erc20_balance_of & \(from, balance) ->
         erc20_balance_storage from <== balance - amount)
@@ -24,6 +23,6 @@ erc20_transfer = externalFn "transfer" do
     yulConst true
 
 object = mkYulObject "ERC20" ctor
-  [ MkAnyFn erc20_transfer
+  [ externalFn erc20_transfer
   ]
   where ctor = YulId

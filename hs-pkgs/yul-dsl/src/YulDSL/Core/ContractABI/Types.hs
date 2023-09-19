@@ -128,7 +128,7 @@ class (Show a, Typeable a, ABISerialize a) => ABIType a where
 
 -- | A 'abi_type_name' variant, enclosing name with "@()".
 abi_type_name' :: forall a. ABIType a => String
-abi_type_name' = "@(" <> abi_type_name @a <> ")"
+abi_type_name' = "@" <> abi_type_name @a
 
 -- | Unit type of ABI Types
 instance ABIType () where
@@ -402,7 +402,7 @@ type FuncSig = Maybe (String {- function name -}, String {- arguments -})
 type Sel4Bytes = INTx False 4
 
 -- | Selector value type with the optional function signature tagged.
-newtype SEL = SEL (FuncSig, Sel4Bytes)
+newtype SEL = SEL (Sel4Bytes, FuncSig)
 
 instance ABIType SEL where
   abi_type_name = "SEL"
@@ -411,18 +411,19 @@ instance ABIType SEL where
 --  abi_type_show_vars (SEL (Just (sig, args), _)) = [sig]
 
 instance Show SEL where
-  show (SEL (Just (fname, args), c)) = "0x" <> showHex c " /*::" ++ fname ++ "(" ++ args ++ ")*/"
-  show (SEL (Nothing, c))            = "0x" <> showHex c ""
+  show (SEL (sig, Just (fname, args))) = fname <> "/*" ++ showHex sig "(" ++ args ++ ")*/"
+  show (SEL (sig, Nothing))            = showHex sig ""
 
 deriving instance Generic SEL
 deriving newtype instance S.Serialize SEL
 
 -- | Create a solidity-compatible selector based on types.
+--   FIXME do it.
 mkTypedSelector :: forall a b. String -> SEL
-mkTypedSelector n = SEL (Just (n, ""), 0) -- FIXME create selector
+mkTypedSelector n = SEL (0, Just (n, ""))
 
 mkRawSelector :: Sel4Bytes -> SEL
-mkRawSelector b = SEL (Nothing, b)
+mkRawSelector sig = SEL (sig, Nothing)
 
 -- | Create a solidity-compatible selector based on the plain signature.
 -- sigToSelector :: String -> SEL

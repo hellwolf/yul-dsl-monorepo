@@ -130,27 +130,32 @@ data YulCat a b where
   -- Type-level Operations (Zero Runtime Cost)
   --
   YulCoerce :: forall a b. (YulO2 a b, YulCoercible a b) => YulCat a b
-  -- | Split the head element of the type.
+  -- | Split the head and tail of the atomized type.
   YulSplit :: forall a r . YulO2 a r => YulCat r ( UnM (HeadANP (AtomizeNP (Identity a)))
                                                  , UnM (TailANP (AtomizeNP (Identity a))))
 
   -- SMC Primitives
-  --
-  YulId   :: forall a.       YulO2 a a     => YulCat a a
-  YulComp :: forall a b c.   YulO3 a b c   => YulCat c b %1 -> YulCat a c %1 -> YulCat a b
+  --  Category
+  YulId   :: forall a.     YulO2 a a     => YulCat a a
+  YulComp :: forall a b c. YulO3 a b c   => YulCat c b %1 -> YulCat a c %1 -> YulCat a b
+  --  Monoidal
   YulProd :: forall a b c d. YulO4 a b c d => YulCat a b %1 -> YulCat c d %1 -> YulCat (a, c) (b, d)
   YulSwap :: forall a b.     YulO2 a b     => YulCat (a, b) (b, a)
-  YulDis  :: forall a.       YulO1 a       => YulCat a ()
-  YulDup  :: forall a.       YulO1 a       => YulCat a (a, a)
+  --  Cartesian
+  YulIntro :: forall a b c. YulO3 a b c => YulCat a b %1 -> YulCat a c %1 -> YulCat a (b, c)
+  YulExl   :: forall a b.   YulO2 a b   => YulCat (a, b) a
+  YulExr   :: forall a b.   YulO2 a b   => YulCat (a, b) b
+  YulDis   :: forall a.     YulO1 a     => YulCat a ()
+  YulDup   :: forall a.     YulO1 a     => YulCat a (a, a)
 
   -- Control Flow Primitives
   --
   -- | Embed a constant value.
   YulEmbed :: forall r a  . YulO2 r a   => a -> YulCat r a
-  -- | Call a yul internal function by named reference.
-  YulJump  :: forall a b  . YulO2 a b   => String -> YulCat a b
+  -- | Call a yul internal function by reference its id.
+  YulJump  :: forall a b  . YulO2 a b   => String -> YulCat a b %1 -> YulCat a b
   -- | Call a external function.
-  YulCall  :: forall a b r. YulO3 a b r => YulCat r (FUNC a b) -> YulCat a b
+  YulCall  :: forall a b r. YulO3 a b r => YulCat r (FUNC a b) %1 -> YulCat a b
   -- | If-then-else.
   YulITE   :: forall a    . YulO1 a     => YulCat (BOOL, (a, a)) a
   -- | Mapping over a list.
@@ -239,7 +244,7 @@ instance (YulObj r, YulNum a) => MPOrd (YulCat r a) (YulCat r BOOL) where
   a /=? b = YulNumCmp (true , false, true ) `YulComp` YulProd a b `YulComp` YulDup
 
 instance YulO2 a r => IfThenElse (YulCat r BOOL) (YulCat r a) where
-  ifThenElse = undefined
+  ifThenElse c a b = YulITE `YulComp` YulIntro c (YulIntro a b)
 
 -- | Bespoke show instance for YulCat.
 --
@@ -247,23 +252,26 @@ instance YulO2 a r => IfThenElse (YulCat r BOOL) (YulCat r a) where
 --   * It is deliberately done so for compactness of the string representation of the 'YulCat'.
 --   * It is meant also for strong equality checking of 'YulCat' used in yul object building.
 instance Show (YulCat a b) where
-  show YulCoerce           = "(coerce" <> abi_type_name' @a <> abi_type_name' @b <> ")"
-  show YulId               = "(id" <> abi_type_name' @a <> abi_type_name' @b <> ")"
-  show YulSplit            = "(▿" <> abi_type_name' @a <> ")"
-  show (YulComp cb ac)     = show cb <> "∘" <> show ac
-  show (YulProd ab cd)     = "(▹(" <> show ab <> ")(" <> show cd <> "))"
-  show YulSwap             = "(swap" <> abi_type_name' @a <> abi_type_name' @b <> ")"
-  show YulDis              = "(dis" <> abi_type_name' @a <> ")"
-  show YulDup              = "(dup" <> abi_type_name' @a <> ")"
+  show YulCoerce           = "coerce" <> abi_type_name' @a <> abi_type_name' @b
+  show YulId               = "id"
+  show YulSplit            = "▿" <> abi_type_name' @a
+  show (YulComp cb ac)     = "(" <> show ac <> ");(" <> show cb <> ")"
+  show (YulProd ab cd)     = "▹(" <> show ab <> ")(" <> show cd <> ")"
+  show YulSwap             = "swap" <> abi_type_name' @a <> abi_type_name' @b
+  show (YulIntro ab ac)    = "▵(" <> show ab <> ")(" <> show ac <> ")"
+  show YulExl              = "exl" <> abi_type_name' @a
+  show YulExr              = "exr" <> abi_type_name' @a
+  show YulDis              = "dis" <> abi_type_name' @a
+  show YulDup              = "dup" <> abi_type_name' @a
   show (YulEmbed x)        = "{" <> show x <> "}" -- TODO: x should be escaped ideally, especially for equality checks
-  show (YulCall c)         = "(call " <> show c <> ")"
-  show (YulJump n)         = "(jump " <> n <> ")"
-  show YulITE              = "(ite" <> abi_type_name' @a <> ")"
+  show (YulCall c)         = "call " <> show c
+  show (YulJump cid _)     = "jump " <> cid
+  show YulITE              = "?" <> abi_type_name' @a
   show YulNot              = "not"
   show YulAnd              = "and"
   show YulOr               = "or"
-  show YulNumAdd           = "(add" <> abi_type_name' @a <> ")"
-  show YulNumNeg           = "(neg" <> abi_type_name' @a <> ")"
-  show (YulNumCmp (i,j,k)) = "(cmp(" <> show i <> ")(" <> show j <> ")(" <> show k <> "))"
-  show YulSGet             = "(sget" <> abi_type_name' @a <> ")"
-  show YulSPut             = "(sput" <> abi_type_name' @a <> ")"
+  show YulNumAdd           = "add" <> abi_type_name' @a
+  show YulNumNeg           = "neg" <> abi_type_name' @a
+  show (YulNumCmp (i,j,k)) = "cmp" <> s i <> s j <> s k where s x = if x == true then "t" else "f"
+  show YulSGet             = "sget" <> abi_type_name' @a
+  show YulSPut             = "sput" <> abi_type_name' @a

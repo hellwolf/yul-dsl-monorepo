@@ -59,7 +59,7 @@ TODOs
     - Derivative Types:
       - Tuple Types
         - [x] :L: `:*`, n-ary product.
-        - [ ] 🚧 :S: `SOLO a`, demarcation solo tuple.
+        - [ ] :S: `SOLO a`, demarcation solo tuple.
         - [ ] 🔴 :L: `(,..)`, n-tuple types for function specification.
       - Function Types:
         - [ ] :M: `SEL`, selector data type; selector creators.
@@ -92,18 +92,21 @@ TODOs
   - YulCat Combinators
     - [x] :S: `Num, MPOrd` instances for `YulNum`.
     - [x] :S: `IfThenElse` instance.
-    - [-] 🚧 :M: `vfn, ap'vfn`, value function declaration and application.
+    - [x] :M: `vfn, ap'vfn`, value function declaration and application.
   - Yul Port Combinators
     - [x] :S: `Num, MPOrd` instances for `YulNum`.
     - [x] :S: `IfThenElse` instance.
-    - [-] 🚧 :M: `lfn, ap'lfn`, linearly-typed function declaration and application.
+    - [x] :M: `lfn, ap'lfn`, linearly-typed function declaration and application.
   - Prelude:
     - [ ] :L: Curation.
 - CodeGen
   - Yul
-    - [ ] :M: Object constructor.
+    - [ ] 🚧 :M: Lazy semantics.
+    - [ ] 🚧 :M: Object builder, constructor, dispatcher.
+    - [ ] :S: Fn autoId.
+    - [ ] :M: Program builder, featuring upgradability, factory pattern, external library support.
     - [ ] :M: Variable over-copying optimization.
-    - [ ] :XL: Full Calldata encoding/decoding.
+    - [ ] :XL: Full dispatcher calldata codec support.
   - PlantUML
     - [ ] :L: **FULL** PlantUML support.
 

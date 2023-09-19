@@ -100,7 +100,6 @@ instance YulCatReducible BYTES
 
 instance forall a as. (YulCatReducible a, YulCatReducible as) => YulCatReducible (a :* as) where
   -- Using unsafeCoerce to avoid difficult type level proofs
-
   yul_cat_reduce c = yul_cat_reduce @a (exl `YulComp` s) :*
                      yul_cat_reduce @as (exr `YulComp` s)
     where s = unsafeCoerce @(YulCat (a :* as) _) @_ (YulSplit @(a :* as)) ∘ c
@@ -127,14 +126,13 @@ instance (YulObj r, YulNum a) => AdditiveGroup (YulCat r a) where
 --
 
 vfn :: forall a b p. (YulO2 a b, YulCatReducible a)
-    => (AtomizeNP (YulCat a a) -> YulCat a b)
-    -> YulCat a b
-vfn fn = fn (yul_cat_reduce @a YulId)
+    => String -> (AtomizeNP (YulCat a a) -> YulCat a b)
+    -> Fn a b
+vfn fname fn = MkFn fname $ fn (yul_cat_reduce @a YulId)
 
 ap'vfn :: forall a b p r. (YulCatReducible a, YulO3 a b r)
       => Fn a b -> AtomizeNP (YulCat r a) -> YulCat r b
-ap'vfn (LibraryFn fname _) a = YulJump fname `YulComp` yul_cat_merge @a a
--- FIXME ap'vfn ExternalFn case
+ap'vfn fn a = YulJump (fnId fn) (fnCat fn) `YulComp` yul_cat_merge @a a
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Yul Port Combinators
@@ -154,8 +152,8 @@ type Uint256P r = YulP r UINT256
 type Int256P  r = YulP r INT256
 type BytesP   r = YulP r BYTES
 
-yulConst :: forall a b r. YulO3 r a b
-         => a -> (YulP r b ⊸ YulP r a)
+yulConst :: forall a d r. YulO3 a d r
+         => a -> (YulP r d ⊸ YulP r a)
 yulConst a = \b -> encode (YulEmbed a) (discard b)
 
 coerceP :: forall a b r. (YulO3 r a b, YulCoercible a b)
@@ -191,8 +189,12 @@ instance (YulObj r, YulNum a) => MPOrd (YulP r a) (BoolP r) where
 -- ifThenElse :: forall a r. YulO2 a r
 --            => BoolP r ⊸ YulP r a ⊸ YulP r a ⊸ YulP r a
 
-instance YulO2 a r => IfThenElse (YulP r BOOL) (YulP r a) where
-  ifThenElse i a b = encode YulITE (merge (i, merge(a, b)))
+instance YulO2 a r => IfThenElse (BoolP r) (YulP r a) where
+  ifThenElse c a b = encode YulITE (merge(c, merge(a, b)))
+
+instance Consumable a => IfThenElse Bool a where
+  ifThenElse True  a b = lseq b a
+  ifThenElse False a b = lseq a b
 
 --
 -- Storage utilities
@@ -251,13 +253,12 @@ instance forall a as. (YulPortReducible a, YulPortReducible as) => YulPortReduci
 --
 
 -- | Define a `YulCat` morphism from a linear port function.
-lfn :: forall a b p. (YulO2 a b, YulPortReducible a)
-    => (forall r. YulObj r => AtomizeNP (YulP r a) ⊸ YulP r b)
-    -> YulCat a b
-lfn f = decode (f . yul_port_reduce)
+lfn :: forall a b p. (YulO2 a b, YulPortReducible a) =>
+       String ->
+       (forall r. YulObj r => AtomizeNP (YulP r a) ⊸ YulP r b) ->
+       Fn a b
+lfn fname f = MkFn fname $ decode (f . yul_port_reduce)
 
 ap'lfn :: forall a b p r. (YulPortReducible a, YulO3 a b r)
       => Fn a b -> AtomizeNP (YulP r a) ⊸ YulP r b
-ap'lfn (LibraryFn fname _) a = encode (YulJump fname) (yul_port_merge @a a)
--- ap'lfn (ExternalFn feff sel _)  a = encode (YulCall f) (yul_port_merge @a a)
---  where f = YulEmbed FUNC(FuncExternal, feff, sel)
+ap'lfn fn a = encode (YulJump (fnId fn) (fnCat fn)) (yul_port_merge @a a)

@@ -1,3 +1,5 @@
+{-# LANGUAGE ImpredicativeTypes #-}
+
 module YulDSL.Core.YulObject where
 
 import           Data.List               (intercalate)
@@ -6,58 +8,62 @@ import           YulDSL.Core.ContractABI
 import           YulDSL.Core.YulCat
 
 
-data Fn a b = ExternalFn FuncEffect SEL (YulCat a b)
-            | LibraryFn String (YulCat a b)
+data Fn a b where
+  MkFn :: forall a b. YulO2 a b => { fnId :: String, fnCat :: YulCat a b } -> Fn a b
 
 data AnyFn = forall a b. YulO2 a b => MkAnyFn (Fn a b)
 
-externalFn :: forall a b p. YulO2 a b => String -> YulCat a b -> Fn a b
-externalFn fname = ExternalFn FuncTx (mkTypedSelector @a @b fname)
+instance YulO2 a b => Show (Fn a b) where show (MkFn _ cat) = show cat
 
-staticFn :: forall a b p. YulO2 a b => String -> YulCat a b -> Fn a b
-staticFn fname = ExternalFn FuncStatic (mkTypedSelector @a @b fname)
+data ScopedFn where
+  ExternalFn :: forall a b. YulO2 a b => FuncEffect -> SEL -> Fn a b -> ScopedFn
+  LibraryFn  :: forall a b. YulO2 a b => Fn a b -> ScopedFn
 
-libraryFn :: forall a b p. YulO2 a b => String -> YulCat a b -> Fn a b
-libraryFn name = LibraryFn name
+externalFn :: forall a b p. YulO2 a b => Fn a b -> ScopedFn
+externalFn fn = ExternalFn FuncTx (mkTypedSelector @a @b (fnId fn)) fn
 
-removeScope :: Fn a b -> YulCat a b
-removeScope (ExternalFn _ _ c) = c
-removeScope (LibraryFn _ c)    = c
+staticFn :: forall a b p. YulO2 a b => Fn a b -> ScopedFn
+staticFn fn = ExternalFn FuncStatic (mkTypedSelector @a @b (fnId fn)) fn
 
-show_fn_spec :: forall a b. YulO2 a b => String -> YulCat a b -> String
-show_fn_spec s _ = "function " <> s <> "(" <> abi_type_name @a <> ") -> " <> abi_type_name @b
+libraryFn :: forall a b p. YulO2 a b => Fn a b -> ScopedFn
+libraryFn fn = LibraryFn fn
 
-instance YulO2 a b => Show (Fn a b) where
-  show (ExternalFn FuncTx s c)     = "external " <> show_fn_spec (show s) c <> "\n" <> show c
-  show (ExternalFn FuncStatic s c) = "static "   <> show_fn_spec (show s) c <> "\n" <> show c
-  show (LibraryFn n c)             = "internal " <> show_fn_spec n c <> "\n" <> show c
+show_fn_spec :: forall a b. YulO2 a b => Fn a b -> String
+show_fn_spec fn = "fn " <> fnId fn <> "(" <> abi_type_name @a <> ") -> " <> abi_type_name @b
 
-instance Show AnyFn where show (MkAnyFn fn) = show fn
+instance Show ScopedFn where
+  show (ExternalFn FuncTx _ fn)     = "external " <> show_fn_spec fn <> "\n" <> show (fnCat fn)
+  show (ExternalFn FuncStatic _ fn) = "static "   <> show_fn_spec fn <> "\n" <> show (fnCat fn)
+  show (LibraryFn fn)               = "internal " <> show_fn_spec fn <> "\n" <> show (fnCat fn)
+
+removeScope :: ScopedFn -> AnyFn
+removeScope (ExternalFn _ _ fn) = MkAnyFn fn
+removeScope (LibraryFn fn)      = MkAnyFn fn
 
 -- | A Yul Object per spec.
 --
 -- Note:
 --   * Do not confuse this with YulObj which is an "object" in the category of YulCat.
 --   * Specification: https://docs.soliditylang.org/en/latest/yul.html#specification-of-yul-object
-data YulObject = MkYulObject { yulObjectName      :: String
-                             , yulObjectCtor      :: YulCat () ()
-                             , yulObjectFunctions :: [AnyFn]
-                             , yulSubObjects      :: [YulObject]
+data YulObject = MkYulObject { yulObjectName :: String
+                             , yulObjectCtor :: YulCat () ()
+                             , yulObjectSFns :: [ScopedFn] -- scoped functions
+                             , yulSubObjects :: [YulObject]
                              -- , TODO support object data
                              }
 
 instance Show YulObject where
   show o = "-- Functions:\n\n"
-           <> intercalate "\n\n" (fmap show (yulObjectFunctions  o))
+           <> intercalate "\n\n" (fmap show (yulObjectSFns  o))
            <> "\n\n-- Init code:\n\n"
            <> (show . yulObjectCtor) o
 
 mkYulObject :: String
             -> YulCat () ()
-            -> [AnyFn]
+            -> [ScopedFn]
             -> YulObject
 mkYulObject name ctor afns = MkYulObject { yulObjectName = name
                                          , yulObjectCtor = ctor
-                                         , yulObjectFunctions = afns
+                                         , yulObjectSFns = afns
                                          , yulSubObjects = []
                                          }

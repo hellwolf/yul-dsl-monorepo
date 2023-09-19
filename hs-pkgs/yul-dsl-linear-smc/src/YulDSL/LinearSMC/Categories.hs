@@ -20,7 +20,7 @@ module YulDSL.LinearSMC.Categories () where
 -- constraints
 import           Data.Constraint              (Dict (Dict))
 -- linear-smc
-import           Control.Category.Constrained (Cartesian (dis, dup), Category (..), Monoidal (..), ProdObj (..))
+import           Control.Category.Constrained (Cartesian (..), Category (..), Monoidal (..), ProdObj (..))
 --
 import           YulDSL.Core.ContractABI
 import           YulDSL.Core.YulCat           (YulCat (..), YulObj)
@@ -45,5 +45,8 @@ instance Monoidal YulCat where
   swap    = YulSwap
 
 instance Cartesian YulCat where
+  (▵) = YulIntro
+  exl = YulExl
+  exr = YulExr
   dis = YulDis
   dup = YulDup

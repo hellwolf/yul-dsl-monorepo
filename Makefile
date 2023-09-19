@@ -64,6 +64,7 @@ test-yul-dsl:
 
 test-yolc-basic:
 	yolc -m yul yolc-examples:Basic
+	yolc -m show yolc-examples:Basic
 	yolc -m yul yolc-examples:ERC20
 
 dev:

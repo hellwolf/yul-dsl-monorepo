@@ -6,26 +6,24 @@ module Basic where
 -- Trivial Diagrams
 ------------------------------------------------------------------------------------------------------------------------
 
-simple_id = YulId @UINT256
-simple_coerce = YulCoerce @UINT256 @UINT256
-const_42 = decode (yulConst (to_intx 42)) :: YulCat () UINT256
+simple_id = MkFn "simple_id" $ YulId @UINT256
 
-------------------------------------------------------------------------------------------------------------------------
--- Yul Internal Functions
-------------------------------------------------------------------------------------------------------------------------
+simple_coerce = MkFn "simple_coerce" $ YulCoerce @UINT256 @UINT256
+
+const_42 = MkFn "const_42" $ decode (yulConst (to_intx 42)) :: Fn () UINT256
 
 nop :: Fn () ()
-nop = externalFn "nop" $ lfn \(u) -> u
+nop = lfn "nop" \(u) -> u
 
-disFn :: YulPortReducible a => Fn a ()
-disFn = libraryFn "disFn" YulDis
+disFn :: ABIType a => Fn a ()
+disFn = MkFn "disFn" YulDis
 
-mkConst :: YulPortReducible a => a -> Fn () a
-mkConst a = libraryFn "mkConst" $ lfn \u -> yulConst a u
+mkConst :: ABIType a => a -> Fn () a
+mkConst a = lfn "mkConst" \u -> yulConst a u
 
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
 foo1 :: Fn UINT256 BOOL
-foo1 = externalFn "foo" $ lfn \x ->
+foo1 = lfn "foo1" \x ->
   copy x & split & \(x1, x2) ->
   yulConst true (to_addr' 0xdeadbeef <==@ x1 + x2)
 
@@ -33,19 +31,19 @@ foo1 = externalFn "foo" $ lfn \x ->
 --
 --   Note: you can create any number of "unit" signals by adding '()' to the input list.
 foo2 :: Fn (UINT256 :* UINT256 :* ()) BOOL
-foo2 = externalFn "foo2" $ lfn \(x1 :* x2 :* u) ->
+foo2 = lfn "foo2" \(x1 :* x2 :* u) ->
   (to_addr' 0xdeadbeef <==@ x1 + x2) &
   ignore u & yulConst true
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
 foo3 :: Fn (UINT256 :* UINT256 :* ()) (BOOL, UINT256)
-foo3 = externalFn "foo3" $ lfn \(x1 :* x2 :* u) ->
+foo3 = lfn "foo3" \(x1 :* x2 :* u) ->
   dup2P (x1 + x2) & \(r, r') ->
   ignore (to_addr' 0xdeadbeef <==@ r) (merge (yulConst true u, r'))
 
 -- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
 rangeSumLFn :: Fn (UINT256 :* UINT256 :* UINT256) UINT256
-rangeSumLFn = libraryFn "rangeSumLFn" $ lfn \(i :* s :* t) ->
+rangeSumLFn = lfn "rangeSumLFn" \(i :* s :* t) ->
   dup2P i & \(i, i') ->
   dup2P s & \(s, s') ->
   dup2P t & \(t, t') ->
@@ -55,12 +53,12 @@ rangeSumLFn = libraryFn "rangeSumLFn" $ lfn \(i :* s :* t) ->
 
 -- | "rangeSum" implemented in a value function.
 rangeSumVFn :: Fn (UINT256 :* UINT256 :* UINT256) UINT256
-rangeSumVFn = libraryFn "rangeSumVFn" $ vfn \(i :* s :* t) ->
-  ap'vfn go (YulEmbed 0 :* i :* s :* t)
+rangeSumVFn = vfn "rangeSumVFn" \(i :* s :* t) ->
+    ap'vfn go (YulEmbed 0 :* i :* s :* t)
   where
     go :: Fn (UINT256 :* UINT256 :* UINT256 :* UINT256) UINT256
-    go = libraryFn "rangeSumVFn_go" $ vfn \(c :* i :* s :* t) ->
-          if (i + s) <=? t then ap'vfn go (c + i :* i + s :* s :* t) else c
+    go = vfn "rangeSumVFN_go" \(c :* i :* s :* t) ->
+      if (i + s) <=? t then ap'vfn go (c + i :* i + s :* s :* t) else c
 
 -- idVar :: Fn UINT256 UINT256
 -- idVar = lfn "idVar" \a -> a' + a'
@@ -92,10 +90,10 @@ rangeSumVFn = libraryFn "rangeSumVFn" $ vfn \(i :* s :* t) ->
   --         -- (copy x2 & split & \(x2, x2') -> go x2 x2')
 
 object = mkYulObject "Basic" ctor
-         [ MkAnyFn foo1
-         , MkAnyFn foo2
-         , MkAnyFn foo3
-         , MkAnyFn rangeSumLFn
-         , MkAnyFn rangeSumVFn
+         [ externalFn foo1
+         , libraryFn  foo2
+         , staticFn   foo3 -- FIXME this should not be possible with permission tag
+         , staticFn   rangeSumLFn
+         , externalFn rangeSumVFn
          ]
          where ctor = YulId -- empty constructor

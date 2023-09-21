@@ -186,7 +186,7 @@ gen_code ind (MkAnyYulCat cat) vals_a = go cat where
   go (YulComp cb ac)  = go_comp cb ac
   go (YulProd ab cd)  = go_prod ab cd
   go (YulSwap @m @n)  = ret_vars (swap_vals (Proxy @m) (Proxy @n) vals_a)
-  go (YulIntro ab ac) = go_intro ab ac
+  go (YulFork ab ac)  = go_intro ab ac
   go (YulExl @mn @m)  = go_extract (Proxy @mn) (Proxy @m) True
   go (YulExr @mn @n)  = go_extract (Proxy @mn) (Proxy @n) False
   go YulDis           = ret_vars (dis_vals (Proxy @a) vals_a)
@@ -372,7 +372,6 @@ compile_object ind (MkYulObject { yulObjectName = oname
     ( -- object init
       ind' "code {" <>
       (
-        ind'' "sstore(0, caller()) // store the creator in slot zero" <>
         ind'' "datacopy(0, dataoffset(\"runtime\"), datasize(\"runtime\"))" <>
         ind'' "" <>
         ind'' "// constructor" <>

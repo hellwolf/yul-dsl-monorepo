@@ -142,7 +142,7 @@ data YulCat a b where
   YulProd :: forall a b c d. YulO4 a b c d => YulCat a b %1 -> YulCat c d %1 -> YulCat (a, c) (b, d)
   YulSwap :: forall a b.     YulO2 a b     => YulCat (a, b) (b, a)
   --  Cartesian
-  YulIntro :: forall a b c. YulO3 a b c => YulCat a b %1 -> YulCat a c %1 -> YulCat a (b, c)
+  YulFork :: forall a b c. YulO3 a b c => YulCat a b %1 -> YulCat a c %1 -> YulCat a (b, c)
   YulExl   :: forall a b.   YulO2 a b   => YulCat (a, b) a
   YulExr   :: forall a b.   YulO2 a b   => YulCat (a, b) b
   YulDis   :: forall a.     YulO1 a     => YulCat a ()
@@ -244,7 +244,7 @@ instance (YulObj r, YulNum a) => MPOrd (YulCat r a) (YulCat r BOOL) where
   a /=? b = YulNumCmp (true , false, true ) `YulComp` YulProd a b `YulComp` YulDup
 
 instance YulO2 a r => IfThenElse (YulCat r BOOL) (YulCat r a) where
-  ifThenElse c a b = YulITE `YulComp` YulIntro c (YulIntro a b)
+  ifThenElse c a b = YulITE `YulComp` YulFork c (YulFork a b)
 
 -- | Bespoke show instance for YulCat.
 --
@@ -258,7 +258,7 @@ instance Show (YulCat a b) where
   show (YulComp cb ac)     = "(" <> show ac <> ");(" <> show cb <> ")"
   show (YulProd ab cd)     = "▹(" <> show ab <> ")(" <> show cd <> ")"
   show YulSwap             = "swap" <> abi_type_name' @a <> abi_type_name' @b
-  show (YulIntro ab ac)    = "▵(" <> show ab <> ")(" <> show ac <> ")"
+  show (YulFork ab ac)     = "▵(" <> show ab <> ")(" <> show ac <> ")"
   show YulExl              = "exl" <> abi_type_name' @a
   show YulExr              = "exr" <> abi_type_name' @a
   show YulDis              = "dis" <> abi_type_name' @a

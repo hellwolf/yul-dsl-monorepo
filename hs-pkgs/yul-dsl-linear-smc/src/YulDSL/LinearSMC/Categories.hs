@@ -45,7 +45,7 @@ instance Monoidal YulCat where
   swap    = YulSwap
 
 instance Cartesian YulCat where
-  (▵) = YulIntro
+  (▵) = YulFork
   exl = YulExl
   exr = YulExr
   dis = YulDis

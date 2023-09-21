@@ -75,7 +75,7 @@ TODOs
       - [ ] :M: `MAP k v`, key-value storage.
   - YulCat
     - [x] `(>.>)` operator for the `YulDSL` morphism left-to-right composition.
-    - [ ] :S: `YulMerge, ▵` merge constructor.
+    - [x] :S: `YulFork, ▵` fork constructor.
     - [ ] :M: `YulCall, YulJump`, function calls.
     - [ ] :M: `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
     - [ ] :M: `YulView`, for indexed or named position.
@@ -101,31 +101,31 @@ TODOs
     - [ ] :L: Curation.
 - CodeGen
   - Yul
-    - [ ] 🚧 :M: Lazy semantics.
     - [ ] 🚧 :M: Object builder, constructor, dispatcher.
+    - [ ] 🚧 :M: Lazy semantics.
     - [ ] :S: Fn autoId.
-    - [ ] :M: Program builder, featuring upgradability, factory pattern, external library support.
     - [ ] :M: Variable over-copying optimization.
     - [ ] :XL: Full dispatcher calldata codec support.
   - PlantUML
     - [ ] :L: **FULL** PlantUML support.
+- Program Builder
+  - [ ] :M: Stunt contract generator.
+  - [ ] :M: Upgradability.
+  - [ ] :M: Factory pattern.
+  - [ ] :M: External library.
 
 ## Development Environment
 
-- QuickCheck integration
-  - [ ] Testing using Eval monad.
-  - [ ] `yolc test` pipeline support.
-- Foundry testing integration
-  - [ ] Testing using stunt contract.
-  - [ ] `yolc test` pipeline support.
-- Stunt Contract Support
-  - [ ] Generator.
-- Foundry deployment integration
-  - [ ] `yolc deploy` pipeline.
-  - [ ] Deploy stunt contract.
+- Test Pipeline: `yolc test`
+  - [ ] QuickCheck integration using Eval monad.
+  - [ ] Foundry testing integration using stunt contract.
+- Deployment Pipeline: `yolc deploy`
+  - [ ] Deploy the program (program is an unit of deployment.)
   - [ ] Etherscan verification pipeline.
 
 Future Ideas
 ------------
 
-- Effect System?
+- Liquid Haskell integration
+- YulDSL artifact.
+- Effect system?

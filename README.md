@@ -74,13 +74,21 @@ TODOs
       - [ ] :M: `LIST(l?) n? a`, optionally-length-indexed singly-linked list type.
       - [ ] :M: `MAP k v`, key-value storage.
   - YulCat
-    - [x] `(>.>)` operator for the `YulDSL` morphism left-to-right composition.
-    - [x] :S: `YulFork, ▵` fork constructor.
-    - [ ] :M: `YulCall, YulJump`, function calls.
-    - [ ] :M: `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
-    - [ ] :M: `YulView`, for indexed or named position.
-    - [ ] :M: `YulMap, YulFoldl`, control structure for lists.
-    - [ ] :M: `YulGet, YulPut` using `REF`, and remove `YulSet, YulSPut`.
+      - [x] `(>.>)` operator for the `YulDSL` morphism left-to-right composition.
+      - [ ] :M: `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
+      - SMC Primitives:
+        - [x] Category: `YulId; YulComp, ∘`;
+        - [x] Monoidal: `YulProd, ×; YulSwap, σ`;
+        - [ ] Catesian: `YulFork, ▵; YulExl, π₁; YulExr, π₂; YulDis, ε; YulDup, δ;`
+      - Control Flow Primitives:
+        - [x] `YulEmbed`, embedding constant.
+        - [ ] :M: 🚧 `YulITE`, if-then-else.
+        - [ ] :M: `YulJump`, internal function calls.
+        - [ ] :M: `YulCall`, external function calls.
+        - [ ] :M: `YulMap, YulFoldl`, control structure for lists.
+      - Storage Primitives:
+        - [ ] :M: `YulView`, for indexed or named position.
+        - [ ] :M: `YulGet, YulPut` using `REF`, and remove `YulSet, YulSPut`.
   - YulObject
     - [ ] :S: Module documentation.
 - Eval Monad:

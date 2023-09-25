@@ -396,7 +396,7 @@ deriving newtype instance S.Serialize BYTES
 --
 
 -- | External function signature. This optional information does not have run-time representation.
-type FuncSig = Maybe (String {- function name -}, String {- arguments -})
+type FuncSig = Maybe (String {- function name -}, String {- argument types -})
 
 -- | Selector value type.
 type Sel4Bytes = INTx False 4
@@ -420,7 +420,7 @@ deriving newtype instance S.Serialize SEL
 -- | Create a solidity-compatible selector based on types.
 --   FIXME do it.
 mkTypedSelector :: forall a b. String -> SEL
-mkTypedSelector n = SEL (0, Just (n, ""))
+mkTypedSelector fname = SEL (0, Just (fname, ""))
 
 mkRawSelector :: Sel4Bytes -> SEL
 mkRawSelector sig = SEL (sig, Nothing)

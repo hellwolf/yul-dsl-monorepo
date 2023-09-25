@@ -42,8 +42,8 @@ STILL WORK IN PROGRESS
 
 Contact me if you are interested in testing this project out soon!
 
-TODOs
------
+Features
+--------
 
 ## Framework Features
 
@@ -62,8 +62,8 @@ TODOs
         - [ ] :S: `SOLO a`, demarcation solo tuple.
         - [ ] 🔴 :L: `(,..)`, n-tuple types for function specification.
       - Function Types:
-        - [ ] :M: `SEL`, selector data type; selector creators.
-        - [x] :S: `FUNC a b`, external function reference with storage tag and effect tag.
+        - [ ] :M: `SEL`, selector data type; selector creators: `mkTypedSelector, mkRawSelector`.
+        - [x] :S: `FUNC a b`, external function reference with `FuncStorage` and `FuncEffect` tags.
       - Lenses:
         - [ ] :M: `a :@ "name"` to name a tuple element.
     - Reference
@@ -79,7 +79,7 @@ TODOs
       - SMC Primitives:
         - [x] Category: `YulId; YulComp, ∘`;
         - [x] Monoidal: `YulProd, ×; YulSwap, σ`;
-        - [ ] Catesian: `YulFork, ▵; YulExl, π₁; YulExr, π₂; YulDis, ε; YulDup, δ;`
+        - [x] Catesian: `YulFork, ▵; YulExl, π₁; YulExr, π₂; YulDis, ε; YulDup, δ;`
       - Control Flow Primitives:
         - [x] `YulEmbed`, embedding constant.
         - [ ] :M: 🚧 `YulITE`, if-then-else.
@@ -97,11 +97,11 @@ TODOs
   - Multi-style functions:
     - [x] :S: composition of all styles using `(>.>)`.
     - [x] :S: `IfThenElse` typeclass, rebindable if-then-else syntax.
-  - YulCat Combinators
+  - YulCat combinators:
     - [x] :S: `Num, MPOrd` instances for `YulNum`.
     - [x] :S: `IfThenElse` instance.
     - [x] :M: `vfn, ap'vfn`, value function declaration and application.
-  - Yul Port Combinators
+  - Yul Port combinators:
     - [x] :S: `Num, MPOrd` instances for `YulNum`.
     - [x] :S: `IfThenElse` instance.
     - [x] :M: `lfn, ap'lfn`, linearly-typed function declaration and application.
@@ -109,25 +109,41 @@ TODOs
     - [ ] :L: Curation.
 - CodeGen
   - Yul
-    - [ ] 🚧 :M: Object builder, constructor, dispatcher.
-    - [ ] 🚧 :M: Lazy semantics.
-    - [ ] :S: Fn autoId.
-    - [ ] :M: Variable over-copying optimization.
-    - [ ] :XL: Full dispatcher calldata codec support.
+    - CodeGen core:
+      - [ ] :M: Lazy semantics.
+      - [ ] :S: Fn autoId (instead of using yulCatDigest.)
+    - Object builder:
+      - [ ] 🚧 :XL: dispatcher.
+        - 🔴 Blocked by `mkTypedSelector` support.
+        - Full dispatcher calldata codec support.
+      - [ ] :M: constructor support.
   - PlantUML
-    - [ ] :L: **FULL** PlantUML support.
+    - [ ] :L: PlantUML support.
 - Program Builder
   - [ ] :M: Stunt contract generator.
-  - [ ] :M: Upgradability.
-  - [ ] :M: Factory pattern.
-  - [ ] :M: External library.
+    - 🔴 Blocked by `mkTypedSelector` support.
+  - Program output mode, as a solidity contract:
+    - [ ] 🚧 :S: Simple program template.
+    - [ ] :S: Upgradability patterns.
+    - [ ] :S: Factory patterns.
+  - Shared library output mode, as a solidity external library:
+    - [ ] :S: Simple library template.
+- CLI: `yolc [options] yol_module_spec...`
+  - Output modes:
+    - [x] Show output mode.
+    - [x] Yul output mode.
+    - [ ] :M: PlantUML output mode.
+  - Compiler Modes:
+    - [x] `symbol :: Fn a b`, fnMode
+    - [x] `object :: YulObject`, objectMode
+    - [ ] 🚧 :M: `manifest :: Manifest`, projectMode
 
-## Development Environment
+## Development Environment (attila & drwitch)
 
-- Test Pipeline: `yolc test`
+- Test Pipeline: `attila test`
   - [ ] QuickCheck integration using Eval monad.
   - [ ] Foundry testing integration using stunt contract.
-- Deployment Pipeline: `yolc deploy`
+- Deployment Pipeline: `attila deploy`
   - [ ] Deploy the program (program is an unit of deployment.)
   - [ ] Etherscan verification pipeline.
 

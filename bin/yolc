@@ -15,33 +15,37 @@ cmpl_id=2
 out_dir="$PWD"/build
 declare -a runyol_extra_opts=(-O0)
 
-function help() {
+help() {
   cat <<EOF
 yolc, the YulDSL commandline transpiler.
 
 Usage: yolc [options] yol_module_spec...
 
--m [output_mode] Valid output modes: show, plantuml, yul (default)
--h               Display this help and exit
+-m [output_mode] Valid output modes: yul (default), show, plantuml
 -v               Output more information about what is going on
+-h               Display this help and exit
 
-yol_module_spec: {package_path:}module_name{[symbol...,]}
-  where 1) both package_path and symbol list is optional,
-        2) default package_path is current working directory ($PWD),
-        3) and default symbol is 'defsym' (TODO, use object instead).
+yol_module_spec: package_path{:module_name}{[symbol...,]}, where
+    1) without specifying a module_name, 'Project' module is loaded instead,
+    2) the default symbol for a module is 'object :: YulObject', otherwise symbols are of type 'Fn a b',
+    3) the required symbol for a 'Project' module is 'manifest :: Manifest', no other symbol is supported.
 
 EOF
 }
 
-function die() {
+die() {
   echo "$@"
   exit 1
 }
 
-function runyol() {
+debug() {
+  echo "$@" >&2
+}
+
+runyol() {
   if when_verbose; then
-    echo "+ runyol" "$@"
-    cabal build "${runyol_extra_opts[@]}" runyol "$@" && \
+    debug "+ runyol" "$@"
+    cabal build "${runyol_extra_opts[@]}" runyol "$@" >&2 && \
       cabal run "${runyol_extra_opts[@]}" runyol "$@"
   else
     # silent the stdout of the build process
@@ -50,14 +54,16 @@ function runyol() {
   fi
 }
 
-function main() {
+main() {
   local PROGRAM_PATH="$0"
   local OPTIND OPTARG
+  local cmpl_name
 
   # parse options
   while getopts m:hv o; do
     case $o in
       m)
+        cmpl_name=$OPTARG
         case "$OPTARG" in
           yul)
             cmpl_id=2
@@ -97,10 +103,10 @@ function main() {
   [[ -n "$is_nix_dist" ]] && die "Nix-distribution mode not supported"
 
   when_verbose && {
-    echo "Distribution path: $dist_path"
-    echo "Output mode: $cmpl_id"
-    echo "Output directory: $out_dir"
-    echo
+    debug "Distribution path: $dist_path"
+    debug "Output mode: $cmpl_name"
+    debug "Output directory: $out_dir"
+    debug
   }
 
   mkdir -p "$out_dir"
@@ -108,21 +114,26 @@ function main() {
   for i in "$@"; do
     build_yol_module "$i"
   done
+
+  exit 0
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Yol Module Builder
 #-----------------------------------------------------------------------------------------------------------------------
 
-function build_yol_module() {
-  local yol_dir pkg_path cabal_path pkg_name mod_name cmpl_mode cmpl_syms rest build_failed
+build_yol_module() {
+  #
+  # Parse Yol Module Spec
+  #
 
-  when_verbose && echo "=== Building yol module: $1"
+  local mod_spec
+  mod_spec=$1
+  when_verbose && debug "=== Building yol module: $mod_spec"
 
-  # parse `pkg_path` (default: current folder)
-  # shellcheck disable=SC2162 # allowing read -r
-  IFS=: read pkg_path rest < <(echo "$1")
-  [ -z "$rest" ] && { rest=$pkg_path; pkg_path=$PWD; }
+  # parse pkg_path, cabal_path, pkg_name
+  local rest pkg_path cabal_path pkg_name
+  IFS=: read -r pkg_path rest <<< "$mod_spec"
   pkg_path=$(readlink -f "$pkg_path")
   [ -d "$pkg_path" ] || die "Package path not a directory: $pkg_path"
   cabal_path=$(echo "$pkg_path"/*.cabal)
@@ -130,31 +141,46 @@ function build_yol_module() {
   pkg_name=$(sed -nE -e 's|^name:\s*(.+)\s*$|\1|p' < "$cabal_path")
   [ -n "$pkg_name" ] || die "Package name cannot be detected, is it a valid cabal file?"
 
-  # parse `mod_name`
-  read -r mod_name rest < <(echo -n "$rest" | sed -nE -e 's|^([.0-9a-zA-Z]+)(\[(.*)\])?$|\1 \3|gp')
-  [ -z "$mod_name" ] && die "Module name cannot be empty"
-
-  # parse `syms`
-  cmpl_syms=$(echo -n "$rest" | sed -e 's|\s*,\s*| |g')
-  if [ -z "$cmpl_syms" ]; then
-    cmpl_mode=objectMode # object mode
-    cmpl_syms=object
-  else
-    cmpl_mode=fnMode # fn mode
+  # parse mod_name
+  if [ -n "$rest" ]; then
+    local mod_name
+    # separate module name from symbols
+    read -r mod_name rest <<< "$(echo -n "$rest" | sed -nE -e 's|^([.0-9a-zA-Z]+)(\[(.*)\])?$|\1 \3|gp')"
+    [ -z "$mod_name" ] && die "Module name cannot be extracted: $rest"
   fi
 
-  # prepare the build directory
-  yol_dir=$out_dir/${pkg_name}-${mod_name}.yol
+  # parse cmpl_mode, cmpl_syms
+  local cmpl_mode cmpl_syms yol_dir
+  cmpl_syms=$(echo -n "$rest" | sed -e 's|\s*,\s*| |g')
+  if [ -z "$mod_name" ]; then
+    mod_name=Project
+    cmpl_mode=projectMode
+    cmpl_syms=manifest
+    yol_dir=${pkg_name}
+  elif [ -z "$cmpl_syms" ]; then
+    cmpl_mode=objectMode # object mode
+    cmpl_syms=object
+    yol_dir=${pkg_name}.${mod_name}
+  else
+    cmpl_mode=fnMode # fn mode
+    yol_dir=${pkg_name}.${mod_name}.custom
+  fi
+  yol_dir=$out_dir/${yol_dir}
   mkdir -p "$yol_dir"
 
   when_verbose && {
-    echo "Package path: $pkg_path"
-    echo "Cabal file: $cabal_path"
-    echo "Package name: $pkg_name"
-    echo "Module name: $mod_name"
-    echo "Symbols to be built: $cmpl_syms"
-    echo "Yol module building directory: $yol_dir"
+    debug "Package path: $pkg_path"
+    debug "Cabal file: $cabal_path"
+    debug "Package name: $pkg_name"
+    debug "Module name: $mod_name"
+    debug "Compiler mode: $cmpl_mode"
+    [ -n "$cmpl_syms" ] && debug "Custom compilation symbols: $cmpl_syms"
+    debug "Yol module build directory: $yol_dir"
   }
+
+  #
+  # Build
+  #
 
   # prepare cabal build files and build
   cat > "$yol_dir"/cabal.project <<EOF
@@ -166,10 +192,12 @@ packages:
   $yol_dir/runyol.cabal
 EOF
 
+  # instantiate runyol.cabal template
   {
     sed -e "s|__YOL_PKG_NAME__|$pkg_name|g"
   } < "$dist_path"/templates/runyol.cabal > "$yol_dir"/runyol.cabal
 
+  # instantiate RunYol.hs template
   local actions
   actions=$(for i in $cmpl_syms; do
               echo -n "putStrLn $ $cmpl_mode (compilers !! $cmpl_id) $i"
@@ -180,32 +208,28 @@ EOF
   } < "$dist_path"/templates/RunYol.hs > "$yol_dir"/RunYol.hs
 
   when_verbose && {
-    echo
-    echo "=== BEGIN cabal.project"
-    cat "$yol_dir"/cabal.project
-    echo "=== END cabal.project"
-    echo
-    echo "=== BEGIN runyol.cabal"
-    cat "$yol_dir"/runyol.cabal
-    echo "=== END runyol.cabal"
-    echo
-    echo "=== BEGIN RunYol.hs"
-    cat "$yol_dir"/RunYol.hs
-    echo "=== END RunYol.hs"
+    debug
+    debug "=== BEGIN cabal.project"
+    cat "$yol_dir"/cabal.project >&2
+    debug "=== END cabal.project"
+    debug
+    debug "=== BEGIN runyol.cabal"
+    cat "$yol_dir"/runyol.cabal >&2
+    debug "=== END runyol.cabal"
+    debug
+    debug "=== BEGIN RunYol.hs"
+    cat "$yol_dir"/RunYol.hs >&2
+    debug "=== END RunYol.hs"
   }
 
   runyol --project-file="$yol_dir"/cabal.project \
          --builddir="$out_dir/yolc" \
-    || build_failed=1
-
-  [ -z "$build_failed" ] || die "Failed to build yol module: $1"
+    || die "Failed to build yol module: $mod_spec"
 
   when_verbose && {
-    echo "=== Done with yol module: $1"
-    echo
+    debug "=== Done with yol module: $mod_spec"
+    debug
   }
-
-  exit 0
 }
 
 main "$@"

@@ -35,5 +35,4 @@ common yol-module-options
 
 library
   import:           yol-module-options
-  exposed-modules:  Basic
-                    ERC20
+  exposed-modules:  Project Basic ERC20

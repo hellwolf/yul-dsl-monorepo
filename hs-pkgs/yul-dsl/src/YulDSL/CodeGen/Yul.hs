@@ -335,7 +335,7 @@ create_dispatcher ind fns = do
     code_cases <>
     ind' "default { revert(0, 0) }" <>
     ind' "function selector() -> s {" <>
-    ind' " s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)" <>
+    ind' "  s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)" <>
     ind' "}" <>
     ind "}"
   where ind' = indent ind

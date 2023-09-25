@@ -46,6 +46,7 @@ library
                     YulDSL.Eval
                     YulDSL.CodeGen.PlantUML
                     YulDSL.CodeGen.Yul
+                    YOLC.Manifest
 
 Test-Suite test-yul-dsl
   import:           basic-options

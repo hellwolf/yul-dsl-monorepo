@@ -11,7 +11,7 @@ import           Control.Monad.State.Lazy (State, evalState, get, modify, put)
 import           Data.Char                (chr)
 import qualified Data.Map.Strict          as M'
 import           Data.Maybe               (fromJust, isJust)
-import qualified Data.Text                as T
+import qualified Data.Text.Lazy           as T
 import           Data.Typeable            (Proxy (..))
 
 import           YulDSL.Core
@@ -342,16 +342,16 @@ create_dispatcher ind fns = do
         ind'' = indent ind'
         dispatchable (ExternalFn _ sel fn) = Just (sel, MkAnyYulCat (fnCat fn))
         dispatchable (LibraryFn _)         = Nothing
-        case_fn (s, (MkAnyYulCat (c :: YulCat a b))) = do
+        case_fn (sel@(SEL (sig, Just (fname, _))), (MkAnyYulCat (_ :: YulCat a b))) = do
           vars_a <- mk_let_vars (Proxy @a)
           vars_b <- mk_let_vars (Proxy @b)
           code_vars <- declare_vars ind''
           return $
-            ind' ("case " <> T.pack (show s) <> "{") <>
+            ind' ("case " <> T.pack (show sel) <> "{") <>
             code_vars <>
             ind'' "// TODO, abi decoding of input" <>
             ind'' (T.intercalate "," vars_b <> " := " <>
-                   T.pack (digestYulCat c) <> "(" <> T.intercalate "," vars_a <> ")") <>
+                   T.pack fname <> "(" <> T.intercalate "," vars_a <> ")") <>
             ind' "}"
 
 compile_object :: Indenter -> YulObject -> CGState Code

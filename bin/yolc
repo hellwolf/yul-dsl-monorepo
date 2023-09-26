@@ -11,7 +11,7 @@
 opt_verbose=; function when_verbose() { [[ -n "$opt_verbose" ]]; }
 is_nix_dist=
 dist_path=
-cmpl_id=2
+cmpl_id=0 # yul, show, plantuml
 out_dir="$PWD"/build
 declare -a runyol_extra_opts=(-O0)
 
@@ -66,13 +66,13 @@ main() {
         cmpl_name=$OPTARG
         case "$OPTARG" in
           yul)
-            cmpl_id=2
-            ;;
-          plantuml)
-            cmpl_id=1
+            cmpl_id=0
             ;;
           show)
-            cmpl_id=0
+            cmpl_id=1
+            ;;
+          plantuml)
+            cmpl_id=2
             ;;
           *)
             die "Unknown output mode"
@@ -200,7 +200,7 @@ EOF
   # instantiate RunYol.hs template
   local actions
   actions=$(for i in $cmpl_syms; do
-              echo -n "putStrLn $ $cmpl_mode (compilers !! $cmpl_id) $i"
+              echo -n "putStrLn =<< $cmpl_mode (compilers !! $cmpl_id) $i"
             done)
   {
     sed -e "s|__YOL_MOD_NAME__|${mod_name}|g" \

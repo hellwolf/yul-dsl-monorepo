@@ -28,13 +28,19 @@ common basic-options
 library
   import:           basic-options
   hs-source-dirs:   src
-  build-depends:    bytestring >= 0.11,
+  build-depends:    template-haskell >= 2.19.0,
+                    bytestring >= 0.11,
                     text >= 2.0.1,
-                    -- TODO remove cereal dependency
-                    cereal >= 0.5.8,
+                    process >= 1.6.17,
                     constraints >= 0.13,
                     containers >= 0.6.7,
-                    mtl >= 2.3.1
+                    mtl >= 2.3.1,
+                    aeson >= 2.2.0,
+                    lens-aeson >= 1.2.2,
+                    lens >= 5.2.0,
+                    PyF >= 0.11.1,
+                    -- TODO remove cereal dependency
+                    cereal >= 0.5.8
   exposed-modules:  Data.NProducts
                     Data.NTuple
                     YulDSL.Core.ContractABI.Types
@@ -46,7 +52,9 @@ library
                     YulDSL.Eval
                     YulDSL.CodeGen.PlantUML
                     YulDSL.CodeGen.Yul
+                    YOLC.TH
                     YOLC.Manifest
+                    YOLC.Builder
 
 Test-Suite test-yul-dsl
   import:           basic-options

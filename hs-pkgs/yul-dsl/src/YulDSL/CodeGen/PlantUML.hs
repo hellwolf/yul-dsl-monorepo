@@ -2,7 +2,7 @@
 
 module YulDSL.CodeGen.PlantUML (compile) where
 
-import qualified Data.Text          as T
+import qualified Data.Text.Lazy     as T
 import           Data.Typeable
 import           Text.Printf
 

@@ -67,7 +67,7 @@ module YulDSL.Core.ContractABI.Types
   , module Data.NProducts
   , module Data.NTuple
 
-  , FuncSig, Sel4Bytes, SEL, mkTypedSelector, mkRawSelector
+  , FuncSig, Sel4Bytes, SEL (..), mkTypedSelector, mkRawSelector
   , FuncStorage (..), FuncEffect (..), FUNC (..)
 
     -- * Show Instance Examples
@@ -411,7 +411,7 @@ instance ABIType SEL where
 --  abi_type_show_vars (SEL (Just (sig, args), _)) = [sig]
 
 instance Show SEL where
-  show (SEL (sig, Just (fname, args))) = fname <> "/*" ++ showHex sig "(" ++ args ++ ")*/"
+  show (SEL (sig, Just (fname, args))) = showHex sig "/*" ++  fname ++ "(" ++ args ++ ")*/"
   show (SEL (sig, Nothing))            = showHex sig ""
 
 deriving instance Generic SEL

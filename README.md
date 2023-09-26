@@ -45,9 +45,9 @@ Contact me if you are interested in testing this project out soon!
 Features
 --------
 
-## Framework Features
+## YulDSL
 
-- YulDSL Core
+- Core
   - ContractABI: Solidity-Contract-ABI-Compatible Types
     - Primitive Types:
       - [x] Simple Static value types: `ADDR`, `BOOL`, `INTx s n`.
@@ -82,7 +82,7 @@ Features
         - [x] Catesian: `YulFork, ▵; YulExl, π₁; YulExr, π₂; YulDis, ε; YulDup, δ;`
       - Control Flow Primitives:
         - [x] `YulEmbed`, embedding constant.
-        - [ ] :M: 🚧 `YulITE`, if-then-else.
+        - [ ] :M: `YulITE`, if-then-else.
         - [ ] :M: `YulJump`, internal function calls.
         - [ ] :M: `YulCall`, external function calls.
         - [ ] :M: `YulMap, YulFoldl`, control structure for lists.
@@ -93,41 +93,50 @@ Features
     - [ ] :S: Module documentation.
 - Eval Monad:
   - [ ] :L: Support all `YulDSL` constructors.
-- YulDSL Linear-SMC Frontend:
-  - Multi-style functions:
-    - [x] :S: composition of all styles using `(>.>)`.
-    - [x] :S: `IfThenElse` typeclass, rebindable if-then-else syntax.
-  - YulCat combinators:
-    - [x] :S: `Num, MPOrd` instances for `YulNum`.
-    - [x] :S: `IfThenElse` instance.
-    - [x] :M: `vfn, ap'vfn`, value function declaration and application.
-  - Yul Port combinators:
-    - [x] :S: `Num, MPOrd` instances for `YulNum`.
-    - [x] :S: `IfThenElse` instance.
-    - [x] :M: `lfn, ap'lfn`, linearly-typed function declaration and application.
-  - Prelude:
-    - [ ] :L: Curation.
-- CodeGen
-  - Yul
-    - CodeGen core:
-      - [ ] :M: Lazy semantics.
-      - [ ] :S: Fn autoId (instead of using yulCatDigest.)
-    - Object builder:
-      - [ ] 🚧 :XL: dispatcher.
-        - 🔴 Blocked by `mkTypedSelector` support.
-        - Full dispatcher calldata codec support.
-      - [ ] :M: constructor support.
-  - PlantUML
-    - [ ] :L: PlantUML support.
-- Program Builder
-  - [ ] :M: Stunt contract generator.
-    - 🔴 Blocked by `mkTypedSelector` support.
-  - Program output mode, as a solidity contract:
-    - [ ] 🚧 :S: Simple program template.
-    - [ ] :S: Upgradability patterns.
-    - [ ] :S: Factory patterns.
-  - Shared library output mode, as a solidity external library:
+- Yul CodeGen
+  - CodeGen core:
+    - [ ] :M: Lazy semantics.
+    - [ ] :S: Fn autoId (instead of using yulCatDigest.)
+  - Object builder:
+    - [ ] 🚧 :XL: dispatcher.
+      - 🔴 Blocked by `mkTypedSelector` support.
+      - Full dispatcher calldata codec support.
+    - [ ] :M: constructor support.
+- PlantUML CodeGen
+  - [ ] :L: Complete PlantUML codegen support.
+
+## YulDSL Linear-SMC Frontend
+
+- Multi-style functions:
+  - [x] :S: composition of all styles using `(>.>)`.
+  - [x] :S: `IfThenElse` typeclass, rebindable if-then-else syntax.
+- YulCat combinators:
+  - [x] :S: `Num, MPOrd` instances for `YulNum`.
+  - [x] :S: `IfThenElse` instance.
+  - [x] :M: `vfn, ap'vfn`, value function declaration and application.
+- Yul Port combinators:
+  - [x] :S: `Num, MPOrd` instances for `YulNum`.
+  - [x] :S: `IfThenElse` instance.
+  - [x] :M: `lfn, ap'lfn`, linearly-typed function declaration and application.
+- Prelude:
+  - [ ] :L: Curation.
+
+## YOLC
+
+- Project Builder
+  - [ ] 🚧 :M: Single-file output mode
+  - Deployment types:
+    - [ ] 🚧 :S: Singleton contract.
+    - [ ] :S: Factory contract.
+    - [ ] :S: Shared library.
+  - Upgradability patterns:
+    - [ ] :S: Grandfatherly upgradable.
+    - [ ] :S: Full upgradable.
     - [ ] :S: Simple library template.
+  - Contract verification support:
+    - [ ] :M: Stunt contract generator.
+      - 🔴 Blocked by `mkTypedSelector` support.
+    - [ ] :M: Multi-files output mode
 - CLI: `yolc [options] yol_module_spec...`
   - Output modes:
     - [x] Show output mode.
@@ -146,6 +155,7 @@ Features
 - Deployment Pipeline: `attila deploy`
   - [ ] Deploy the program (program is an unit of deployment.)
   - [ ] Etherscan verification pipeline.
+- Distribution Packaging
 
 Future Ideas
 ------------

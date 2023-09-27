@@ -2,4 +2,5 @@ packages:
     3rd-parties/linear-smc-2.2.3
     hs-pkgs/yul-dsl
     hs-pkgs/yul-dsl-linear-smc
-    yolc-examples
+    hs-pkgs/yol-suite
+    examples/demo

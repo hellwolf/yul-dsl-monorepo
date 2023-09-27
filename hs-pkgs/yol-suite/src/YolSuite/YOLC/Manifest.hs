@@ -1,4 +1,4 @@
-module YOLC.Manifest where
+module YolSuite.YOLC.Manifest where
 
 import           YulDSL.Core.YulObject (YulObject)
 

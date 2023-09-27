@@ -121,7 +121,12 @@ Features
 - Prelude:
   - [ ] :L: Curation.
 
-## YOLC
+## YOL Suite
+
+- YOL stands for *Yet Original Language*.
+- YOL suite is *For the New Pioneer* of EVM application development.
+
+### yolc: the evil twin of solc
 
 - Project Builder
   - [ ] 🚧 :M: Single-file output mode
@@ -145,9 +150,9 @@ Features
   - Compiler Modes:
     - [x] `symbol :: Fn a b`, fnMode
     - [x] `object :: YulObject`, objectMode
-    - [ ] 🚧 :M: `manifest :: Manifest`, projectMode
+    - [x] `manifest :: Manifest`, projectMode
 
-## Development Environment (attila & drwitch)
+### attila: who wields the foundry, forges his path
 
 - Test Pipeline: `attila test`
   - [ ] QuickCheck integration using Eval monad.
@@ -155,7 +160,13 @@ Features
 - Deployment Pipeline: `attila deploy`
   - [ ] Deploy the program (program is an unit of deployment.)
   - [ ] Etherscan verification pipeline.
-- Distribution Packaging
+
+### drwitch: who persuades the tyrant, shapes our history
+
+
+### Software Distribution
+
+- [ ] :M: Nix flake.
 
 Future Ideas
 ------------

@@ -1,46 +1,35 @@
-Cabal-Version:  3.0
+cabal-version:  3.0
 name:           yul-dsl
-version:        0.1
-category:       control
+version:        0.1.0.0
+category:       Language
 synopsis:       YulDSL, a DSL for Solidity/Yul
-license:        LGPL-3.0-or-later
-license-file:   LICENSE
-author:         Miao, ZhiCheng
-maintainer:     zhicheng.miao@gmail.com
-tested-with:    GHC==9.6.2
-build-type:     Simple
-
 description:    YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
 
                 Additionally, the package uses a technique called "evaluating linear functions to symmetric monoidal
-                categories (Jean-Philippe Bernardy and Arnaud Spiwack)" to provide an ergonomic linear functions
+                categories (Jean-Philippe Berntardy and Arnaud Spiwack)" to provide an ergonomic linear functions
                 (nicknamed "lolipop" functions, hence the project name) programming environment for the 'YulDSL'.
 
                 Furthermore, the 'YulDSL' has its portable artifact form (WORK-IN-PROGRESS), which opens the door for
                 other frontends (a visual programming interface or other principled programming languages) to produce
                 and share 'YulDSL' as portable modules with each other.
 
+license:        LGPL-3.0-or-later
+license-file:   LICENSE
+author:         Miao, ZhiCheng
+maintainer:     zhicheng.miao@gmail.com
+copyright:      (c) 2023 Miao, ZhiCheng
+tested-with:    GHC==9.6.2
+build-type:     Simple
+-- extra-doc-files:    CHANGELOG.md
+
 common basic-options
-  default-language:     GHC2021
-  ghc-options:          -Wall
-  build-depends:    base >= 4.13 && < 666
+  default-language: GHC2021
+  ghc-options:      -Wall
+  build-depends:    base ^>=4.18.0.0 && < 666
 
 library
   import:           basic-options
   hs-source-dirs:   src
-  build-depends:    template-haskell >= 2.19.0,
-                    bytestring >= 0.11,
-                    text >= 2.0.1,
-                    process >= 1.6.17,
-                    constraints >= 0.13,
-                    containers >= 0.6.7,
-                    mtl >= 2.3.1,
-                    aeson >= 2.2.0,
-                    lens-aeson >= 1.2.2,
-                    lens >= 5.2.0,
-                    PyF >= 0.11.1,
-                    -- TODO remove cereal dependency
-                    cereal >= 0.5.8
   exposed-modules:  Data.NProducts
                     Data.NTuple
                     YulDSL.Core.ContractABI.Types
@@ -52,9 +41,13 @@ library
                     YulDSL.Eval
                     YulDSL.CodeGen.PlantUML
                     YulDSL.CodeGen.Yul
-                    YOLC.TH
-                    YOLC.Manifest
-                    YOLC.Builder
+  build-depends:    bytestring >= 0.11,
+                    text >= 2.0.1,
+                    constraints >= 0.13,
+                    containers >= 0.6.7,
+                    mtl >= 2.3.1,
+                    -- TODO remove cereal dependency
+                    cereal >= 0.5.8
 
 Test-Suite test-yul-dsl
   import:           basic-options

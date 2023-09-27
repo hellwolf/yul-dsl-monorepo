@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 
-module YOLC.Builder
+module YolSuite.YOLC.Builder
   ( Manifest (..)
   , buildManifest
   ) where
@@ -20,8 +20,8 @@ import           System.Process          (CreateProcess (..), StdStream (CreateP
 import qualified YulDSL.CodeGen.Yul      as YulCodeGen
 import qualified YulDSL.Core             as YulDSLCore
 --
-import           YOLC.Manifest
-import           YOLC.TH
+import           YolSuite.TH
+import           YolSuite.YOLC.Manifest
 
 get_solc :: IO String
 get_solc = return "solc" -- FIXME read SOLC environment variable
@@ -31,8 +31,7 @@ stringify val = case fromJSON val of
     Success str -> Just str
     Error _     -> Nothing
 
--- Compile a YulObject to bytecode.
-
+-- | Compile a YulObject to bytecode.
 compile_mo :: YulDSLCore.YulObject -> IO T.Text
 compile_mo mo = do
   let oname = YulDSLCore.yulObjectName mo
@@ -51,23 +50,28 @@ compile_mo mo = do
                    ]
                ])
   hClose hin
-  out <- encodeUtf8 <$> T.pack <$> hGetContents' hout
-  return $ fromJust $ stringify <$> fromJust $ (decode out :: Maybe Value)
+  out :: Maybe Value <- decode <$> encodeUtf8 <$> T.pack <$> hGetContents' hout
+  print out
+  -- TODO handle errors
+  return $ fromJust $ out
     >>= (^? key "contracts")
     >>= (^? key "main.yul")
     >>= (^? key (fromString oname))
     >>= (^? key "evm")
     >>= (^? key "bytecode")
     >>= (^? key "object")
+    >>= stringify
 
+-- | Compile one build unit.
 build_bu :: BuildUnit -> IO T.Text
 build_bu (MkBuildUnit { mainObject = mo }) = do
   let oname = YulDSLCore.yulObjectName mo
       pname = oname ++ "Program"
   bytecode <- compile_mo mo
   return $ [fmt'|
-#include "../../templates/SingletonContract.sol"
+#include "../../../templates/SingletonContract.sol"
 |]
 
+-- | Build manifest in the single-file output mode.
 buildManifest :: Manifest -> IO T.Text
 buildManifest (MkManifest as) = mapM build_bu as >>= return . T.intercalate "\n"

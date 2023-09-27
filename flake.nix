@@ -14,7 +14,7 @@
       devInputs = with pkgs; [ shellcheck jq nodePackages.nodemon ];
       shellHook = ''
         # This makes binaries of this project available for testing, e.g. `yolc`
-        export PATH=$PWD/bin:$PATH
+        export PATH=$PWD/hs-pkgs/yol-suite/bin/:$PATH
       '';
     in {
       devShells.default = pkgs.mkShell {

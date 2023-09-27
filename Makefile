@@ -57,17 +57,17 @@ build-docs-and-display: build-docs
 clean:
 	rm -rf build
 
-test: test-yul-dsl test-yolc-basic
+test: test-yul-dsl test-demo
 
 test-yul-dsl:
 	$(CABAL_TEST) test yul-dsl $(TEST_OPTIONS)
 
-test-yolc-basic:
-	yolc -m yul yolc-examples:Basic
-	yolc -m show yolc-examples:Basic
-	yolc -m yul yolc-examples:ERC20
+test-demo:
+	yolc -m yul examples/demo:Basic
+	yolc -m show examples/demo:Basic
+	yolc -m yul examples/demo:ERC20
 
 dev:
-	nodemon -w hs-pkgs -w yolc-examples -e "hs cabal" -x "make $(DEV_TARGETS) || exit 1"
+	nodemon -w hs-pkgs -w yol-demo -e "hs cabal" -x "make $(DEV_TARGETS) || exit 1"
 
 .PHONY: all gen-* build-* clean test test-* dev

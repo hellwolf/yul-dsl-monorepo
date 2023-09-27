@@ -1,38 +1,31 @@
 Cabal-Version:  3.0
-name:           yolc-examples
+name:           runyol-__YOL_PKG_NAME__
 version:        0.1
-category:       control
-synopsis:       Examples built with yolc (A YulDSL Compiler)
-license:        LGPL-3.0-or-later
-license-file:   LICENSE
-author:         Miao, ZhiCheng
-maintainer:     zhicheng.miao@gmail.com
-tested-with:    GHC==9.6.2
 build-type:     Simple
 
 common yol-module-options
     default-language:     GHC2021
-    ghc-options:          -Wall
-                          -Wno-name-shadowing
     default-extensions:   LinearTypes
                           BlockArguments
                           ImpredicativeTypes
                           OverloadedStrings
                           UnicodeSyntax
-                          RebindableSyntax
-                          ImplicitPrelude
+    ghc-options:          -Wall
+                          -Wno-name-shadowing
     mixins:               base hiding (Prelude),
                           base (Prelude as Prelude.Base),
                           yul-dsl-linear-smc (Prelude.YulDSL.LinearSMC as Prelude),
                           yul-dsl-linear-smc
     build-depends:        base >= 4.13 && < 666,
-                          text >= 2.0.1,
                           bytestring >= 0.11,
-                          yul-dsl,
-                          yul-dsl-linear-smc,
+                          text >= 2.0.2,
                           linear-base >= 0.3.1,
-                          linear-smc >= 2.2.3
+                          linear-smc >= 2.2.3,
+                          yul-dsl-linear-smc,
+                          yul-dsl,
+                          yol-suite
 
-library
+executable runyol
   import:           yol-module-options
-  exposed-modules:  Project Basic ERC20
+  build-depends:    __YOL_PKG_NAME__
+  main-is:          RunYol.hs

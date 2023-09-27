@@ -1,0 +1,45 @@
+cabal-version:   3.4
+name:            yol-suite
+version:         0.1.0.0
+category:        Development
+synopsis:        YOL suite is *For the New Pioneer* of EVM application development
+description:     YOL stands for *Yet Original Language*. The suite consists of:
+
+                 * yolc "the evil twin of solc": a compiler for the Haskell port of yul-dsl.
+
+                 * attila "who wields the foundry, forges his path": a testing framework using foundry under the hood.
+
+                 * drwitch "who persuades the tyrant, shapes our history": a minimalistic multitool for interacting with
+                   EVM smart contracts.
+
+license:         LGPL-3.0-only
+license-file:    LICENSE
+author:          Miao, ZhiCheng
+maintainer:      zhicheng.miao@gmail.com
+tested-with:     GHC==9.6.2
+copyright:       (c) 2023 Miao, ZhiCheng
+build-type:      Simple
+extra-doc-files: CHANGELOG.md
+
+common warnings
+  default-language: GHC2021
+  ghc-options:      -Wall
+  build-depends:    base ^>=4.18.0.0 && < 666
+
+library
+  import:           warnings
+  exposed-modules:  YolSuite.TH
+                    YolSuite.YOLC.Manifest
+                    YolSuite.YOLC.Builder
+  -- other-modules:
+  -- other-extensions:
+  build-depends:    bytestring >= 0.11,
+                    text >= 2.0.1,
+                    process >= 1.6.17,
+                    template-haskell >= 2.19.0,
+                    PyF >= 0.11.1,
+                    lens >= 5.2.0,
+                    aeson >= 2.2.0,
+                    lens-aeson >= 1.2.2,
+                    yul-dsl
+  hs-source-dirs:   src

@@ -97,7 +97,7 @@ main() {
   if [[ -n "$is_nix_dist" ]]; then
     dist_path=$(nix metadata --json | jq -r .path)
   else
-    dist_path=$(readlink -f "$(dirname "$PROGRAM_PATH")"/..)
+    dist_path=$(readlink -f "$(dirname "$PROGRAM_PATH")"/../../..)
   fi
   ## TODO support nix-distribution mode
   [[ -n "$is_nix_dist" ]] && die "Nix-distribution mode not supported"
@@ -188,6 +188,7 @@ packages:
   $dist_path/3rd-parties/linear-smc-2.2.3
   $dist_path/hs-pkgs/yul-dsl
   $dist_path/hs-pkgs/yul-dsl-linear-smc
+  $dist_path/hs-pkgs/yol-suite
   $cabal_path
   $yol_dir/runyol.cabal
 EOF
@@ -195,7 +196,7 @@ EOF
   # instantiate runyol.cabal template
   {
     sed -e "s|__YOL_PKG_NAME__|$pkg_name|g"
-  } < "$dist_path"/templates/runyol.cabal > "$yol_dir"/runyol.cabal
+  } < "$dist_path"/hs-pkgs/yol-suite/templates/runyol.cabal > "$yol_dir"/runyol.cabal
 
   # instantiate RunYol.hs template
   local actions
@@ -205,7 +206,7 @@ EOF
   {
     sed -e "s|__YOL_MOD_NAME__|${mod_name}|g" \
         -e "s|__COMPILE_ACTIONS__|${actions}|g"
-  } < "$dist_path"/templates/RunYol.hs > "$yol_dir"/RunYol.hs
+  } < "$dist_path"/hs-pkgs/yol-suite/templates/RunYol.hs > "$yol_dir"/RunYol.hs
 
   when_verbose && {
     debug

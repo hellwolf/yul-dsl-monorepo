@@ -258,14 +258,14 @@ gen_code ind (MkAnyYulCat cat) vals_a = go cat where
   go_ite _ = let ca = abi_type_count_vars @a in assert (length vals_a == 1 + 2 * ca)
     (do vars_b <- mk_let_vars (Proxy @a)
         let vals_b = fmap LetVar vars_b
-        return ( mk_code' "ite" (Proxy @(BOOL, (a, a))) (Proxy @a) $
-                 ind ("switch " <> val_to_code (vals_a !! 0)) <>
-                 ind "case 0 {" <>
-                 ind' (vals_to_code vals_b <> " := " <> (vals_to_code . take ca . drop 1) vals_a) <>
-                 ind "}" <>
-                 ind "default {" <>
-                 ind' (vals_to_code vals_b <> " := " <> (vals_to_code . drop (1 + ca)) vals_a) <>
-                 ind "}"
+        return ( mk_code' "ite" (Proxy @(BOOL, (a, a))) (Proxy @a) $ ""
+                 -- ind ("switch " <> val_to_code (vals_a !! 0)) <>
+                 -- ind "case 0 {" <>
+                 -- ind' (vals_to_code vals_b <> " := " <> (vals_to_code . take ca . drop 1) vals_a) <>
+                 -- ind "}" <>
+                 -- ind "default {" <>
+                 -- ind' (vals_to_code vals_b <> " := " <> (vals_to_code . drop (1 + ca)) vals_a) <>
+                 -- ind "}"
                , vals_b ))
   go_num_cmp :: forall a. YulO1 a => (BOOL, BOOL, BOOL) -> Proxy a -> CGState CGOutput
   go_num_cmp (BOOL True , BOOL False, BOOL False) _ = go_num_cmp' "lt(" ")" (Proxy @a)

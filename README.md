@@ -130,10 +130,10 @@ Features
 
 - Project Builder
   - Manifest Builder:
-    - [ ] 🚧 :M: Single-file output mode.
+    - [x] Single-file output mode.
     - [ ] :M: Better error messages.
   - Deployment types:
-    - [ ] 🚧 :S: Singleton contract.
+    - [x] :S: Singleton contract.
     - [ ] :S: Factory contract.
     - [ ] :S: Shared library.
   - Upgradability patterns:
@@ -145,6 +145,8 @@ Features
       - 🔴 Blocked by `mkTypedSelector` support.
     - [ ] :M: Multi-files output mode
 - CLI: `yolc [options] yol_module_spec...`
+  - Build Pipeline:
+    - [ ] :?: Better YOLSuite build sharing.
   - Output modes:
     - [x] Show output mode.
     - [x] Yul output mode.

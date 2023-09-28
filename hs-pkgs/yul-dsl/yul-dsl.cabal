@@ -46,6 +46,8 @@ library
                     constraints >= 0.13,
                     containers >= 0.6.7,
                     mtl >= 2.3.1,
+                    crypton >= 0.32,
+                    memory >= 0.18.0,
                     -- TODO remove cereal dependency
                     cereal >= 0.5.8
 

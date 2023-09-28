@@ -1,3 +1,5 @@
 /build
 /dist-*
 /data
+/out
+/cache

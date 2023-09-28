@@ -37,3 +37,4 @@ common yol-module-options
 library
   import:           yol-module-options
   exposed-modules:  Project Basic ERC20
+  hs-source-dirs:   src

@@ -62,10 +62,15 @@ test: test-yul-dsl test-demo
 test-yul-dsl:
 	$(CABAL_TEST) test yul-dsl $(TEST_OPTIONS)
 
-test-demo:
-	yolc -m yul examples/demo:Basic
+test-demo: test-demo-show test-demo-yul
+
+test-demo-show:
+	yolc -m show examples/demo:ERC20
 	yolc -m show examples/demo:Basic
-	yolc -m yul examples/demo:ERC20
+
+test-demo-yul:
+	yolc -m yul examples/demo
+	cd examples/demo && forge test
 
 dev:
 	nodemon -w hs-pkgs -w yol-demo -e "hs cabal" -x "make $(DEV_TARGETS) || exit 1"

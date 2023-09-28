@@ -75,18 +75,23 @@ module YulDSL.Core.ContractABI.Types
   ) where
 
 -- base
-import           Data.Bits       (shift)
-import           Data.Maybe      (fromJust)
-import           Data.Typeable   (Proxy (..), Typeable, typeRep)
-import           GHC.Generics    (Generic)
-import           GHC.TypeNats    (KnownNat, Nat, natVal)
-import           Numeric         (showHex)
+import           Data.Bits             (shift, (.|.))
+import           Data.Maybe            (fromJust)
+import           Data.Typeable         (Proxy (..), Typeable, typeRep)
+import           Data.Word             (Word32)
+import           GHC.Generics          (Generic)
+import           GHC.TypeNats          (KnownNat, Nat, natVal)
+import           Numeric               (showHex)
 -- bytestring
-import           Data.ByteString (ByteString, unpack)
+import qualified Data.ByteString       as B
+import qualified Data.ByteString.Char8 as BC
 -- constraints
-import           Data.Constraint (Dict (..))
+import           Data.Constraint       (Dict (..))
 -- cereal
-import qualified Data.Serialize  as S
+import qualified Data.Serialize        as S
+-- crypton, memory
+import           Crypto.Hash           (Digest, Keccak_256, hash)
+import qualified Data.ByteArray        as BA
 -- (this)
 import           Data.NProducts
 import           Data.NTuple
@@ -101,11 +106,11 @@ import           Data.NTuple
 type ABISerialize = S.Serialize
 
 -- | ABI encoder.
-abi_encode :: ABISerialize a => a -> ByteString
+abi_encode :: ABISerialize a => a -> B.ByteString
 abi_encode = S.encode
 
 -- | ABI decoder.
-abi_decode :: ABISerialize a => ByteString -> Maybe a
+abi_decode :: ABISerialize a => B.ByteString -> Maybe a
 abi_decode a = case S.decode a of
                  Right b -> Just b
                  Left _  -> Nothing
@@ -375,7 +380,7 @@ type UINT256 = INTx False 32;type INT256 = INTx True 32
 -- TODO
 
 -- | ABI bytes reference type.
-newtype BYTES = BYTES ByteString deriving newtype (Eq)
+newtype BYTES = BYTES B.ByteString deriving newtype (Eq)
 
 instance ABIType BYTES where
   abi_type_name = "BYTES"
@@ -383,7 +388,7 @@ instance ABIType BYTES where
   abi_type_show_vars a = [show a]
 
 instance Show BYTES where
-  show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . unpack) a ++ "/*::BYTES*/"
+  show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . B.unpack) a ++ "/*::BYTES*/"
 
 deriving instance Generic BYTES
 deriving newtype instance S.Serialize BYTES
@@ -411,16 +416,27 @@ instance ABIType SEL where
 --  abi_type_show_vars (SEL (Just (sig, args), _)) = [sig]
 
 instance Show SEL where
-  show (SEL (sig, Just (fname, args))) = showHex sig "/*" ++  fname ++ "(" ++ args ++ ")*/"
-  show (SEL (sig, Nothing))            = showHex sig ""
+  show (SEL (sig, Just (fname, args))) = "0x" ++ showHex sig "/*" ++  fname ++ "(" ++ args ++ ")*/"
+  show (SEL (sig, Nothing))            = "0x" ++ showHex sig ""
 
 deriving instance Generic SEL
 deriving newtype instance S.Serialize SEL
 
+-- Generate ABI Contract compatible signature string.
+make_sig :: forall a b. (ABIType a, ABIType b) => String -> String
+make_sig fname = fname <> "()" -- FIXME use a b
+
 -- | Create a solidity-compatible selector based on types.
---   FIXME do it.
-mkTypedSelector :: forall a b. String -> SEL
-mkTypedSelector fname = SEL (0, Just (fname, ""))
+--
+mkTypedSelector :: forall a b. (ABIType a, ABIType b) => String -> SEL
+mkTypedSelector fname = SEL (fromIntegral sel4bytes, Just (fname, ""))
+  where
+    sig = make_sig @a @b fname
+    bs4bytes = B.unpack(B.take 4(BA.convert(hash(BC.pack sig) :: Digest Keccak_256) :: B.ByteString))
+    sel4bytes = (fromIntegral (bs4bytes!!3) :: Word32)
+      .|. shift (fromIntegral (bs4bytes!!2) :: Word32) 8
+      .|. shift (fromIntegral (bs4bytes!!1) :: Word32) 16
+      .|. shift (fromIntegral (bs4bytes!!0) :: Word32) 24
 
 mkRawSelector :: Sel4Bytes -> SEL
 mkRawSelector sig = SEL (sig, Nothing)
@@ -475,6 +491,10 @@ instance forall a b. (ABIType a, ABIType b) => ABIType (a :* b) where
 deriving instance Generic (a :* b)
 deriving anyclass instance (ABISerialize a, ABISerialize b) => S.Serialize (a :* b)
 
+
+_lpad0 :: Int -> ShowS -> ShowS
+_lpad0 n s = showString (reverse (take n (reverse (s "") ++ repeat '0')))
+
 {- $range_check_examples
 
 __INTx Types__
@@ -523,19 +543,13 @@ NaN/*::INT8*/
 >>> show (to_intx 255 :: UINT8)
 >>> show (to_intx (-8) :: INT96)
 >>> show (to_intx 256 :: UINT8)
->>> import Data.ByteString.Char8 as BC
 >>> show (BYTES (BC.pack "hello, world"))
->>> import Data.ByteString as B
->>> show (BYTES (B.pack [1,2]))
+>>> show (BYTES (B.pack [4, 2]))
 "true"
 "0x0000000000000000000000000000000000000042/*::ADDR*/"
 "255/*::UINT8*/"
 "-8/*::INT96*/"
 "NaN/*::UINT8*/"
 "0x68656c6c6f2c20776f726c64/*::BYTES*/"
-"0x0102/*::BYTES*/"
-
+"0x0402/*::BYTES*/"
 -}
-
-_lpad0 :: Int -> ShowS -> ShowS
-_lpad0 n s = showString (reverse (take n (reverse (s "") ++ repeat '0')))

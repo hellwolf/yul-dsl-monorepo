@@ -36,9 +36,9 @@ get_solc = return "solc" -- FIXME read SOLC environment variable
 
 type BuildResult = Either T.Text T.Text
 
-run_maybe_value :: Maybe a -> T.Text -> (a -> BuildResult) -> BuildResult
-run_maybe_value Nothing err _  = Left err
-run_maybe_value (Just val) _ f = f val
+run_maybe :: Maybe a -> T.Text -> (a -> BuildResult) -> BuildResult
+run_maybe Nothing err _  = Left err
+run_maybe (Just val) _ f = f val
 
 stringify :: Value -> BuildResult
 stringify val = case fromJSON val of
@@ -58,23 +58,25 @@ compile_mo mo = do
                    "main.yul" .= object [ "content" .= YulCodeGen.compileObject mo ]
                    ]
                , "settings" .= object [
+                   "evmVersion" .= ("paris" :: String),
                    "outputSelection" .= object [
                        "*" .= object [ "*" .= (["evm.bytecode.object"] :: [String])]
                        ]
                    ]
+                 -- "optimizer": { "enabled": true, "details": { "yul": true } }
                ])
   hClose hin
   decode <$> encodeUtf8 <$> T.pack <$> hGetContents' hout >>= \(maybeOut :: Maybe Value) -> return $
-    run_maybe_value maybeOut "solc fails to execute" (
-    \out -> run_maybe_value (out ^? key "errors" >>= Just . (^.. values)) "Missing 'errors' field" (
+    run_maybe maybeOut "Failed to decode json output from solc." (
+    \out -> run_maybe (out ^? key "errors" >>= Just . (^.. values)) "Missing 'errors' field." (
       \errors -> if length errors == 0
-                 then run_maybe_value (out ^? key "contracts"
+                 then run_maybe (out ^? key "contracts"
                                        >>= (^? key "main.yul")
                                        >>= (^? key (fromString oname))
                                        >>= (^? key "evm")
                                        >>= (^? key "bytecode")
                                        >>= (^? key "object"))
-                      "Missing 'contracts...evm.bytecode.object' field"
+                      "Missing 'contracts...evm.bytecode.object' field."
                       stringify
                  else Left (decodeUtf8 . encode $ errors)
       )
@@ -88,7 +90,8 @@ build_bu (MkBuildUnit { mainObject = mo }) = do
   result <- compile_mo mo
   case result of
     Left err -> return (Left err)
-    Right bytecode -> return (Right [fmt'|
+    Right bytecode' -> let bytecode = foldr ((<>) . ("\\x" <>)) "" (T.chunksOf 2 bytecode')
+                       in return (Right [fmt'|
 #include "../../../templates/SingletonContract.sol"
 |])
 
@@ -102,4 +105,3 @@ buildManifest (MkManifest as) = foldM
 pragma solidity ^0.8.20;
 |])
   as
-  -- >>= return . T.intercalate "\n"

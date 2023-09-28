@@ -11,7 +11,8 @@
 opt_verbose=; function when_verbose() { [[ -n "$opt_verbose" ]]; }
 is_nix_dist=
 dist_path=
-cmpl_id=0 # yul, show, plantuml
+codegen_name=
+codegen_id=0 # yul, show, plantuml
 out_dir="$PWD"/build
 declare -a runyol_extra_opts=(-O0)
 
@@ -21,9 +22,9 @@ yolc, the YulDSL commandline transpiler.
 
 Usage: yolc [options] yol_module_spec...
 
--m [output_mode] Valid output modes: yul (default), show, plantuml
--v               Output more information about what is going on
--h               Display this help and exit
+-m [codegen_mode] Valid codegen modes: yul (default), show, plantuml
+-v                Output more information about what is going on
+-h                Display this help and exit
 
 yol_module_spec: package_path{:module_name}{[symbol...,]}, where
     1) without specifying a module_name, 'Project' module is loaded instead,
@@ -57,22 +58,21 @@ runyol() {
 main() {
   local PROGRAM_PATH="$0"
   local OPTIND OPTARG
-  local cmpl_name
 
   # parse options
   while getopts m:hv o; do
     case $o in
       m)
-        cmpl_name=$OPTARG
+        codegen_name=$OPTARG
         case "$OPTARG" in
           yul)
-            cmpl_id=0
+            codegen_id=0
             ;;
           show)
-            cmpl_id=1
+            codegen_id=1
             ;;
           plantuml)
-            cmpl_id=2
+            codegen_id=2
             ;;
           *)
             die "Unknown output mode"
@@ -104,7 +104,7 @@ main() {
 
   when_verbose && {
     debug "Distribution path: $dist_path"
-    debug "Output mode: $cmpl_name"
+    debug "Codegen mode: $codegen_name"
     debug "Output directory: $out_dir"
     debug
   }
@@ -149,31 +149,36 @@ build_yol_module() {
     [ -z "$mod_name" ] && die "Module name cannot be extracted: $rest"
   fi
 
-  # parse cmpl_mode, cmpl_syms
-  local cmpl_mode cmpl_syms yol_dir
+  # parse codegen_mode, cmpl_syms
+  local codegen_mode cmpl_syms yol_dir yol_output_name
   cmpl_syms=$(echo -n "$rest" | sed -e 's|\s*,\s*| |g')
   if [ -z "$mod_name" ]; then
     mod_name=Project
-    cmpl_mode=projectMode
+    codegen_mode=projectMode
     cmpl_syms=manifest
     yol_dir=${pkg_name}
+    yol_output_name=Contracts.sol
   elif [ -z "$cmpl_syms" ]; then
-    cmpl_mode=objectMode # object mode
+    codegen_mode=objectMode # object mode
     cmpl_syms=object
     yol_dir=${pkg_name}.${mod_name}
+    yol_output_name=object.yul
   else
-    cmpl_mode=fnMode # fn mode
+    codegen_mode=fnMode # fn mode
     yol_dir=${pkg_name}.${mod_name}.custom
+    yol_output_name=fn.yul
   fi
   yol_dir=$out_dir/${yol_dir}
+  yol_output_file="$yol_dir/contracts/$yol_output_name"
   mkdir -p "$yol_dir"
+  mkdir -p "$yol_dir/contracts"
 
   when_verbose && {
     debug "Package path: $pkg_path"
     debug "Cabal file: $cabal_path"
     debug "Package name: $pkg_name"
     debug "Module name: $mod_name"
-    debug "Compiler mode: $cmpl_mode"
+    debug "Codegen mode: $codegen_mode"
     [ -n "$cmpl_syms" ] && debug "Custom compilation symbols: $cmpl_syms"
     debug "Yol module build directory: $yol_dir"
   }
@@ -201,11 +206,11 @@ EOF
   # instantiate RunYol.hs template
   local actions
   actions=$(for i in $cmpl_syms; do
-              echo -n "handleResult =<< $cmpl_mode (compilers !! $cmpl_id) $i"
+              echo -n "handleResult =<< $codegen_mode (compilers !! $codegen_id) $i"
             done)
   {
-    sed -e "s|__YOL_MOD_NAME__|${mod_name}|g" \
-        -e "s|__COMPILE_ACTIONS__|${actions}|g"
+    sed -e "s|%YOL_MOD_NAME%|${mod_name}|g" \
+        -e "s|%COMPILE_ACTIONS%|${actions}|g"
   } < "$dist_path"/hs-pkgs/yol-suite/templates/RunYol.hs > "$yol_dir"/RunYol.hs
 
   when_verbose && {
@@ -223,13 +228,16 @@ EOF
     debug "=== END RunYol.hs"
   }
 
+  # run yol, and tee its output
   runyol --project-file="$yol_dir"/cabal.project \
-         --builddir="$out_dir/yolc" \
-    || die "Failed to build yol module: $mod_spec"
+         --builddir="$out_dir/yolc" > "${yol_output_file}" || {
+    rm "${yol_output_file}"
+    die "=== Failed to build yol module: $mod_spec"
+  }
+  cat "${yol_output_file}"
 
   when_verbose && {
     debug "=== Done with yol module: $mod_spec"
-    debug
   }
 }
 

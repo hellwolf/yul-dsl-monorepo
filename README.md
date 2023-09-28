@@ -129,7 +129,9 @@ Features
 ### yolc: the evil twin of solc
 
 - Project Builder
-  - [ ] 🚧 :M: Single-file output mode
+  - Manifest Builder:
+    - [ ] 🚧 :M: Single-file output mode.
+    - [ ] :M: Better error messages.
   - Deployment types:
     - [ ] 🚧 :S: Singleton contract.
     - [ ] :S: Factory contract.

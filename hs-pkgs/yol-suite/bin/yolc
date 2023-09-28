@@ -34,7 +34,7 @@ EOF
 }
 
 die() {
-  echo "$@"
+  echo "$@" >&2
   exit 1
 }
 
@@ -201,7 +201,7 @@ EOF
   # instantiate RunYol.hs template
   local actions
   actions=$(for i in $cmpl_syms; do
-              echo -n "putStrLn =<< $cmpl_mode (compilers !! $cmpl_id) $i"
+              echo -n "handleResult =<< $cmpl_mode (compilers !! $cmpl_id) $i"
             done)
   {
     sed -e "s|__YOL_MOD_NAME__|${mod_name}|g" \

@@ -68,7 +68,7 @@ passAp :: forall k con r a b.
           ( Cartesian k {-<-}, O3 k r a b, con ~ Obj k {->-}
           , con (), (forall α β. (con α, con β) => con (α,β))
           ) => P k r a ⊸ (P k r a ⊸ P k r b) ⊸ (P k r a, P k r b)
-passAp i f = copyAp' i id f
+passAp i = copyAp' i id
 
 ------------------------------------------------------------------------------------------------------------------------
 -- YulCat Combinators
@@ -153,7 +153,7 @@ type BytesP   r = YulP r BYTES
 
 yulConst :: forall a d r. YulO3 a d r
          => a -> (YulP r d ⊸ YulP r a)
-yulConst a = \b -> encode (YulEmbed a) (discard b)
+yulConst a = encode (YulEmbed a) . discard
 
 coerceP :: forall a b r. (YulO3 r a b, YulCoercible a b)
         => YulP r a ⊸ YulP r b

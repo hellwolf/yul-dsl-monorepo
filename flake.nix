@@ -11,7 +11,11 @@
     let
       pkgs = import nixpkgs { inherit system; };
       requiredInputs = haskell-tooling.lib.install pkgs ["ghc96+hls"];
-      devInputs = with pkgs; [ shellcheck jq nodePackages.nodemon ];
+      devInputs = with pkgs; [
+        nodePackages.nodemon
+        jq
+        shellcheck
+      ];
       shellHook = ''
         # This makes binaries of this project available for testing, e.g. `yolc`
         export PATH=$PWD/hs-pkgs/yol-suite/bin/:$PATH

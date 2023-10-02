@@ -23,6 +23,7 @@ import           YulDSL.Core.ContractABI
 import           YulDSL.Core.YulCat      (YulCat (..))
 
 
+{-# ANN EvalState "HLint: ignore Use newtype instead of data" #-}
 data EvalState = EvalState { store_map :: M.Map ADDR SVALUE
                            }
                deriving Show

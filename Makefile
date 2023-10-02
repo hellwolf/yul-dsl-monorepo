@@ -35,12 +35,15 @@ DEV_TARGETS = build-all-modules test-yul-dsl
 # TARGETS
 ########################################################################################################################
 
-all: build test
+all: lint build test
 
 gen-patch-linear-smc:
 	diff -ur -p2 3rd-parties/linear-smc-"$(LINEAR_SMC_VERSION)" 3rd-parties/linear-smc | tee "$(LINEAR_SMC_PATH_FILE)"
 	# delete the patch if empty
 	[[ -s "$(LINEAR_SMC_PATH_FILE)" ]] & rm -f "$(LINEAR_SMC_PATH_FILE)"
+
+lint:
+	hlint --ignore-glob=hs-pkgs/yol-suite/templates/*.hs hs-pkgs/
 
 build: build-all-modules build-docs
 
@@ -75,4 +78,4 @@ test-demo-yul:
 dev:
 	nodemon -w hs-pkgs -w yol-demo -e "hs cabal" -x "make $(DEV_TARGETS) || exit 1"
 
-.PHONY: all gen-* build-* clean test test-* dev
+.PHONY: all gen-* build-* lint clean test test-* dev

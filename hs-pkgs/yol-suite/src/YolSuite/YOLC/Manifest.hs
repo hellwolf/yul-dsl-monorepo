@@ -17,5 +17,8 @@ data BuildUnit = MkBuildUnit { mainObject        :: YulObject
                              , upgradabilityMode :: Upgradability
                              } deriving Show
 
-data Manifest = MkManifest { buildUnits :: [BuildUnit]
+{- HLint ignore Manifest "Use newtype instead of data" -}
+data Manifest = MkManifest { buildUnits      :: [BuildUnit]
+                           -- , solidityVersion :: String
+                           -- , evmVersion      :: String
                            } deriving Show

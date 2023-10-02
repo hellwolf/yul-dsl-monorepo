@@ -19,6 +19,7 @@ import           Data.Aeson
     , object
     )
 import           Data.Aeson.Lens         (key, values)
+import           Data.Functor            ((<&>))
 import           Data.String             (fromString)
 import qualified Data.Text.Lazy          as T
 import           Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
@@ -66,21 +67,19 @@ compile_mo mo = do
                  -- "optimizer": { "enabled": true, "details": { "yul": true } }
                ])
   hClose hin
-  decode <$> encodeUtf8 <$> T.pack <$> hGetContents' hout >>= \(maybeOut :: Maybe Value) -> return $
-    run_maybe maybeOut "Failed to decode json output from solc." (
+  maybeOut :: Maybe Value <- decode . encodeUtf8 . T.pack <$> hGetContents' hout
+  return $ run_maybe maybeOut "Failed to decode json output from solc." (
     \out -> run_maybe (out ^? key "errors" >>= Just . (^.. values)) "Missing 'errors' field." (
-      \errors -> if length errors == 0
+      \errors -> if null errors
                  then run_maybe (out ^? key "contracts"
-                                       >>= (^? key "main.yul")
-                                       >>= (^? key (fromString oname))
-                                       >>= (^? key "evm")
-                                       >>= (^? key "bytecode")
-                                       >>= (^? key "object"))
+                                  >>= (^? key "main.yul")
+                                  >>= (^? key (fromString oname))
+                                  >>= (^? key "evm")
+                                  >>= (^? key "bytecode")
+                                  >>= (^? key "object"))
                       "Missing 'contracts...evm.bytecode.object' field."
                       stringify
-                 else Left (decodeUtf8 . encode $ errors)
-      )
-    )
+                 else Left (decodeUtf8 . encode $ errors)))
 
 -- | Compile one build unit.
 build_bu :: BuildUnit -> IO BuildResult
@@ -97,10 +96,10 @@ build_bu (MkBuildUnit { mainObject = mo }) = do
 
 -- | Build manifest in the single-file output mode.
 buildManifest :: Manifest -> IO BuildResult
-buildManifest (MkManifest as) = foldM
+buildManifest (MkManifest { buildUnits = as }) = foldM
   (\b a -> case b of
       Left b'  -> return (Left b')
-      Right b' -> build_bu a >>= return . fmap (\a' -> b' <> a' <> "\n"))
+      Right b' -> build_bu a <&> fmap (\a' -> b' <> a' <> "\n"))
   (Right [fmt'|// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 |])

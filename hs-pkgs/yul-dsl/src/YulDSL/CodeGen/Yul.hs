@@ -9,14 +9,16 @@ module YulDSL.CodeGen.Yul
 -- import           Control.Exception        (assert)
 import           Control.Monad.State.Lazy (State, evalState, get, modify, put)
 import           Data.Char                (chr)
+import           Data.Functor             ((<&>))
 import qualified Data.Map.Strict          as M'
-import           Data.Maybe               (fromJust, isJust)
+import           Data.Maybe               (mapMaybe)
 import qualified Data.Text.Lazy           as T
 import           Data.Typeable            (Proxy (..))
 
 import           YulDSL.Core
 
 
+-- FIXME
 assert _ a = a
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -35,11 +37,11 @@ add_indent s = " " <> s
 
 -- Add one level of indentation.
 indent :: Indenter -> Indenter
-indent ind = \s -> add_indent (ind s)
+indent ind s = add_indent (ind s)
 
 -- Initial indentation.
 init_ind :: Indenter
-init_ind = \s -> s <> "\n"
+init_ind s = s <> "\n"
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Variables
@@ -64,7 +66,7 @@ cur_var (MkAutoVarGen i0) = "v_" <> T.pack (go i0) where
 
 -- | Generate a new auto variable.
 new_auto_var :: AutoVarGen -> (Var, AutoVarGen)
-new_auto_var g@(MkAutoVarGen i0) = (cur_var g, MkAutoVarGen (i0 + 1)) where
+new_auto_var g@(MkAutoVarGen i0) = (cur_var g, MkAutoVarGen (i0 + 1))
 
 -- Variable and value
 --
@@ -134,7 +136,7 @@ next_var = do
   return v
 
 mk_let_vars :: forall a proxy. YulO1 a => proxy a -> CGState [Var]
-mk_let_vars _ = return . reverse =<< go (abi_type_count_vars @a) []
+mk_let_vars _ = reverse <$> go (abi_type_count_vars @a) []
   where go n vars = next_var >>= \var ->
           if n > 1 then go (n - 1) (var:vars) else return (var:vars)
 
@@ -149,7 +151,7 @@ declare_vars :: Indenter -> CGState Code
 declare_vars ind = do
   s <- get
   let vars = undeclared_vars s
-      code = if length vars == 0 then "" else ind ("let " <> T.intercalate ", " vars)
+      code = if null vars then "" else ind ("let " <> T.intercalate ", " vars)
   put (s { undeclared_vars = [] })
   return code
 
@@ -178,7 +180,6 @@ gen_code ind (MkAnyYulCat cat) vals_a = go cat where
   wrap_let_vars :: Code -> (Code -> Code)
   wrap_let_vars vars = if vars == "" then id else \x -> vars <> ind "{" <> x <> ind "}"
   -- go functions
-  --
   go :: forall a b. YulO2 a b => YulCat a b -> CGState CGOutput
   go YulCoerce        = ret_vars vals_a -- return (coerce_vals ind (Proxy @a) (Proxy @b) vals_a, vals_a)
   go YulSplit         = return (mk_code' "split"  (Proxy @a) (Proxy @b) "", vals_a)
@@ -247,7 +248,7 @@ gen_code ind (MkAnyYulCat cat) vals_a = go cat where
     modify (\d@(MkCGStateData { dependant_cats = deps }) -> d {
                dependant_cats = M'.insert cid (MkAnyYulCat cat) deps
                })
-    vals_b <- return . fmap LetVar =<< mk_let_vars (Proxy @b)
+    vals_b <- fmap LetVar <$> mk_let_vars (Proxy @b)
     forget_vars -- we do in-place declaration immediately
     return ( mk_code' "jump" (Proxy @a) (Proxy @b) $
              ind ("let " <> vals_to_code vals_b <> " := " <>
@@ -258,7 +259,7 @@ gen_code ind (MkAnyYulCat cat) vals_a = go cat where
   go_ite _ = let ca = abi_type_count_vars @a in assert (length vals_a == 1 + 2 * ca)
     (do vars_b <- mk_let_vars (Proxy @a)
         let vals_b = fmap LetVar vars_b
-        return ( mk_code' "ite" (Proxy @(BOOL, (a, a))) (Proxy @a) $ ""
+        return ( mk_code' "ite" (Proxy @(BOOL, (a, a))) (Proxy @a) ""
                  -- ind ("switch " <> val_to_code (vals_a !! 0)) <>
                  -- ind "case 0 {" <>
                  -- ind' (vals_to_code vals_b <> " := " <> (vals_to_code . take ca . drop 1) vals_a) <>
@@ -307,17 +308,20 @@ compile_one_fn ind fn = do
 compile_one_any_fn :: Indenter -> AnyFn -> CGState Code
 compile_one_any_fn ind (MkAnyFn fn)= compile_one_fn ind fn
 
+-- | Compile dependencies with a function id filter @fidFilter@.
 compile_deps :: Indenter -> (String -> Bool) -> CGState [Code]
 compile_deps ind fidFilter = do
   deps <- fmap (\(i, c) -> case c of (MkAnyYulCat cat) -> MkAnyFn (MkFn i cat))
-          <$> filter (\(i, _) -> fidFilter i)
-          <$> M'.toList <$> dependant_cats <$> get
+          . filter (\(i, _) -> fidFilter i)
+          . M'.toList
+          . dependant_cats
+          <$> get
   mapM (compile_one_any_fn ind) deps
 
 compile_fn :: forall a b. YulO2 a b => Indenter -> Fn a b -> CGState Code
 compile_fn ind fn = do
   main_code <- compile_one_fn ind fn
-  deps_codes <- compile_deps ind (/= (fnId fn))
+  deps_codes <- compile_deps ind (/= fnId fn)
   return $
     ind main_code <> "\n" <>
     T.intercalate (ind "") deps_codes
@@ -327,8 +331,8 @@ compile_scoped_fn ind sfn = case removeScope sfn of MkAnyFn fn -> compile_one_fn
 
 create_dispatcher :: Indenter -> [ScopedFn] -> CGState Code
 create_dispatcher ind fns = do
-  code_cases <- (mapM case_fn . fmap fromJust . filter isJust . fmap dispatchable) fns
-                >>= return . T.intercalate ""
+  code_cases <- (mapM case_fn . mapMaybe dispatchable) fns
+                <&> T.intercalate ""
   return $
     "{ // Dispatcher\n" <>
     ind' "switch selector()" <>
@@ -342,7 +346,7 @@ create_dispatcher ind fns = do
         ind'' = indent ind'
         dispatchable (ExternalFn _ sel fn) = Just (sel, MkAnyYulCat (fnCat fn))
         dispatchable (LibraryFn _)         = Nothing
-        case_fn (sel@(SEL (sig, Just (fname, _))), (MkAnyYulCat (_ :: YulCat a b))) = do
+        case_fn (sel@(SEL (sig, Just (fname, _))), MkAnyYulCat (_ :: YulCat a b)) = do
           vars_a <- mk_let_vars (Proxy @a)
           vars_b <- mk_let_vars (Proxy @b)
           code_vars <- declare_vars ind''

@@ -25,8 +25,8 @@ get_header filename = T.pack $
 get_footer :: T.Text
 get_footer = T.pack "@enduml\n"
 
-data Env = Env { node_counter :: Int
-               }
+newtype Env = Env { node_counter :: Int
+                  }
 
 inc_env :: Env -> Env
 inc_env env@(Env i) = env { node_counter = i + 1 }

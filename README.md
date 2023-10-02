@@ -63,8 +63,11 @@ Features
         - [ ] :S: `SOLO a`, demarcation solo tuple.
         - [ ] 🔴 :L: `(,..)`, n-tuple types for function specification.
       - Function Types:
-        - [ ] 🚧 :M: `SEL`, selector data type; selector creators: `mkTypedSelector, mkRawSelector`.
-        - [x] :S: `FUNC a b`, external function reference with `FuncStorage` and `FuncEffect` tags.
+        - [x] `SEL`, selector data type.
+        - [x] `mkTypedSelector, mkRawSelector`.
+        - [ ] :M: `sigToSelector`, similar to `cast sig`.
+        - [-] :S: `FUNC a b`, external function reference with `FuncStorage` and `FuncEffect` tags.
+          - Missing show instance.
       - Lenses:
         - [ ] :M: `a :@ "name"` to name a tuple element.
     - Reference
@@ -99,8 +102,7 @@ Features
     - [ ] :M: Lazy semantics.
     - [ ] :S: Fn autoId (instead of using yulCatDigest.)
   - Object builder:
-    - [ ] 🚧 :XL: dispatcher.
-      - 🔴 Blocked by `mkTypedSelector` support.
+    - [ ] 🚧 :XL: dispatcher builder.
       - Full dispatcher calldata codec support.
     - [ ] :M: constructor support.
 - PlantUML CodeGen

@@ -51,7 +51,6 @@ Features
   - ContractABI: Solidity-Contract-ABI-Compatible Types
     - Primitive Types:
       - [x] Simple Static value types: `ADDR`, `BOOL`, `INTx (s :: KnownBool) (n :: KnownNat)`.
-        - 🔴 Create known Bool.
       - [ ] :S: `SVALUE`, storage value.
       - [ ] :S: `type BYTESnn = BYTES_N n`, static bytes value type.
       - [ ] :L: `BYTES(l?) n?`, optionally-length-indexed dynamic bytes type.

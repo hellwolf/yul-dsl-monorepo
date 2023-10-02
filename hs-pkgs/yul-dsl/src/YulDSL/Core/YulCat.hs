@@ -50,7 +50,6 @@ module YulDSL.Core.YulCat
 import           Data.Char               (ord)
 import           Data.Functor.Identity   (Identity)
 import           Data.Kind               (Constraint, Type)
-import           Data.Typeable           (Typeable)
 import           GHC.Integer             (xorInteger)
 import           Text.Printf             (printf)
 -- byteStringb
@@ -81,12 +80,12 @@ class (YulObj a, ABIValue a) => YulVal a
 
 instance YulVal BOOL
 instance YulVal ADDR
-instance (Typeable s, KnownNat n) => YulVal (INTx s n)
+instance (KnownBool s, KnownNat n) => YulVal (INTx s n)
 
 -- | Number-type objects in the category.
 class (YulVal a, Num a) => YulNum a
 
-instance (Typeable s, KnownNat n) => YulNum (INTx s n)
+instance (KnownBool s, KnownNat n) => YulNum (INTx s n)
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Granular Permission Tag

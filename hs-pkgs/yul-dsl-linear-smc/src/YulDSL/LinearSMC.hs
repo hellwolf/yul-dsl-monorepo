@@ -23,7 +23,6 @@ This module provides extra combinators to program 'YulDSL' in linear-types, in a
 module YulDSL.LinearSMC where
 
 -- base
-import           Data.Typeable                (Typeable)
 import qualified Prelude                      as BasePrelude
 import           Unsafe.Coerce                (unsafeCoerce)
 -- linear-base
@@ -44,7 +43,7 @@ import           YulDSL.LinearSMC.Categories  ()
 instance FromInteger Integer where
   fromInteger = id
 
-instance (Typeable s, KnownNat n) => FromInteger (INTx s n) where
+instance (KnownBool s, KnownNat n) => FromInteger (INTx s n) where
   fromInteger = UnsafeLinear.toLinear BasePrelude.fromInteger
 
 copy' :: forall k con r a.
@@ -95,7 +94,7 @@ class YulObj a => YulCatReducible a where
 instance YulCatReducible () where
 instance YulCatReducible ADDR
 instance YulCatReducible BOOL
-instance (Typeable s, KnownNat n) => YulCatReducible (INTx s n)
+instance (KnownBool s, KnownNat n) => YulCatReducible (INTx s n)
 instance YulCatReducible BYTES
 
 instance forall a as. (YulCatReducible a, YulCatReducible as) => YulCatReducible (a :* as) where
@@ -239,7 +238,7 @@ class YulObj a => YulPortReducible a where
 instance YulPortReducible () where
 instance YulPortReducible ADDR
 instance YulPortReducible BOOL
-instance (Typeable s, KnownNat n) => YulPortReducible (INTx s n)
+instance (KnownBool s, KnownNat n) => YulPortReducible (INTx s n)
 instance YulPortReducible BYTES
 
 instance forall a as. (YulPortReducible a, YulPortReducible as) => YulPortReducible (a :* as) where

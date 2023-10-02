@@ -38,7 +38,7 @@ module YulDSL.Core.ContractABI.Types
     -- * Primitive Types
 
     -- ** BOOL
-  , BOOL (..), true, false, if'
+  , KnownBool (..), BOOL (..), true, false, if'
 
     -- ** ADDR
   , ADDR, zero_address, max_addr, to_addr, to_addr', addr_to_integer
@@ -77,7 +77,7 @@ module YulDSL.Core.ContractABI.Types
 -- base
 import           Data.Bits             (shift, (.|.))
 import           Data.Maybe            (fromJust)
-import           Data.Typeable         (Proxy (..), Typeable, typeRep)
+import           Data.Proxy            (Proxy (..))
 import           Data.Word             (Word32)
 import           GHC.Generics          (Generic)
 import           GHC.TypeNats          (KnownNat, Nat, natVal)
@@ -120,7 +120,7 @@ abi_decode a = case S.decode a of
 ------------------------------------------------------------------------------------------------------------------------
 
 -- | Contract ABI type class for all primitive and composite ABI types.
-class (Show a, Typeable a, ABISerialize a) => ABIType a where
+class (Show a, {- Typeable a, -} ABISerialize a) => ABIType a where
   -- | Possible breakdown of the product object type.
   maybe_prod_objs :: forall b c. a ~ (b, c) => Dict (ABIType b, ABIType c)
   maybe_prod_objs = error "maybe_prod_objs: not a product object"
@@ -253,22 +253,28 @@ if' (BOOL False) _ y = y
 -- | ABI integer value types, where @s@ is for signess and @n@ is the multiple of 8 bits
 newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer) deriving newtype (Ord, Eq)
 
-instance forall s n. (Typeable s, KnownNat n) => ABIType (INTx s n) where
-  abi_type_uniq_name = (if typeRep (Proxy @s) == typeRep (Proxy @True)
-                   then "i" else "u") <> show (natVal (Proxy @n))
-  abi_type_canon_name = (if typeRep (Proxy @s) == typeRep (Proxy @True)
-                   then "int" else "uint") <> show (natVal (Proxy @n) * 8)
+-- | Boolean type singleton.
+data SBool (s :: Bool) = SBool
+
+-- | Known boolean singletons.
+class KnownBool (s :: Bool) where toBool :: SBool s -> Bool
+instance KnownBool True where toBool _ = True
+instance KnownBool False where toBool _ = False
+
+instance forall s n. (KnownBool s, KnownNat n) => ABIType (INTx s n) where
+  abi_type_uniq_name = if toBool (SBool @s) then "i" else "u" <> show (natVal (Proxy @n))
+  abi_type_canon_name = if toBool (SBool @s) then "int" else "uint" <> show (natVal (Proxy @n) * 8)
   abi_type_count_vars = 1
   abi_type_list_vars a = [show a]
 
 
-instance (Typeable s, KnownNat n) => ABIValue (INTx s n) where
+instance (KnownBool s, KnownNat n) => ABIValue (INTx s n) where
   from_svalue (SVALUE a) = fromIntegral a -- FIXME, support signed numbers
 
   to_svalue (INT (Just a)) = SVALUE a -- FIXME, support signed numbers
   to_svalue (INT Nothing)  = def_sval
 
-instance (Typeable s, KnownNat n) => Show (INTx s n) where
+instance (KnownBool s, KnownNat n) => Show (INTx s n) where
   show (INT (Just a)) = show a ++ "/*::" ++ intx_typename @(INTx s n) ++ "*/"
   show (INT Nothing)  = "NaN" ++ "/*::" ++ intx_typename @(INTx s n) ++ "*/"
 
@@ -280,11 +286,11 @@ instance Enum (INTx s n) where
   fromEnum (INT Nothing)  =0
   toEnum = INT . Just . toEnum
 
-instance (Typeable s, KnownNat n) => Real (INTx s n) where
+instance (KnownBool s, KnownNat n) => Real (INTx s n) where
   toRational (INT (Just a)) = toRational a
   toRational (INT Nothing)  = toRational (0 :: Integer)
 
-instance (Typeable s, KnownNat n) => Integral (INTx s n) where
+instance (KnownBool s, KnownNat n) => Integral (INTx s n) where
   toInteger (INT (Just a)) = toInteger a
   toInteger (INT Nothing)  = toInteger (0 :: Integer)
 
@@ -292,7 +298,7 @@ instance (Typeable s, KnownNat n) => Integral (INTx s n) where
   quotRem (INT (Just a)) (INT (Just b)) = let (c, d) = quotRem a b in (INT (Just c), INT (Just d))
   quotRem _              _              = (INT Nothing, INT Nothing)
 
-instance (Typeable s, KnownNat n) => Num (INTx s n) where
+instance (KnownBool s, KnownNat n) => Num (INTx s n) where
   (INT (Just a)) + (INT (Just b)) = fromInteger (a + b)
   _ + _                           = INT Nothing
 
@@ -312,36 +318,36 @@ instance (Typeable s, KnownNat n) => Num (INTx s n) where
                   in if a' >= min_intx @(INTx s n) && a' <= max_intx @(INTx s n)
                      then a' else INT Nothing
 
-instance (Typeable s, KnownNat n) => Bounded (INTx s n) where
+instance (KnownBool s, KnownNat n) => Bounded (INTx s n) where
   minBound = min_intx
   maxBound = max_intx
 
 -- | Minimum value of the INTx type. Use type application on @a@.
-min_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => a
+min_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownBool s, KnownNat n) => a
 min_intx = INT . Just $
   if intx_sign @(INTx s n) then negate (1 `shift` (nbits - 1)) else 0
   where nbits = intx_nbits @(INTx s n)
 
 -- | Maximum value of the INTx type. Use type application on @a@.
-max_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => a
+max_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownBool s, KnownNat n) => a
 max_intx = INT . Just $
   if intx_sign @(INTx s n) then (1 `shift` (nbits - 1)) - 1 else (1 `shift` nbits) - 1
   where nbits = intx_nbits @(INTx s n)
 
 -- | Sign of the INTx type. Use type application on @a@.
-intx_sign :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => Bool
-intx_sign = typeRep (Proxy @s) == typeRep (Proxy @True)
+intx_sign :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownBool s, KnownNat n) => Bool
+intx_sign = toBool (SBool @s)
 
 -- | Number of bits for the INTx type. Use type application on @a@.
 intx_nbits :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownNat n) => Int
 intx_nbits = fromEnum (8 * natVal (Proxy @n))
 
 -- | Show the canonical type name for the INTX type. Use type application on @a@.
-intx_typename :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => String
+intx_typename :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownBool s, KnownNat n) => String
 intx_typename = (if intx_sign @a then "" else "U") ++ "INT" ++ show (intx_nbits @a)
 
 -- | Convert integer to the INTx type.
-to_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, Typeable s, KnownNat n) => Integer -> a
+to_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownBool s, KnownNat n) => Integer -> a
 to_intx = fromIntegral
 
 -- Assorted integer types:

@@ -4,7 +4,6 @@
 module TestCommon where
 
 import           Data.Functor                  ((<&>))
-import           Data.Typeable                 (Typeable)
 
 import           Test.QuickCheck
 
@@ -18,5 +17,5 @@ deriving newtype instance Arbitrary BOOL
 
 -- deriving instance Arbitrary BYTES
 
-instance (Typeable s, KnownNat n) => Arbitrary (INTx s n) where
+instance (KnownBool s, KnownNat n) => Arbitrary (INTx s n) where
   arbitrary = chooseBoundedIntegral (minBound, maxBound)

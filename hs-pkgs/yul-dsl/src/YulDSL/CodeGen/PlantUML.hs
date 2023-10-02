@@ -42,8 +42,8 @@ type Code = T.Text
 deriving instance YulObj a => Typeable a
 deriving instance (Typeable a, Typeable b) => Typeable (YulCat a b)
 
-print_types :: forall a b. YulO2 a b => YulCat a b -> String
-print_types _ = show (typeRep (Proxy @a)) <> " -> " <> show (typeRep (Proxy @b))
+-- print_types :: forall a b. YulO2 a b => YulCat a b -> String
+-- print_types _ = show (typeRep (Proxy @a)) <> " -> " <> show (typeRep (Proxy @b))
 
 compile_cat :: YulCat a b -> T.Text
 compile_cat cat = code <> T.pack (

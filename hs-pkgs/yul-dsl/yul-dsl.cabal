@@ -59,6 +59,7 @@ Test-Suite test-yul-dsl
                     hspec >=2.11,
                     yul-dsl
   hs-source-dirs:   test
-  other-modules:    TestCommon
-                    Eval_prop
+  other-modules:    Eval_prop
+                    TestCommon
+                    Types_prop
   main-is:          Main.hs

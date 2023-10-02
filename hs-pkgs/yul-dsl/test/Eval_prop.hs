@@ -30,7 +30,7 @@ test_num_add :: UINT256 -> UINT256 -> Bool
 test_num_add a b = (a + b) == c
   where (_, c) = evalYulDSL initEvalState YulNumAdd (a, b)
 
-tests = describe "YulDSL.Core.Eval tests" $ do
+tests = describe "YulDSL.Eval tests" $ do
   describe "YulCoerce" $ do
     it "UINT256 =~= (UINT256,())" $ property test_coerce_uint256_unit_prod
     -- it "p :* q :* () =~= (p, q)" $ property test_coerce_two_vals_unit_hlist

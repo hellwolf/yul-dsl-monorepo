@@ -50,7 +50,8 @@ Features
 - Core
   - ContractABI: Solidity-Contract-ABI-Compatible Types
     - Primitive Types:
-      - [x] Simple Static value types: `ADDR`, `BOOL`, `INTx s n`.
+      - [x] Simple Static value types: `ADDR`, `BOOL`, `INTx (s :: KnownBool) (n :: KnownNat)`.
+        - 🔴 Create known Bool.
       - [ ] :S: `SVALUE`, storage value.
       - [ ] :S: `type BYTESnn = BYTES_N n`, static bytes value type.
       - [ ] :L: `BYTES(l?) n?`, optionally-length-indexed dynamic bytes type.
@@ -62,7 +63,7 @@ Features
         - [ ] :S: `SOLO a`, demarcation solo tuple.
         - [ ] 🔴 :L: `(,..)`, n-tuple types for function specification.
       - Function Types:
-        - [ ] :M: `SEL`, selector data type; selector creators: `mkTypedSelector, mkRawSelector`.
+        - [ ] 🚧 :M: `SEL`, selector data type; selector creators: `mkTypedSelector, mkRawSelector`.
         - [x] :S: `FUNC a b`, external function reference with `FuncStorage` and `FuncEffect` tags.
       - Lenses:
         - [ ] :M: `a :@ "name"` to name a tuple element.

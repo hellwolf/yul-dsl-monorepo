@@ -20,16 +20,16 @@ data ScopedFn where
   LibraryFn  :: forall a b. YulO2 a b => Fn a b -> ScopedFn
 
 externalFn :: forall a b p. YulO2 a b => Fn a b -> ScopedFn
-externalFn fn = ExternalFn FuncTx (mkTypedSelector @a @b (fnId fn)) fn
+externalFn fn = ExternalFn FuncTx (mkTypedSelector @a (fnId fn)) fn
 
 staticFn :: forall a b p. YulO2 a b => Fn a b -> ScopedFn
-staticFn fn = ExternalFn FuncStatic (mkTypedSelector @a @b (fnId fn)) fn
+staticFn fn = ExternalFn FuncStatic (mkTypedSelector @a (fnId fn)) fn
 
 libraryFn :: forall a b p. YulO2 a b => Fn a b -> ScopedFn
-libraryFn fn = LibraryFn fn
+libraryFn = LibraryFn
 
 show_fn_spec :: forall a b. YulO2 a b => Fn a b -> String
-show_fn_spec fn = "fn " <> fnId fn <> "(" <> abi_type_name @a <> ") -> " <> abi_type_name @b
+show_fn_spec fn = "fn " <> fnId fn <> "(" <> abi_type_uniq_name @a <> ") -> " <> abi_type_uniq_name @b
 
 instance Show ScopedFn where
   show (ExternalFn FuncTx _ fn)     = "external " <> show_fn_spec fn <> "\n" <> show (fnCat fn)

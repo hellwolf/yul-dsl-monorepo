@@ -124,22 +124,25 @@ class (Show a, Typeable a, ABISerialize a) => ABIType a where
   -- | Possible breakdown of the product object type.
   maybe_prod_objs :: forall b c. a ~ (b, c) => Dict (ABIType b, ABIType c)
   maybe_prod_objs = error "maybe_prod_objs: not a product object"
-
-  abi_type_name :: String
-
+  -- | Unambiguous succinct and unique name for the type.
+  abi_type_uniq_name :: String
+  -- | Canonical name used as argument of the selector.
+  abi_type_canon_name :: String
+  -- | Number of yul primitive variables required to capture the value of this type.
   abi_type_count_vars :: Int
-
-  abi_type_show_vars :: a -> [String]
+  -- | List the types of yul primitive variables required to capture the value of this type.
+  abi_type_list_vars :: a -> [String]
 
 -- | A 'abi_type_name' variant, enclosing name with "@()".
 abi_type_name' :: forall a. ABIType a => String
-abi_type_name' = "@" <> abi_type_name @a
+abi_type_name' = "@" <> abi_type_uniq_name @a
 
 -- | Unit type of ABI Types
 instance ABIType () where
-  abi_type_name = "∅"
+  abi_type_uniq_name = "n" -- it stands for "null".
+  abi_type_canon_name = "()" -- Well, this is not really sensible, but let's not be too liberal with runtime error.
   abi_type_count_vars = 0
-  abi_type_show_vars _ = []
+  abi_type_list_vars _ = []
 
 -- | Raw storage value for ABI value types.
 newtype SVALUE = SVALUE Integer deriving newtype (Eq, Show)
@@ -168,9 +171,10 @@ class ABIValue a where
 newtype ADDR = ADDR Integer deriving newtype (Ord, Eq)
 
 instance ABIType ADDR where
-  abi_type_name = "ADDR"
+  abi_type_uniq_name = "a"
+  abi_type_canon_name = "address"
   abi_type_count_vars = 1
-  abi_type_show_vars a = [show a]
+  abi_type_list_vars a = [show a]
 
 instance ABIValue ADDR where
   from_svalue (SVALUE a) = to_addr' a
@@ -211,9 +215,10 @@ addr_to_integer (ADDR a) = a
 newtype BOOL = BOOL Bool deriving newtype (Eq)
 
 instance ABIType BOOL where
-  abi_type_name = "BOOL"
+  abi_type_uniq_name = "b"
+  abi_type_canon_name = "bool"
   abi_type_count_vars = 1
-  abi_type_show_vars a = [show a]
+  abi_type_list_vars a = [show a]
 
 instance ABIValue BOOL where
   from_svalue (SVALUE 0) = false
@@ -249,11 +254,12 @@ if' (BOOL False) _ y = y
 newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer) deriving newtype (Ord, Eq)
 
 instance forall s n. (Typeable s, KnownNat n) => ABIType (INTx s n) where
-  abi_type_name = (if typeRep (Proxy @s) == typeRep (Proxy @True)
-                   then "INT" else "UINT") <> show (natVal (Proxy @n) * 8)
-
+  abi_type_uniq_name = (if typeRep (Proxy @s) == typeRep (Proxy @True)
+                   then "i" else "u") <> show (natVal (Proxy @n))
+  abi_type_canon_name = (if typeRep (Proxy @s) == typeRep (Proxy @True)
+                   then "int" else "uint") <> show (natVal (Proxy @n) * 8)
   abi_type_count_vars = 1
-  abi_type_show_vars a = [show a]
+  abi_type_list_vars a = [show a]
 
 
 instance (Typeable s, KnownNat n) => ABIValue (INTx s n) where
@@ -383,9 +389,11 @@ type UINT256 = INTx False 32;type INT256 = INTx True 32
 newtype BYTES = BYTES B.ByteString deriving newtype (Eq)
 
 instance ABIType BYTES where
-  abi_type_name = "BYTES"
+  abi_type_uniq_name = "B" -- Lowercase "b" is taken by "bool".
+  abi_type_canon_name = "bytes"
   abi_type_count_vars = 1
-  abi_type_show_vars a = [show a]
+  abi_type_list_vars :: BYTES -> [String]
+  abi_type_list_vars a = [show a]
 
 instance Show BYTES where
   show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . B.unpack) a ++ "/*::BYTES*/"
@@ -410,9 +418,10 @@ type Sel4Bytes = INTx False 4
 newtype SEL = SEL (Sel4Bytes, FuncSig)
 
 instance ABIType SEL where
-  abi_type_name = "SEL"
+  abi_type_uniq_name = "S" -- Lowercase 's' is taken by "string".
+  abi_type_canon_name = "bytes4" -- It doesn't have a direct underlying type.
   abi_type_count_vars = 1
-  abi_type_show_vars (SEL (_, b))  = [show b]
+  abi_type_list_vars (SEL (_, b))  = [show b]
 --  abi_type_show_vars (SEL (Just (sig, args), _)) = [sig]
 
 instance Show SEL where
@@ -423,20 +432,20 @@ deriving instance Generic SEL
 deriving newtype instance S.Serialize SEL
 
 -- Generate ABI Contract compatible signature string.
-make_sig :: forall a b. (ABIType a, ABIType b) => String -> String
-make_sig fname = fname <> "()" -- FIXME use a b
+make_sig :: forall a. ABIType a => String -> String
+make_sig fname = fname <> "(" <> abi_type_canon_name @a <> ")"
 
 -- | Create a solidity-compatible selector based on types.
 --
-mkTypedSelector :: forall a b. (ABIType a, ABIType b) => String -> SEL
-mkTypedSelector fname = SEL (fromIntegral sel4bytes, Just (fname, ""))
+mkTypedSelector :: forall a. ABIType a => String -> SEL
+mkTypedSelector fname = SEL (fromIntegral sel4bytes, Just (fname, abi_type_canon_name @a))
   where
-    sig = make_sig @a @b fname
+    sig = make_sig @a fname
     bs4bytes = B.unpack(B.take 4(BA.convert(hash(BC.pack sig) :: Digest Keccak_256) :: B.ByteString))
     sel4bytes = (fromIntegral (bs4bytes!!3) :: Word32)
       .|. shift (fromIntegral (bs4bytes!!2) :: Word32) 8
       .|. shift (fromIntegral (bs4bytes!!1) :: Word32) 16
-      .|. shift (fromIntegral (bs4bytes!!0) :: Word32) 24
+      .|. shift (fromIntegral (head bs4bytes) :: Word32) 24 -- use 'head' to hush hlint
 
 mkRawSelector :: Sel4Bytes -> SEL
 mkRawSelector sig = SEL (sig, Nothing)
@@ -457,9 +466,10 @@ data FuncEffect = FuncTx | FuncStatic
 newtype FUNC a b = FUNC (FuncStorage, FuncEffect, SEL, ADDR)
 
 instance forall a b. (ABIType a, ABIType b) => ABIType (FUNC a b) where
-  abi_type_name = "FUNC"
+  abi_type_uniq_name = "f"
+  abi_type_canon_name = "bytes24" -- Per spec, it is 20 bytes address and 4 bytes selector.
   abi_type_count_vars = 1
-  abi_type_show_vars a = [show a]
+  abi_type_list_vars a = [show a]
 
 instance Show (FUNC a b) where
   show _              = error "TODO Show FUNC"
@@ -479,14 +489,16 @@ deriving newtype instance S.Serialize (FUNC a b)
 
 instance forall a b. (ABIType a, ABIType b) => ABIType (a, b) where
   maybe_prod_objs = Dict
-  abi_type_name = "(" <> abi_type_name @a <> "×" <> abi_type_name @b <> ")"
+  abi_type_uniq_name = abi_type_uniq_name @a <> "×" <> abi_type_uniq_name @b
+  abi_type_canon_name = abi_type_canon_name @a <> "," <> abi_type_canon_name @b
   abi_type_count_vars = abi_type_count_vars @a + abi_type_count_vars @b
-  abi_type_show_vars (a, b) = abi_type_show_vars a <> abi_type_show_vars b
+  abi_type_list_vars (a, b) = abi_type_list_vars a <> abi_type_list_vars b
 
 instance forall a b. (ABIType a, ABIType b) => ABIType (a :* b) where
-  abi_type_name = "(" <> abi_type_name @a <> ":*" <> abi_type_name @b <> ")"
+  abi_type_uniq_name = abi_type_uniq_name @a <> "*" <> abi_type_uniq_name @b
+  abi_type_canon_name = abi_type_canon_name @a <> "," <> abi_type_canon_name @b
   abi_type_count_vars = abi_type_count_vars @a + abi_type_count_vars @b
-  abi_type_show_vars (a :* b) = abi_type_show_vars a <> abi_type_show_vars b
+  abi_type_list_vars (a :* b) = abi_type_list_vars a <> abi_type_list_vars b
 
 deriving instance Generic (a :* b)
 deriving anyclass instance (ABISerialize a, ABISerialize b) => S.Serialize (a :* b)

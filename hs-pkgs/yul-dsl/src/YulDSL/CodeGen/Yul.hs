@@ -157,8 +157,8 @@ mk_code :: forall a b. YulO2 a b => Indenter -> [Val] -> T.Text -> Proxy a -> Pr
 mk_code ind vals title _ _ code = ind (
   "//dbg: " <> title <> " " <>
   vals_to_code vals <>
-  " : "  <> T.pack (abi_type_name @a) <>
-  " -> " <> T.pack (abi_type_name @b)
+  " : "  <> T.pack (abi_type_uniq_name @a) <>
+  " -> " <> T.pack (abi_type_uniq_name @b)
   ) <> code
 
 -- coerce_vals :: forall a b. YulO2 a b => Indenter -> Proxy a -> Proxy b -> [Val] -> Code
@@ -193,7 +193,7 @@ gen_code ind (MkAnyYulCat cat) vals_a = go cat where
   go YulDup           = go_dup (Proxy @a)
   go YulSGet          = ret_expr $ "sload(" <> vals_to_code vals_a <> ")"
   go YulSPut          = return (ind ("sstore(" <> vals_to_code vals_a <> ")"), [])
-  go (YulEmbed a)     = ret_vars $ fmap (ValExpr . T.pack) (abi_type_show_vars a)
+  go (YulEmbed a)     = ret_vars $ fmap (ValExpr . T.pack) (abi_type_list_vars a)
   -- go (YulCall c)        =
   go (YulJump i c)    = go_jump (Proxy @a) (Proxy @b) i c
   -- go (YulMap (MkFn n _)) = _
@@ -206,7 +206,7 @@ gen_code ind (MkAnyYulCat cat) vals_a = go cat where
   go YulNumAdd        = ret_expr $ "add(" <> vals_to_code vals_a <> ")"
   go YulNumNeg        = ret_expr $ "sub(0, " <> vals_to_code vals_a <> ")"
   go (YulNumCmp @m s) = go_num_cmp s (Proxy @m)
-  go _                = error $ "gen_code unimpl:" <> abi_type_name @a <> " ~> " <> abi_type_name @b -- FIXME remove
+  go _                = error $ "gen_code unimpl:" <> abi_type_uniq_name @a <> " ~> " <> abi_type_uniq_name @b -- FIXME remove
   go_comp :: forall a b c. YulO3 a b c => YulCat c b -> YulCat a c -> CGState CGOutput
   go_comp cb ac = do
     (code_ac, vals_c) <- gen_code ind (MkAnyYulCat ac) vals_a

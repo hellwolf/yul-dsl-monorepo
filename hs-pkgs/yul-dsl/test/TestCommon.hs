@@ -12,7 +12,7 @@ import           YulDSL.Core.ContractABI.Types
 
 instance Arbitrary ADDR where
   arbitrary = chooseBoundedIntegral (minBound @UINT256, maxBound @UINT256)
-              <&> toInteger <&> to_addr'
+              <&> to_addr' . toInteger
 
 deriving newtype instance Arbitrary BOOL
 

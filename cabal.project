@@ -3,4 +3,5 @@ packages:
     hs-pkgs/yul-dsl
     hs-pkgs/yul-dsl-linear-smc
     hs-pkgs/yol-suite
+    hs-pkgs/yol-suite/testsuite
     examples/demo

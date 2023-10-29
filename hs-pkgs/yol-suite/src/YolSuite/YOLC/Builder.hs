@@ -2,6 +2,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 
+{-|
+
+Copyright   : (c) 2023 Miao, ZhiCheng
+License     : LGPL-3
+Maintainer  : zhicheng.miao@gmail.com
+Stability   : experimental
+
+= Description
+
+Manifest builde r
+
+-}
+
 module YolSuite.YOLC.Builder
   ( Manifest (..)
   , buildManifest
@@ -96,11 +109,11 @@ build_bu (MkBuildUnit { mainObject = mo }) = do
 
 -- | Build manifest in the single-file output mode.
 buildManifest :: Manifest -> IO BuildResult
-buildManifest (MkManifest { buildUnits = as }) = foldM
+buildManifest (MkManifest { buildUnits = bus }) = foldM
   (\b a -> case b of
       Left b'  -> return (Left b')
       Right b' -> build_bu a <&> fmap (\a' -> b' <> a' <> "\n"))
   (Right [fmt'|// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 |])
-  as
+  bus

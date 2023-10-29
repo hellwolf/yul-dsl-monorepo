@@ -228,13 +228,15 @@ EOF
     debug "=== END RunYol.hs"
   }
 
-  # run yol, and tee its output
+  # run yol
   runyol --project-file="$yol_dir"/cabal.project \
          --builddir="$out_dir/yolc" > "${yol_output_file}" || {
     rm "${yol_output_file}"
     die "=== Failed to build yol module: $mod_spec"
   }
-  cat "${yol_output_file}"
+
+  # print output if needed
+  when_verbose || [ "$codegen_id" == 1 ] && cat "${yol_output_file}"
 
   when_verbose && {
     debug "=== Done with yol module: $mod_spec"

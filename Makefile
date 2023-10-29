@@ -29,7 +29,7 @@ CABAL_COVERAGE = $(CABAL) --builddir=$(TEST_COVERAGE_BUILDDIR)
 CABAL_DOCS     = $(CABAL) --builddir=$(DOCS_BUILDDIR)
 
 # Misc
-DEV_TARGETS = build-all-modules test-yul-dsl
+DEV_TARGETS = build-all-modules test-yul-dsl test-yol-suite
 
 ########################################################################################################################
 # TARGETS
@@ -60,10 +60,14 @@ build-docs-and-display: build-docs
 clean:
 	rm -rf build
 
-test: test-yul-dsl test-demo
+test: test-yul-dsl test-yol-suite test-demo
 
 test-yul-dsl:
 	$(CABAL_TEST) test yul-dsl $(TEST_OPTIONS)
+
+test-yol-suite:
+	yolc -m yul hs-pkgs/yol-suite/testsuite
+	cd hs-pkgs/yol-suite/testsuite && forge test
 
 test-demo: test-demo-show test-demo-yul
 
@@ -76,6 +80,6 @@ test-demo-yul:
 	cd examples/demo && forge test
 
 dev:
-	nodemon -w hs-pkgs -w yol-demo -e "hs cabal" -x "make $(DEV_TARGETS) || exit 1"
+	nodemon -w hs-pkgs -w yol-demo -e "hs sol cabal" -x "make $(DEV_TARGETS) || exit 1"
 
 .PHONY: all gen-* build-* lint clean test test-* dev

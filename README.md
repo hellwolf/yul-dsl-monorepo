@@ -98,11 +98,10 @@ Features
   - [ ] :L: Support all `YulDSL` constructors.
 - Yul CodeGen
   - CodeGen core:
-    - [ ] :M: Lazy semantics.
+    - [ ] 🚧 :M: Lazy semantics.
     - [ ] :S: Fn autoId (instead of using yulCatDigest.)
   - Object builder:
-    - [ ] 🚧 :XL: dispatcher builder.
-      - Full dispatcher calldata codec support.
+    - [ ] 🚧 :XL: dispatcher builder with full dispatcher calldata codec support.
     - [ ] :M: constructor support.
 - PlantUML CodeGen
   - [ ] :L: Complete PlantUML codegen support.

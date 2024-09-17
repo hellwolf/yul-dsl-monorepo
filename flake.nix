@@ -10,7 +10,7 @@
   outputs = { nixpkgs, haskell-tooling, flake-utils, ... }: (flake-utils.lib.eachDefaultSystem (system:
     let
       pkgs = import nixpkgs { inherit system; };
-      requiredInputs = haskell-tooling.lib.install pkgs ["ghc96+hls"];
+      requiredInputs = haskell-tooling.lib.install pkgs ["ghc910+hls"];
       devInputs = with pkgs; [
         nodePackages.nodemon
         jq

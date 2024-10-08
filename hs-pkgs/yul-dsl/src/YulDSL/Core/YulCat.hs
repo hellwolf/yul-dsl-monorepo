@@ -142,10 +142,10 @@ data YulCat a b where
   YulSwap :: forall a b.     YulO2 a b     => YulCat (a, b) (b, a)
   --  Cartesian
   YulFork :: forall a b c. YulO3 a b c => YulCat a b %1 -> YulCat a c %1 -> YulCat a (b, c)
-  YulExl   :: forall a b.   YulO2 a b   => YulCat (a, b) a
-  YulExr   :: forall a b.   YulO2 a b   => YulCat (a, b) b
-  YulDis   :: forall a.     YulO1 a     => YulCat a ()
-  YulDup   :: forall a.     YulO1 a     => YulCat a (a, a)
+  YulExl  :: forall a b.   YulO2 a b   => YulCat (a, b) a
+  YulExr  :: forall a b.   YulO2 a b   => YulCat (a, b) b
+  YulDis  :: forall a.     YulO1 a     => YulCat a ()
+  YulDup  :: forall a.     YulO1 a     => YulCat a (a, a)
 
   -- Control Flow Primitives
   --

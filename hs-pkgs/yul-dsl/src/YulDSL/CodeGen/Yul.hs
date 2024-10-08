@@ -200,7 +200,7 @@ gen_code ind (MkAnyYulCat cat) vals_a = go cat where
   -- go (YulMap (MkFn n _)) = _
   -- go (YulFoldl (MkFn n _)) = _
   -- go (YulCall (MkFn n _)) = _
-  go YulITE           = go_ite (Proxy @a)
+  go (YulITE @m)      = go_ite (Proxy @m)
   go YulNot           = ret_expr $ "not(" <> vals_to_code vals_a <> ")"
   go YulAnd           = ret_expr $ "and(" <> vals_to_code vals_a <> ")"
   go YulOr            = ret_expr $ "or(" <> vals_to_code vals_a <> ")"
@@ -241,33 +241,34 @@ gen_code ind (MkAnyYulCat cat) vals_a = go cat where
     code_vars <- declare_vars ind
     return ( mk_code' "dup" (Proxy @a) (Proxy @(a,a)) $
              wrap_let_vars code_vars ( assign_vars ind vars_a1 vals_a <>
-                                       assign_vars ind vars_a2 vals_a )
+                                       ind (vars_a2 !! 0 <> " := " <> vars_a1 !! 0) -- TODO better looking code?
+                                       -- assign_vars ind vars_a2 vals_a
+                                     )
            , fmap LetVar (vars_a1 <> vars_a2) )
   go_jump :: forall a b. YulO2 a b => Proxy a -> Proxy b -> String -> YulCat a b -> CGState CGOutput
-  go_jump _ _ cid cat = do
+  go_jump _ _ cid cat' = do
     modify (\d@(MkCGStateData { dependant_cats = deps }) -> d {
-               dependant_cats = M'.insert cid (MkAnyYulCat cat) deps
+               dependant_cats = M'.insert cid (MkAnyYulCat cat') deps
                })
-    vals_b <- fmap LetVar <$> mk_let_vars (Proxy @b)
-    forget_vars -- we do in-place declaration immediately
-    return ( mk_code' "jump" (Proxy @a) (Proxy @b) $
-             ind ("let " <> vals_to_code vals_b <> " := " <>
-                  T.pack cid <> "(" <> vals_to_code vals_a <> ")")
-           , vals_b )
-  go_ite :: forall a. YulO1 a
-           => Proxy a -> CGState CGOutput
+    -- vals_b <- fmap LetVar <$> mk_let_vars (Proxy @b)
+    -- forget_vars -- we do in-place declaration immediately
+    return ( ""
+           , [ValExpr $  T.pack cid <> "(" <> vals_to_code vals_a <> ")"])
+  -- code block for if-then-else statement
+  go_ite :: forall a. YulO1 a => Proxy a -> CGState CGOutput
   go_ite _ = let ca = abi_type_count_vars @a in assert (length vals_a == 1 + 2 * ca)
     (do vars_b <- mk_let_vars (Proxy @a)
         let vals_b = fmap LetVar vars_b
-        return ( mk_code' "ite" (Proxy @(BOOL, (a, a))) (Proxy @a) ""
-                 -- ind ("switch " <> val_to_code (vals_a !! 0)) <>
-                 -- ind "case 0 {" <>
-                 -- ind' (vals_to_code vals_b <> " := " <> (vals_to_code . take ca . drop 1) vals_a) <>
-                 -- ind "}" <>
-                 -- ind "default {" <>
-                 -- ind' (vals_to_code vals_b <> " := " <> (vals_to_code . drop (1 + ca)) vals_a) <>
-                 -- ind "}"
+        return ( mk_code' "ite" (Proxy @(BOOL, (a, a))) (Proxy @a) $
+                 ind ("switch " <> val_to_code (vals_a !! 0)) <>
+                 ind "case 0 {" <>
+                 ind' (vals_to_code vals_b <> " := " <> (vals_to_code . take ca . drop 1) vals_a) <>
+                 ind "}" <>
+                 ind "default {" <>
+                 ind' (vals_to_code vals_b <> " := " <> (vals_to_code . drop (1 + ca)) vals_a) <>
+                 ind "}"
                , vals_b ))
+  -- code block for compare numbers
   go_num_cmp :: forall a. YulO1 a => (BOOL, BOOL, BOOL) -> Proxy a -> CGState CGOutput
   go_num_cmp (BOOL True , BOOL False, BOOL False) _ = go_num_cmp' "lt(" ")" (Proxy @a)
   go_num_cmp (BOOL True , BOOL True , BOOL False) _ = go_num_cmp' "iszero(gt(" "))" (Proxy @a)
@@ -276,7 +277,8 @@ gen_code ind (MkAnyYulCat cat) vals_a = go cat where
   go_num_cmp (BOOL False, BOOL False, BOOL True ) _ = go_num_cmp' "gt(" ")" (Proxy @a)
   go_num_cmp _ _                                    = error "go_num_cmp: invalid boolean-switches combo"
   go_num_cmp' :: forall a. YulO1 a => Code -> Code -> Proxy a -> CGState CGOutput
-  go_num_cmp' op1 op2 _ = assert (length vals_a == 2) (return ("", [ValExpr $ op1 <> vals_to_code vals_a <> op2 ]))
+  go_num_cmp' op1 op2 _ = assert (length vals_a == 2) $
+    return ("", [ValExpr $ op1 <> vals_to_code vals_a <> op2 ])
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Yul Object Builders

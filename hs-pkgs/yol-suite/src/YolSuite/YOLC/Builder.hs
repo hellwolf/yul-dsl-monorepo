@@ -113,7 +113,7 @@ buildManifest (MkManifest { buildUnits = bus }) = foldM
   (\b a -> case b of
       Left b'  -> return (Left b')
       Right b' -> build_bu a <&> fmap (\a' -> b' <> a' <> "\n"))
-  (Right [fmt'|// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+  (Right [fmt'|
+#include "../../../templates/Preamble.sol"
 |])
   bus

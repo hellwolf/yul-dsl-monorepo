@@ -229,7 +229,7 @@ EOF
   }
 
   # run yol
-  runyol --project-file="$yol_dir"/cabal.project \
+  runyol --project-dir="$yol_dir" \
          --builddir="$out_dir/yolc" > "${yol_output_file}" || {
     rm "${yol_output_file}"
     die "=== Failed to build yol module: $mod_spec"

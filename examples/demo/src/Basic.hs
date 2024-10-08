@@ -90,10 +90,10 @@ rangeSumVFn = vfn "rangeSumVFn" \(i :* s :* t) ->
   --         -- (copy x2 & split & \(x2, x2') -> go x2 x2')
 
 object = mkYulObject "Basic" ctor
-         [ externalFn foo1
-         , libraryFn  foo2
-         , staticFn   foo3 -- FIXME this should not be possible with permission tag
-         , staticFn   rangeSumLFn
-         , externalFn rangeSumVFn
+         [ -- externalFn foo1
+           -- , libraryFn  foo2
+           -- staticFn   foo3 -- FIXME this should not be possible with permission tag
+           staticFn   rangeSumLFn
+           -- externalFn rangeSumVFn
          ]
          where ctor = YulId -- empty constructor

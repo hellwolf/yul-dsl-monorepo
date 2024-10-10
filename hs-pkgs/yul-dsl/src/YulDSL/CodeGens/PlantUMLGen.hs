@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs #-}
 
-module YulDSL.CodeGen.PlantUML (compile) where
+module YulDSL.CodeGens.PlantUMLGen (compile) where
 
 import qualified Data.Text.Lazy     as T
 import           Data.Typeable

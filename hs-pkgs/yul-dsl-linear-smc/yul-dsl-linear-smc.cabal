@@ -7,6 +7,7 @@ license:        LGPL-3.0-or-later
 license-file:   LICENSE
 author:         Miao, ZhiCheng
 maintainer:     zhicheng.miao@gmail.com
+copyright:      (c) 2023-2024 Miao, ZhiCheng
 tested-with:    GHC==9.10.1
 build-type:     Simple
 

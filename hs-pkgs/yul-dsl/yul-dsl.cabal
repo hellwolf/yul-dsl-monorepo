@@ -17,7 +17,7 @@ license:        LGPL-3.0-or-later
 license-file:   LICENSE
 author:         Miao, ZhiCheng
 maintainer:     zhicheng.miao@gmail.com
-copyright:      (c) 2023 Miao, ZhiCheng
+copyright:      (c) 2023-2024 Miao, ZhiCheng
 tested-with:    GHC==9.10.1
 build-type:     Simple
 -- extra-doc-files:    CHANGELOG.md
@@ -39,8 +39,13 @@ library
                     YulDSL.Core.YulObject
                     YulDSL.Core
                     YulDSL.Eval
-                    YulDSL.CodeGen.PlantUML
-                    YulDSL.CodeGen.Yul
+                    YulDSL.CodeGens.PlantUMLGen
+                    YulDSL.CodeGens.YulGen
+
+  other-modules:    YulDSL.CodeGens.Yul.Internal.CodeFormatters
+                    YulDSL.CodeGens.Yul.Internal.CodeGen
+                    YulDSL.CodeGens.Yul.Internal.FunctionGen
+                    YulDSL.CodeGens.Yul.Internal.ObjectGen
   build-depends:    bytestring >= 0.11,
                     text >= 2.0.1,
                     constraints >= 0.13,

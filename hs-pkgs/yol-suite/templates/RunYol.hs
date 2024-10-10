@@ -8,9 +8,9 @@ import System.IO (stderr)
 
 import YulDSL.Core (YulO2, Fn, YulObject (..))
 --
-import qualified YulDSL.CodeGen.Yul as YulCodeGen
+-- import qualified YulDSL.CodeGens.PlantUMLGen as PlantUMLCodeGen
+import qualified YulDSL.CodeGens.YulGen   as YulCodeGen
 import qualified YolSuite.YOLC.Builder as YOLCBuilder
--- import qualified YulDSL.CodeGen.PlantUML as PlantUMLCodeGen
 
 import %YOL_MOD_NAME%
 

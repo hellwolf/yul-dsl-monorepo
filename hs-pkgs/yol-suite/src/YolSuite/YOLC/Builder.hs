@@ -39,7 +39,7 @@ import           Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
 import           System.IO               (hClose, hGetContents', hPutStr)
 import           System.Process          (CreateProcess (..), StdStream (CreatePipe), createProcess, proc)
 --
-import qualified YulDSL.CodeGen.Yul      as YulCodeGen
+import qualified YulDSL.CodeGens.YulGen  as YulCodeGen
 import qualified YulDSL.Core             as YulDSLCore
 --
 import           YolSuite.TH

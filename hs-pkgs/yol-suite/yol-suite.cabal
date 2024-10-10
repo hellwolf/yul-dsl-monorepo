@@ -17,7 +17,7 @@ license-file:    LICENSE
 author:          Miao, ZhiCheng
 maintainer:      zhicheng.miao@gmail.com
 tested-with:     GHC==9.10.1
-copyright:       (c) 2023 Miao, ZhiCheng
+copyright:       (c) 2023-2024 Miao, ZhiCheng
 build-type:      Simple
 extra-doc-files: CHANGELOG.md
 

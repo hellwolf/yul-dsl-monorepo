@@ -27,7 +27,9 @@ init_ind s = s <> "\n"
 
 -- | Wrap monadic code gen in a pair of curly brackets.
 cbracket_m :: Monad m => Indenter -> Code -> (Indenter -> m Code) -> m Code
-cbracket_m ind prefix codegen = codegen (indent ind) >>= \code -> pure (ind (prefix <> "{" ) <> code <> ind "}")
+cbracket_m ind prefix codegen = codegen (indent ind) >>=
+                                \code -> pure (ind (prefix' <> "{" ) <> code <> ind "}")
+  where prefix' = if prefix == "" then "" else prefix <> " "
 
 -- | Wrap code in a pair of curly brackets.
 cbracket :: Indenter -> Code -> (Indenter -> Code) -> Code

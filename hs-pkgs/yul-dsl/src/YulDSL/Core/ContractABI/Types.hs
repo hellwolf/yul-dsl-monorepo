@@ -45,7 +45,7 @@ module YulDSL.Core.ContractABI.Types
 
     -- ** INTx
   , KnownNat
-  , INTx, intx_sign, intx_nbits, min_intx, max_intx, to_intx, intx_typename
+  , INTx, intx_sign, intx_nbits, min_intx, max_intx, to_intx
 
     -- *** Assorted INTx Types
   , UINT8,UINT16,UINT24,UINT32,UINT40,UINT48,UINT56,UINT64
@@ -275,15 +275,15 @@ instance (KnownBool s, KnownNat n) => ABIValue (INTx s n) where
   to_svalue (INT Nothing)  = def_sval
 
 instance (KnownBool s, KnownNat n) => Show (INTx s n) where
-  show (INT (Just a)) = show a ++ "/*::" ++ intx_typename @(INTx s n) ++ "*/"
-  show (INT Nothing)  = "NaN" ++ "/*::" ++ intx_typename @(INTx s n) ++ "*/"
+  show (INT (Just a)) = show a ++ " /*::" ++ abi_type_uniq_name @(INTx s n) ++ "*/"
+  show (INT Nothing)  = "NaN" ++ " /*::" ++ abi_type_uniq_name @(INTx s n) ++ "*/"
 
 deriving instance Generic (INTx s n)
 deriving newtype instance S.Serialize (INTx s n)
 
 instance Enum (INTx s n) where
   fromEnum (INT (Just a)) = fromEnum a
-  fromEnum (INT Nothing)  =0
+  fromEnum (INT Nothing)  = 0
   toEnum = INT . Just . toEnum
 
 instance (KnownBool s, KnownNat n) => Real (INTx s n) where
@@ -343,8 +343,8 @@ intx_nbits :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownNat n) => Int
 intx_nbits = fromEnum (8 * natVal (Proxy @n))
 
 -- | Show the canonical type name for the INTX type. Use type application on @a@.
-intx_typename :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownBool s, KnownNat n) => String
-intx_typename = (if intx_sign @a then "" else "U") ++ "INT" ++ show (intx_nbits @a)
+-- intx_typename :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownBool s, KnownNat n) => String
+-- intx_typename = (if intx_sign @a then "" else "U") ++ "INT" ++ show (intx_nbits @a)
 
 -- | Convert integer to the INTx type.
 to_intx :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownBool s, KnownNat n) => Integer -> a
@@ -431,8 +431,8 @@ instance ABIType SEL where
 --  abi_type_show_vars (SEL (Just (sig, args), _)) = [sig]
 
 instance Show SEL where
-  show (SEL (sig, Just (fname, args))) = "0x" ++ showHex sig "/*" ++  fname ++ "(" ++ args ++ ")*/"
-  show (SEL (sig, Nothing))            = "0x" ++ showHex sig ""
+  show (SEL (sig, Just (fname, argTypes))) = "0x" ++ showHex sig " /* " ++  fname ++ "(" ++ argTypes ++ ") */"
+  show (SEL (sig, Nothing))                = "0x" ++ showHex sig ""
 
 deriving instance Generic SEL
 deriving newtype instance S.Serialize SEL

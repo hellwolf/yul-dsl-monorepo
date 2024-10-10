@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs             #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 module YulDSL.CodeGens.Yul.Internal.FunctionGen
   ( compile_cat
@@ -25,9 +26,9 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
   --
   ret_vars vars = return ("", vars)
   ret_expr expr = return ("", [ValExpr expr])
-  mk_code' :: forall a b. YulO2 a b => T.Text -> Proxy a -> Proxy b -> Code -> Code
+  mk_code' :: forall a b. YulO2 a b => Code -> Proxy a -> Proxy b -> Code -> Code
   mk_code' = mk_code ind vals_a
-  wrap_let_vars vars = if vars == "" then id else \body -> vars <> ind "{" <> body <> ind "}"
+  wrap_let_vars = \case Nothing -> id; Just vars -> \body -> ind (vars <> " {") <> body <> ind "}"
   -- go functions
   go :: forall a b. YulO2 a b => YulCat a b -> CGState CGOutput
   go YulCoerce        = ret_vars vals_a -- return (coerce_vals ind (Proxy @a) (Proxy @b) vals_a, vals_a)
@@ -61,17 +62,17 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
   go_comp cb ac = do
     (code_ac, vals_c) <- do_compile_cat ind (MkAnyYulCat ac) vals_a
     (code_cb, vals_b) <- do_compile_cat ind (MkAnyYulCat cb) vals_c
-    code_vars <- declare_vars ind
+    out_vars <- declare_vars
     return ( mk_code' "comp" (Proxy @(c,b)) (Proxy @(a,c)) $
-             wrap_let_vars code_vars (code_ac <> code_cb)
+             wrap_let_vars out_vars (code_ac <> code_cb)
            , vals_b )
   go_intro :: forall a b c. YulO3 a b c => YulCat a b -> YulCat a c -> CGState CGOutput
   go_intro ab ac = do
     (code_ab, vars_b) <- do_compile_cat ind (MkAnyYulCat ab) vals_a
     (code_ac, vars_c) <- do_compile_cat ind (MkAnyYulCat ac) vals_a
-    code_vars <- declare_vars ind
+    out_vars <- declare_vars
     return ( mk_code' "intro" (Proxy @(a,b)) (Proxy @(a,c)) $
-             wrap_let_vars code_vars (code_ab <> code_ac)
+             wrap_let_vars out_vars (code_ab <> code_ac)
            , vars_b <> vars_c)
   go_extract :: forall m n. YulO2 m n => Proxy m -> Proxy n -> Bool -> CGState CGOutput
   go_extract _ _ extractLeft = let cn = abi_type_count_vars @n
@@ -82,20 +83,20 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
   go_prod ab cd = do
     (code_ab, vars_b1) <- do_compile_cat ind (MkAnyYulCat ab) (fst_vals (Proxy @a) (Proxy @c) vals_a)
     (code_cd, vars_b2) <- do_compile_cat ind (MkAnyYulCat cd) (snd_vals (Proxy @a) (Proxy @c) vals_a)
-    code_vars <- declare_vars ind
+    out_vars <- declare_vars
     return ( mk_code' "prod" (Proxy @(a,b)) (Proxy @(c,d)) $
-             wrap_let_vars code_vars (code_ab <> code_cd)
+             wrap_let_vars out_vars (code_ab <> code_cd)
            , vars_b1 <> vars_b2 )
   go_dup :: forall a. YulO1 a => Proxy a -> CGState CGOutput
   go_dup _ = do
     vars_a1 <- mk_let_vars (Proxy @a)
     vars_a2 <- mk_let_vars (Proxy @a)
-    code_vars <- declare_vars ind
+    out_vars <- declare_vars
     return ( mk_code' "dup" (Proxy @a) (Proxy @(a,a)) $
-             wrap_let_vars code_vars ( assign_vars ind vars_a1 vals_a <>
-                                       ind (vars_a2 !! 0 <> " := " <> vars_a1 !! 0) -- TODO better looking code?
-                                       -- assign_vars ind vars_a2 vals_a
-                                     )
+             wrap_let_vars out_vars ( assign_vars ind vars_a1 vals_a <>
+                                      ind (vars_a2 !! 0 <> " := " <> vars_a1 !! 0) -- TODO better looking code?
+                                      -- assign_vars ind vars_a2 vals_a
+                                    )
            , fmap LetVar (vars_a1 <> vars_a2) )
   go_jump :: forall a b. YulO2 a b => Proxy a -> Proxy b -> String -> YulCat a b -> CGState CGOutput
   go_jump _ _ cid cat' = do
@@ -113,9 +114,9 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
         let vals_b = fmap LetVar vars_b
         return ( mk_code' "ite" (Proxy @(BOOL, (a, a))) (Proxy @a) $
                  ind ("switch " <> val_to_code (vals_a !! 0)) <>
-                 cbracket1 ind "case 0 "
+                 cbracket1 ind "case 0"
                  (vals_to_code vals_b <> " := " <> (vals_to_code . take ca . drop 1) vals_a) <>
-                 cbracket1 ind "default "
+                 cbracket1 ind "default"
                  (vals_to_code vals_b <> " := " <> (vals_to_code . drop (1 + ca)) vals_a)
                , vals_b ))
   -- code block for compare numbers

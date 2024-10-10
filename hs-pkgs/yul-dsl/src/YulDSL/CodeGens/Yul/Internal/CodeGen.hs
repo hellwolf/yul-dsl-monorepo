@@ -118,11 +118,11 @@ assign_vars :: Indenter -> [Var] -> [Val] -> Code
 assign_vars ind vars vals = assert (length vars == length vals) $
   T.intercalate "" (fmap (\(a,b) -> ind (a <> " := " <> b)) (zip vars (fmap val_to_code vals)))
 
-declare_vars :: Indenter -> CGState Code
-declare_vars ind = do
+declare_vars :: CGState (Maybe Code)
+declare_vars = do
   s <- get
   let vars = undeclared_vars s
-      code = if null vars then "" else ind ("let " <> T.intercalate ", " vars)
+      code = if null vars then Nothing else Just ("let " <> T.intercalate ", " vars)
   put (s { undeclared_vars = [] })
   return code
 

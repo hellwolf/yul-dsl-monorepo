@@ -44,6 +44,7 @@ library
 
   other-modules:    YulDSL.CodeGens.Yul.Internal.CodeFormatters
                     YulDSL.CodeGens.Yul.Internal.CodeGen
+                    YulDSL.CodeGens.Yul.Internal.ABICodec
                     YulDSL.CodeGens.Yul.Internal.FunctionGen
                     YulDSL.CodeGens.Yul.Internal.ObjectGen
   build-depends:    bytestring >= 0.11,

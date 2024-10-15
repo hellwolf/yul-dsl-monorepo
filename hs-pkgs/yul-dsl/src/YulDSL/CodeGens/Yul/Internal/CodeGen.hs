@@ -4,6 +4,7 @@ module YulDSL.CodeGens.Yul.Internal.CodeGen where
 import qualified Control.Exception                           (assert)
 import           Control.Monad.State.Lazy                    (MonadState (..), State, evalState, modify)
 import           Data.Char                                   (chr)
+import           Data.Function                               ((&))
 import           Data.Typeable                               (Proxy (..))
 --
 import qualified Data.Text.Lazy                              as T
@@ -39,8 +40,17 @@ cur_var (MkAutoVarGen i0) = "v_" <> T.pack (go i0) where
 new_auto_var :: AutoVarGen -> (Var, AutoVarGen)
 new_auto_var g@(MkAutoVarGen i0) = (cur_var g, MkAutoVarGen (i0 + 1))
 
--- Variable and value
+-- | Generate a list of variables for the 'ABIType' a.
 --
+-- Examples:
+-- >>> gen_vars (Proxy @(INT256, BOOL))
+-- ["v_a","v_b"]
+gen_vars :: forall a. ABIType a => Proxy a -> [Var]
+gen_vars _ = let n = abi_type_count_vars @a
+             in snd $ foldr
+                (\ _ (gen, vars) -> new_auto_var gen & \ (var, gen') -> (gen', vars <> [var]))
+                (MkAutoVarGen 0, [])
+                (drop 1 [0..n])
 
 -- is_let_var :: Val -> Bool
 -- is_let_var x = case x of LetVar _ -> True; _ -> False

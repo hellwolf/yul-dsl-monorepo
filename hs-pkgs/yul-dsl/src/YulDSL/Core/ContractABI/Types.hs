@@ -181,7 +181,7 @@ instance ABIValue ADDR where
   to_svalue (ADDR a) = SVALUE a
 
 instance Show ADDR where
-  show (ADDR a) = "0x" ++ _lpad0 40 (showHex a) "" ++ "/*::ADDR*/"
+  show (ADDR a) = "0x" ++ _lpad0 40 (showHex a) ""
 
 deriving instance Generic ADDR
 deriving newtype instance S.Serialize ADDR
@@ -267,7 +267,6 @@ instance forall s n. (KnownBool s, KnownNat n) => ABIType (INTx s n) where
   abi_type_count_vars = 1
   abi_type_list_vars a = [show a]
 
-
 instance (KnownBool s, KnownNat n) => ABIValue (INTx s n) where
   from_svalue (SVALUE a) = fromIntegral a -- FIXME, support signed numbers
 
@@ -275,8 +274,8 @@ instance (KnownBool s, KnownNat n) => ABIValue (INTx s n) where
   to_svalue (INT Nothing)  = def_sval
 
 instance (KnownBool s, KnownNat n) => Show (INTx s n) where
-  show (INT (Just a)) = show a ++ " /*::" ++ abi_type_uniq_name @(INTx s n) ++ "*/"
-  show (INT Nothing)  = "NaN" ++ " /*::" ++ abi_type_uniq_name @(INTx s n) ++ "*/"
+  show (INT (Just a)) = show a
+  show (INT Nothing)  = "NaN"
 
 deriving instance Generic (INTx s n)
 deriving newtype instance S.Serialize (INTx s n)
@@ -402,7 +401,7 @@ instance ABIType BYTES where
   abi_type_list_vars a = [show a]
 
 instance Show BYTES where
-  show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . B.unpack) a ++ "/*::BYTES*/"
+  show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . B.unpack) a
 
 deriving instance Generic BYTES
 deriving newtype instance S.Serialize BYTES
@@ -451,7 +450,7 @@ mkTypedSelector fname = SEL (fromIntegral sel4bytes, Just (fname, abi_type_canon
     sel4bytes = (fromIntegral (bs4bytes!!3) :: Word32)
       .|. shift (fromIntegral (bs4bytes!!2) :: Word32) 8
       .|. shift (fromIntegral (bs4bytes!!1) :: Word32) 16
-      .|. shift (fromIntegral (head bs4bytes) :: Word32) 24 -- use 'head' to hush hlint
+      .|. shift (fromIntegral (bs4bytes!!0) :: Word32) 24
 
 mkRawSelector :: Sel4Bytes -> SEL
 mkRawSelector sig = SEL (sig, Nothing)
@@ -495,20 +494,22 @@ deriving newtype instance S.Serialize (FUNC a b)
 
 instance forall a b. (ABIType a, ABIType b) => ABIType (a, b) where
   maybe_prod_objs = Dict
-  abi_type_uniq_name = abi_type_uniq_name @a <> "×" <> abi_type_uniq_name @b
+  abi_type_uniq_name = abi_type_uniq_name @a <> abi_type_uniq_name @b
   abi_type_canon_name = abi_type_canon_name @a <> "," <> abi_type_canon_name @b
   abi_type_count_vars = abi_type_count_vars @a + abi_type_count_vars @b
   abi_type_list_vars (a, b) = abi_type_list_vars a <> abi_type_list_vars b
 
+-- | ABIType (a :* b) is equivalent to ABIType (a, b).
 instance forall a b. (ABIType a, ABIType b) => ABIType (a :* b) where
-  abi_type_uniq_name = abi_type_uniq_name @a <> "*" <> abi_type_uniq_name @b
-  abi_type_canon_name = abi_type_canon_name @a <> "," <> abi_type_canon_name @b
-  abi_type_count_vars = abi_type_count_vars @a + abi_type_count_vars @b
-  abi_type_list_vars (a :* b) = abi_type_list_vars a <> abi_type_list_vars b
+  abi_type_uniq_name = abi_type_uniq_name @(a, b)
+  abi_type_canon_name = abi_type_canon_name @(a, b)
+  abi_type_count_vars = abi_type_count_vars @(a, b)
+  abi_type_list_vars (a :* b) = abi_type_list_vars (a, b)
 
 deriving instance Generic (a :* b)
 deriving anyclass instance (ABISerialize a, ABISerialize b) => S.Serialize (a :* b)
 
+{- INTERNAL FUNCTIONS -}
 
 _lpad0 :: Int -> ShowS -> ShowS
 _lpad0 n s = showString (reverse (take n (reverse (s "") ++ repeat '0')))
@@ -522,11 +523,11 @@ __INTx Types__
 >>> (min_intx @INT96, max_intx @INT96)
 >>> to_intx (-128) :: INT8
 >>> to_intx 128 :: INT8
-(-2147483648/*::INT32*/,2147483647/*::INT32*/)
-(0/*::UINT32*/,4294967295/*::UINT32*/)
-(-39614081257132168796771975168/*::INT96*/,39614081257132168796771975167/*::INT96*/)
--128/*::INT8*/
-NaN/*::INT8*/
+(-2147483648,2147483647)
+(0,4294967295)
+(-39614081257132168796771975168,39614081257132168796771975167)
+-128
+NaN
 
 __Num Operators__
 
@@ -534,24 +535,29 @@ __Num Operators__
 >>> (to_intx 255 :: UINT8) + (to_intx 1 :: UINT8)
 >>> (to_intx 32 :: UINT8) * (to_intx 2 :: UINT8)
 >>> (to_intx 32 :: UINT8) * (to_intx 8 :: UINT8)
-8/*::UINT8*/
-NaN/*::UINT8*/
-64/*::UINT8*/
-NaN/*::UINT8*/
+8
+NaN
+64
+NaN
 
 >>> negate (to_intx 32 :: UINT8)
 >>> negate (to_intx 32 :: INT8)
 >>> negate (to_intx (-128) :: INT8)
 >>> abs (to_intx (-128) :: INT8)
-NaN/*::UINT8*/
--32/*::INT8*/
-NaN/*::INT8*/
-NaN/*::INT8*/
+NaN
+-32
+NaN
+NaN
 
 >>> show (SEL (Nothing, 69))
 >>> show (SEL (Just ("foo", ""), 0)) -- TODO 4bytes needs to be generated
-"0x45"
-"0x0 /*::foo()*/"
+Couldn't match type: Maybe a0_a2OaB[tau:1]
+               with: INTx 'False 4
+Expected: Sel4Bytes
+  Actual: Maybe a0_a2OaB[tau:1]
+In the expression: Nothing
+In the first argument of `SEL', namely `(Nothing, 69)'
+In the first argument of `show', namely `(SEL (Nothing, 69))'
 -}
 
 {- $show_instance_examples
@@ -564,10 +570,10 @@ NaN/*::INT8*/
 >>> show (BYTES (BC.pack "hello, world"))
 >>> show (BYTES (B.pack [4, 2]))
 "true"
-"0x0000000000000000000000000000000000000042/*::ADDR*/"
-"255/*::UINT8*/"
-"-8/*::INT96*/"
-"NaN/*::UINT8*/"
-"0x68656c6c6f2c20776f726c64/*::BYTES*/"
-"0x0402/*::BYTES*/"
+"0x0000000000000000000000000000000000000042"
+"255"
+"-8"
+"NaN"
+"0x68656c6c6f2c20776f726c64"
+"0x0402"
 -}

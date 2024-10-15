@@ -4,15 +4,12 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    haskell-tooling.url = "github:hellwolf/haskell-tooling.nix";
   };
 
-  outputs = { nixpkgs, haskell-tooling, flake-utils, ... }: (flake-utils.lib.eachDefaultSystem (system:
+  outputs = { nixpkgs, flake-utils, ... }: (flake-utils.lib.eachDefaultSystem (system:
     let
       pkgs = import nixpkgs { inherit system; };
-      requiredInputs = haskell-tooling.lib.install pkgs ["ghc910+hls"];
-      devInputs = with pkgs; [
-        nodePackages.nodemon
+      commonDevInputs = with pkgs; [
         jq
         shellcheck
       ];
@@ -22,8 +19,16 @@
       '';
     in {
       devShells.default = pkgs.mkShell {
-        buildInputs = requiredInputs ++ devInputs;
+        buildInputs = with pkgs; commonDevInputs ++ [
+          # local dev tooling
+          nodePackages.nodemon
+          # haskell tooling
+          cabal-install
+          hlint
+          haskell.compiler.ghc910
+          haskell.packages.ghc910.haskell-language-server
+        ];
         inherit shellHook;
       };
     }));
-}
+  }

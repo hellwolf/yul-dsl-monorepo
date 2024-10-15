@@ -57,8 +57,11 @@
 # - ignore: {name: Use let}
 # - ignore: {name: Use const, within: SpecialModule} # Only within certain modules
 
+- extensions:
+  - name: [ RequiredTypeArguments ]
 - ignore: {name: "Use camelCase"}
 - ignore: {name: "Use bimap"} # TODO, use linear-base?
+- ignore: {name: "Use head"}
 
 # Define some custom infix operators
 # - fixity: infixr 3 ~^#^~

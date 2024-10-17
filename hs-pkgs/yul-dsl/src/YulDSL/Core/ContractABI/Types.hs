@@ -2,11 +2,9 @@
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE DerivingStrategies  #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
-
 {-|
 
-Copyright   : (c) 2023 Miao, ZhiCheng
+Copyright   : (c) 2023-2004 Miao, ZhiCheng
 License     : LGPL-3
 Maintainer  : zhicheng.miao@gmail.com
 Stability   : experimental
@@ -39,7 +37,8 @@ module YulDSL.Core.ContractABI.Types
     -- * Primitive Types
 
     -- ** BOOL
-  , KnownBool (..), BOOL (..), true, false, if'
+  , module Data.TypeBools
+  , BOOL (..), true, false, if'
 
     -- ** ADDR
   , ADDR, zero_address, max_addr, to_addr, to_addr', addr_to_integer
@@ -82,7 +81,7 @@ import           Data.Maybe            (fromJust)
 import           Data.Proxy            (Proxy (..))
 import           Data.Word             (Word32)
 import           GHC.Generics          (Generic)
-import           GHC.TypeNats
+import           GHC.TypeNats          (KnownNat, Nat, SNat, natSing, natVal)
 import           Numeric               (showHex)
 -- bytestring
 import qualified Data.ByteString       as B
@@ -97,6 +96,7 @@ import qualified Data.ByteArray        as BA
 -- (this)
 import           Data.NProducts
 import           Data.NTuple
+import           Data.TypeBools
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Serialization
@@ -116,21 +116,6 @@ abi_decode :: ABISerialize a => B.ByteString -> Maybe a
 abi_decode a = case S.decode a of
                  Right b -> Just b
                  Left _  -> Nothing
-
-------------------------------------------------------------------------------------------------------------------------
--- Dependent Type Trite
-------------------------------------------------------------------------------------------------------------------------
-
--- | Boolean type singleton.
-data SBool (s :: Bool) = SBool
-
--- | Known boolean singletons.
-class KnownBool (s :: Bool) where
-  toBool :: SBool s -> Bool
-instance KnownBool True where
-  toBool _ = True
-instance KnownBool False where
-  toBool _ = False
 
 ------------------------------------------------------------------------------------------------------------------------
 -- ABI Typeclasses
@@ -295,7 +280,7 @@ if' (BOOL False) _ y = y
 newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer) deriving newtype (Ord, Eq)
 
 instance forall s n. (KnownBool s, KnownNat n) => ABIType (INTx s n) where
-  abi_type_info = [INTx' (SBool @s) (SNat @n)]
+  abi_type_info = [INTx' (SBool @s) (natSing @n)]
   abi_type_list_vars a = [show a]
 
 instance (KnownBool s, KnownNat n) => ABIValue (INTx s n) where
@@ -451,7 +436,7 @@ type Sel4Bytes = INTx False 4
 newtype SEL = SEL (Sel4Bytes, FuncSig)
 
 instance ABIType SEL where
-  abi_type_info = [BYTESn' (SNat @4)]
+  abi_type_info = [BYTESn' (natSing @4)]
   abi_type_list_vars (SEL (_, b))  = [show b]
 --  abi_type_show_vars (SEL (Just (sig, args), _)) = [sig]
 
@@ -497,7 +482,7 @@ data FuncEffect = FuncTx | FuncStatic
 newtype FUNC a b = FUNC (FuncStorage, FuncEffect, SEL, ADDR)
 
 instance forall a b. (ABIType a, ABIType b) => ABIType (FUNC a b) where
-  abi_type_info = [BYTESn' (SNat @24)]
+  abi_type_info = [BYTESn' (natSing @24)]
   abi_type_list_vars a = [show a]
 
 instance Show (FUNC a b) where

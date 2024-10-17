@@ -274,3 +274,10 @@ instance Show (YulCat a b) where
   show (YulNumCmp (i,j,k)) = "cmp" <> s i <> s j <> s k where s x = if x == true then "t" else "f"
   show YulSGet             = "sget" <> abi_type_name' @a
   show YulSPut             = "sput" <> abi_type_name' @a
+
+
+{- INTERNAL FUNCTIONs -}
+
+-- | A 'abi_type_name' variant, enclosing name with "@()".
+abi_type_name' :: forall a. ABIType a => String
+abi_type_name' = "@" <> abi_type_uniq_name @a

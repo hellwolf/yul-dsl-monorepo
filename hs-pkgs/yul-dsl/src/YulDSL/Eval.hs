@@ -1,6 +1,3 @@
-{-# LANGUAGE ImpredicativeTypes #-}
-{-# LANGUAGE MonoLocalBinds     #-}
-
 {-|
 
 Copyright   : (c) 2023 Miao, ZhiCheng

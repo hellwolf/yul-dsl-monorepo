@@ -6,12 +6,11 @@ build-type:     Simple
 
 -- BEGIN yol-module-options
 common yol-module-options
-    default-language:     GHC2021
+    default-language:     GHC2024
     ghc-options:          -Wall
                           -Wno-name-shadowing
     default-extensions:   LinearTypes
                           BlockArguments
-                          ImpredicativeTypes
                           OverloadedStrings
                           UnicodeSyntax
                           RebindableSyntax

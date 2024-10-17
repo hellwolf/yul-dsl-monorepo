@@ -196,6 +196,9 @@ packages:
   $dist_path/hs-pkgs/yol-suite
   $cabal_path
   $yol_dir/runyol.cabal
+
+package linear-smc
+  ghc-options: -Wno-all
 EOF
 
   # instantiate runyol.cabal template

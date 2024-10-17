@@ -1,5 +1,3 @@
-{-# LANGUAGE ImpredicativeTypes #-}
-
 module YulDSL.Core.YulObject where
 
 import           Data.List               (intercalate)

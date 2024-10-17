@@ -4,10 +4,9 @@ version:        0.1
 build-type:     Simple
 
 common yol-module-options
-    default-language:     GHC2021
+    default-language:     GHC2024
     default-extensions:   LinearTypes
                           BlockArguments
-                          ImpredicativeTypes
                           OverloadedStrings
                           UnicodeSyntax
     ghc-options:          -Wall

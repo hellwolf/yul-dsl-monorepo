@@ -22,7 +22,7 @@ build-type:      Simple
 extra-doc-files: CHANGELOG.md
 
 common warnings
-  default-language: GHC2021
+  default-language: GHC2024
   ghc-options:      -Wall
   build-depends:    base >=4.20.0.0 && < 666
 

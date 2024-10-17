@@ -24,12 +24,13 @@ types and functions here.
 
 module YulDSL.Core.ContractABI.Types
   ( -- * ABI Typeclasses
+    abi_type_uniq_name, abi_type_canon_name, abi_type_count_vars, abi_type_eq
 
     -- ** ABI Serialization
-    ABISerialize, abi_encode, abi_decode
+  , ABISerialize, abi_encode, abi_decode
 
     -- ** ABI Types
-  , ABIType (..), abi_type_name'
+  , ABIType (..)
 
     -- ** ABI Static Value Types
   , SVALUE, def_sval, max_sval
@@ -76,11 +77,12 @@ module YulDSL.Core.ContractABI.Types
 
 -- base
 import           Data.Bits             (shift, (.|.))
+import           Data.List             (intercalate)
 import           Data.Maybe            (fromJust)
 import           Data.Proxy            (Proxy (..))
 import           Data.Word             (Word32)
 import           GHC.Generics          (Generic)
-import           GHC.TypeNats          (KnownNat, Nat, natVal)
+import           GHC.TypeNats
 import           Numeric               (showHex)
 -- bytestring
 import qualified Data.ByteString       as B
@@ -116,32 +118,75 @@ abi_decode a = case S.decode a of
                  Left _  -> Nothing
 
 ------------------------------------------------------------------------------------------------------------------------
+-- Dependent Type Trite
+------------------------------------------------------------------------------------------------------------------------
+
+-- | Boolean type singleton.
+data SBool (s :: Bool) = SBool
+
+-- | Known boolean singletons.
+class KnownBool (s :: Bool) where
+  toBool :: SBool s -> Bool
+instance KnownBool True where
+  toBool _ = True
+instance KnownBool False where
+  toBool _ = False
+
+------------------------------------------------------------------------------------------------------------------------
 -- ABI Typeclasses
 ------------------------------------------------------------------------------------------------------------------------
+
+-- | Contract ABI type information.
+data ABITypeInfo where
+  ADDR'   :: ABITypeInfo
+  BOOL'   :: ABITypeInfo
+  INTx'   :: forall s n. (KnownBool s, KnownNat n) => SBool s -> SNat n -> ABITypeInfo
+  BYTESn' :: forall n. (KnownNat n) => SNat n -> ABITypeInfo
+  BYTES'  :: ABITypeInfo
+  -- ARRAY'  :: ABIType a => Proxy a -> ABITypeInfo
+
+-- | Unambiguous succinct and unique name for the type.
+abi_type_uniq_name :: forall a. ABIType a => String
+abi_type_uniq_name = intercalate "" $ fmap go (abi_type_info @a)
+  where go ADDR'       = "a"
+        go BOOL'       = "b"
+        go (INTx' s n) = if toBool s then "i" else "u" <> show (natVal n)
+        go (BYTESn' n) = "B" ++ show (natVal n)
+        go BYTES'      = "Bs"
+
+-- | Canonical name used as argument of the selector.
+abi_type_canon_name :: forall a. ABIType a =>  String
+abi_type_canon_name = intercalate "," $ fmap go (abi_type_info @a)
+  where go ADDR'       = "address"
+        go BOOL'       = "bool"
+        go (INTx' s n) = if toBool s then "int" else "uint" <> show (natVal n * 8)
+        go (BYTESn' n) = "bytes" <> show (natVal n)
+        go BYTES'      = "bytes"
+
+-- | Number of yul primitive variables required to capture the value of this type.
+abi_type_count_vars :: forall a. ABIType a => Int
+abi_type_count_vars = length (abi_type_info @a)
+
+-- | Check type equality of ABIType @a@ and ABIType @b@.
+abi_type_eq :: forall a b. (ABIType a, ABIType b) => Bool
+abi_type_eq = abi_type_uniq_name @a == abi_type_uniq_name @b
 
 -- | Contract ABI type class for all primitive and composite ABI types.
 class (Show a, {- Typeable a, -} ABISerialize a) => ABIType a where
   -- | Possible breakdown of the product object type.
-  maybe_prod_objs :: forall b c. a ~ (b, c) => Dict (ABIType b, ABIType c)
-  maybe_prod_objs = error "maybe_prod_objs: not a product object"
-  -- | Unambiguous succinct and unique name for the type.
-  abi_type_uniq_name :: String
-  -- | Canonical name used as argument of the selector.
-  abi_type_canon_name :: String
-  -- | Number of yul primitive variables required to capture the value of this type.
-  abi_type_count_vars :: Int
-  -- | List the types of yul primitive variables required to capture the value of this type.
-  abi_type_list_vars :: a -> [String]
+  abi_prod_objs :: forall b c. a ~ (b, c) => Dict (ABIType b, ABIType c)
+  -- ^ Default implementation returns (a, ())
+  abi_prod_objs = error "abi_prod_objs should only be implemented by the product of ABIType"
 
--- | A 'abi_type_name' variant, enclosing name with "@()".
-abi_type_name' :: forall a. ABIType a => String
-abi_type_name' = "@" <> abi_type_uniq_name @a
+  -- | Returns a list of ABI type information represented by this ABI type.
+  abi_type_info :: [ABITypeInfo]
+
+  -- | List of yul expressions required to capture the value of this type.
+  abi_type_list_vars :: a -> [String]
 
 -- | Unit type of ABI Types
 instance ABIType () where
-  abi_type_uniq_name = "n" -- it stands for "null".
-  abi_type_canon_name = "()" -- Well, this is not really sensible, but let's not be too liberal with runtime error.
-  abi_type_count_vars = 0
+  abi_type_info = []
   abi_type_list_vars _ = []
 
 -- | Raw storage value for ABI value types.
@@ -156,7 +201,7 @@ max_sval :: SVALUE
 max_sval = SVALUE (2 ^ (256 :: Int) - 1)
 
 -- | ABI (static) value types.
-class ABIValue a where
+class ABIType a => ABIValue a where
   from_svalue :: SVALUE -> a
   to_svalue :: a -> SVALUE
 
@@ -171,9 +216,7 @@ class ABIValue a where
 newtype ADDR = ADDR Integer deriving newtype (Ord, Eq)
 
 instance ABIType ADDR where
-  abi_type_uniq_name = "a"
-  abi_type_canon_name = "address"
-  abi_type_count_vars = 1
+  abi_type_info = [ADDR']
   abi_type_list_vars a = [show a]
 
 instance ABIValue ADDR where
@@ -215,9 +258,7 @@ addr_to_integer (ADDR a) = a
 newtype BOOL = BOOL Bool deriving newtype (Eq)
 
 instance ABIType BOOL where
-  abi_type_uniq_name = "b"
-  abi_type_canon_name = "bool"
-  abi_type_count_vars = 1
+  abi_type_info = [BOOL']
   abi_type_list_vars a = [show a]
 
 instance ABIValue BOOL where
@@ -247,24 +288,14 @@ if' :: BOOL -> a -> a -> a
 if' (BOOL True) x _  = x
 if' (BOOL False) _ y = y
 
--- * Intx
+-- * INTx
 --
 
 -- | ABI integer value types, where @s@ is for signess and @n@ is the multiple of 8 bits
 newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer) deriving newtype (Ord, Eq)
 
--- | Boolean type singleton.
-data SBool (s :: Bool) = SBool
-
--- | Known boolean singletons.
-class KnownBool (s :: Bool) where toBool :: SBool s -> Bool
-instance KnownBool True where toBool _ = True
-instance KnownBool False where toBool _ = False
-
 instance forall s n. (KnownBool s, KnownNat n) => ABIType (INTx s n) where
-  abi_type_uniq_name = if toBool (SBool @s) then "i" else "u" <> show (natVal (Proxy @n))
-  abi_type_canon_name = if toBool (SBool @s) then "int" else "uint" <> show (natVal (Proxy @n) * 8)
-  abi_type_count_vars = 1
+  abi_type_info = [INTx' (SBool @s) (SNat @n)]
   abi_type_list_vars a = [show a]
 
 instance (KnownBool s, KnownNat n) => ABIValue (INTx s n) where
@@ -394,10 +425,7 @@ type UINT256 = INTx False 32;type INT256 = INTx True 32
 newtype BYTES = BYTES B.ByteString deriving newtype (Eq)
 
 instance ABIType BYTES where
-  abi_type_uniq_name = "B" -- Lowercase "b" is taken by "bool".
-  abi_type_canon_name = "bytes"
-  abi_type_count_vars = 1
-  abi_type_list_vars :: BYTES -> [String]
+  abi_type_info = [BYTES']
   abi_type_list_vars a = [show a]
 
 instance Show BYTES where
@@ -423,9 +451,7 @@ type Sel4Bytes = INTx False 4
 newtype SEL = SEL (Sel4Bytes, FuncSig)
 
 instance ABIType SEL where
-  abi_type_uniq_name = "S" -- Lowercase 's' is taken by "string".
-  abi_type_canon_name = "bytes4" -- It doesn't have a direct underlying type.
-  abi_type_count_vars = 1
+  abi_type_info = [BYTESn' (SNat @4)]
   abi_type_list_vars (SEL (_, b))  = [show b]
 --  abi_type_show_vars (SEL (Just (sig, args), _)) = [sig]
 
@@ -471,9 +497,7 @@ data FuncEffect = FuncTx | FuncStatic
 newtype FUNC a b = FUNC (FuncStorage, FuncEffect, SEL, ADDR)
 
 instance forall a b. (ABIType a, ABIType b) => ABIType (FUNC a b) where
-  abi_type_uniq_name = "f"
-  abi_type_canon_name = "bytes24" -- Per spec, it is 20 bytes address and 4 bytes selector.
-  abi_type_count_vars = 1
+  abi_type_info = [BYTESn' (SNat @24)]
   abi_type_list_vars a = [show a]
 
 instance Show (FUNC a b) where
@@ -493,17 +517,13 @@ deriving newtype instance S.Serialize (FUNC a b)
 ------------------------------------------------------------------------------------------------------------------------
 
 instance forall a b. (ABIType a, ABIType b) => ABIType (a, b) where
-  maybe_prod_objs = Dict
-  abi_type_uniq_name = abi_type_uniq_name @a <> abi_type_uniq_name @b
-  abi_type_canon_name = abi_type_canon_name @a <> "," <> abi_type_canon_name @b
-  abi_type_count_vars = abi_type_count_vars @a + abi_type_count_vars @b
+  abi_prod_objs = Dict
+  abi_type_info = abi_type_info @a <> abi_type_info @b
   abi_type_list_vars (a, b) = abi_type_list_vars a <> abi_type_list_vars b
 
 -- | ABIType (a :* b) is equivalent to ABIType (a, b).
 instance forall a b. (ABIType a, ABIType b) => ABIType (a :* b) where
-  abi_type_uniq_name = abi_type_uniq_name @(a, b)
-  abi_type_canon_name = abi_type_canon_name @(a, b)
-  abi_type_count_vars = abi_type_count_vars @(a, b)
+  abi_type_info = abi_type_info @(a, b)
   abi_type_list_vars (a :* b) = abi_type_list_vars (a, b)
 
 deriving instance Generic (a :* b)

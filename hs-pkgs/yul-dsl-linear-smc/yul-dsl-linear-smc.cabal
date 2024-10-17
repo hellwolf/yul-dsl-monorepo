@@ -22,7 +22,7 @@ description:    YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell 
                 and share 'YulDSL' as portable modules with each other.
 
 common basic-options
-    default-language:     GHC2021
+    default-language:     GHC2024
     ghc-options:          -Wall
     default-extensions:   UnicodeSyntax
 

@@ -114,7 +114,7 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
         let vals_b = fmap LetVar vars_b
         return ( mk_code' "ite" (Proxy @(BOOL, (a, a))) (Proxy @a) $
                  ind ("switch " <> val_to_code (vals_a !! 0)) <>
-                 cbracket1 ind "case 0"
+                 cbracket1 ind "case 1"
                  (vals_to_code vals_b <> " := " <> (vals_to_code . take ca . drop 1) vals_a) <>
                  cbracket1 ind "default"
                  (vals_to_code vals_b <> " := " <> (vals_to_code . drop (1 + ca)) vals_a)
@@ -132,12 +132,11 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
     return ("", [ValExpr $ op1 <> vals_to_code vals_a <> op2 ])
 
 compile_cat :: forall a b. YulO2 a b => Indenter -> YulCat a b -> ([Var], [Var]) -> CGState Code
-compile_cat ind acat (vars_a, vars_r) =
-  cbracket_m ind ""
-  (\ind' -> do
-      (code, vals_b) <- do_compile_cat ind' (MkAnyYulCat acat) (fmap LetVar vars_a)
-      pure $ code <> assign_vars ind' vars_r vals_b
-  )
+compile_cat ind acat (vars_a, vars_r) = do
+  (code, vals_b) <- do_compile_cat ind (MkAnyYulCat acat) (fmap LetVar vars_a)
+  pure $
+    code <>
+    assign_vars ind vars_r vals_b
 
 compile_one_fn :: forall a b. YulO2 a b => Indenter -> Fn a b -> CGState Code
 compile_one_fn ind fn = do
@@ -145,12 +144,16 @@ compile_one_fn ind fn = do
   vars_a <- mk_let_vars (Proxy @a)
   vars_b <- mk_let_vars (Proxy @b)
   forget_vars -- these variables will not be declared separately
-  code <- compile_cat ind (fnCat fn) (vars_a, vars_b)
-  return $
-    ind ("function " <> T.pack (fnId fn) <>
-         "(" <> T.intercalate ", " vars_a <> ")" <>
-          (case vars_b of [] -> ""; _ -> " -> " <> T.intercalate ", " vars_b)
-        ) <> code
+  cbracket_m ind ("function " <> T.pack (fnId fn) <>
+                   "(" <> T.intercalate ", " vars_a <> ")" <>
+                   (case vars_b of [] -> ""; _ -> " -> " <> T.intercalate ", " vars_b)
+                 )
+    ( \ind' -> do
+        code <- compile_cat ind' (fnCat fn) (vars_a, vars_b)
+        pure $
+          code <>
+          ind' "leave"
+    )
 
 compile_one_any_fn :: Indenter -> AnyFn -> CGState Code
 compile_one_any_fn ind (MkAnyFn fn)= compile_one_fn ind fn

@@ -31,7 +31,7 @@ initEvalState = EvalState { store_map = M.empty
 
 evalYulDSL :: EvalState -> YulCat a b -> a -> (EvalState, b)
 evalYulDSL s YulId             a  = (s, a)
-evalYulDSL s YulCoerce         a  = (s, fromJust . abi_decode . abi_encode $ a)
+-- evalYulDSL s YulCoerce         a  = (s, fromJust . abi_decode . abi_encode $ a)
 evalYulDSL s (YulComp n m)     a  = (s'', c) where (s' , b) = evalYulDSL s  m a
                                                    (s'', c) = evalYulDSL s' n b
 evalYulDSL s (YulProd m n) (a, b) = (s'', (c, d)) where (s',  c) = evalYulDSL s  m a
@@ -46,4 +46,5 @@ evalYulDSL s  YulSGet          r  = (s, case M.lookup r (store_map s) of
                                           Just a  -> from_svalue a
                                           Nothing -> from_svalue def_sval)
 evalYulDSL s  YulSPut      (r, a) = (s', ()) where s' = s { store_map = M.insert r (to_svalue a) (store_map s) }
+evalYulDSL _ _ _ = error "evalYulDSL"
 -- evalYulDSL s  (YulDefun _ f)   () = (s', () ::)

@@ -22,17 +22,25 @@ compile_fn_dispatcher ind (ExternalFn _ sel@(SEL (_, Just (fname, _))) (_ :: Fn 
   vars_a <- mk_let_vars (Proxy @a)
   vars_b <- mk_let_vars (Proxy @b)
   io_vars <- declare_vars
-  let ca = MkABICodec (Proxy @a)
-      cb = MkABICodec (Proxy @b)
+  let ca = ABICodecDispatcher @a
+      cb = ABICodecDispatcher @b
   let code = cbracket ind ("case " <> T.pack (show sel)) $ \ ind' ->
         (case io_vars of Nothing -> ""; Just io_vars' -> ind' io_vars') <>
-        ind' "// TODO, abi decoding of input" <>
-        ind' (T.intercalate "," vars_a <> " := " <> abi_decoder_name ca <> "()") <>
+        -- call abi decoder
+        ind' ( T.intercalate "," vars_a <> " := " <>
+               -- skip selector and (TODO) check if calldatasize is big enough
+               abi_decoder_name ca <> "(4, calldatasize())"
+             ) <>
+        -- call the function
         ind' ( T.intercalate "," vars_b <> " := " <>
                T.pack fname <> "(" <> T.intercalate "," vars_a <> ")"
              ) <>
-        ind' "// TODO, abi encoding of output" <>
-        ind' (abi_encoder_name cb <> "(" <> T.intercalate "," vars_b <> ")")
+        ind' "let memPos := allocate_unbounded()" <>
+        -- call abi encoder
+        ind' ( "let memEnd := " <>
+               abi_encoder_name cb <> "(memPos, " <> T.intercalate "," vars_b <> ")"
+             ) <>
+        ind' "return(memPos, sub(memEnd, memPos))"
   pure (Just (code, ca, cb))
 compile_fn_dispatcher _ (ExternalFn _ (SEL (_, Nothing)) _) = pure Nothing
 compile_fn_dispatcher _ (LibraryFn _) = pure Nothing
@@ -45,17 +53,16 @@ compile_dispatchers ind fns = cbracket_m ind "/* dispatcher */" $ \ind' -> do
                    & map (\(a, _, _) -> a)
                    & T.intercalate ""
       code_abicodecs = externalFunctions
-                       & map (\(_, b, c) -> [b, c])
+                       & map (\(_, b, c) -> abi_codec_deps b <> abi_codec_deps c)
                        & join
                        & nub
-                       & map (flip abi_code_def ind')
+                       & map (flip abi_codec_code ind')
                        & T.intercalate "\n"
   pure $
     ind' "switch selector()" <>
     code_cases <>
     ind' "default { revert(0, 0) }" <>
-    ( cbracket1 ind'
-      "function selector() -> s"
+    ( cbracket1 ind' "function selector() -> s"
       "s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)"
     ) <>
     "\n" <>
@@ -70,12 +77,12 @@ compile_object ind (MkYulObject { yulObjectName = oname
   cbracket_m ind ("object \"" <> T.pack oname <> "\"") $ \ind' -> do
     -- object init code
     code_ctor <- cbracket_m ind' "code /* object init code */" $ \ind'' -> do
-      user_ctor <- compile_cat ind'' ctor ([], [])
+      user_ctor <- compile_cat (indent ind'') ctor ([], [])
       pure $
         ind'' "datacopy(0, dataoffset(\"runtime\"), datasize(\"runtime\"))" <>
         ind'' "" <>
         ind'' "// constructor" <>
-        user_ctor <>
+        cbracket1 ind'' "" user_ctor <>
         ind'' "" <>
         ind'' "return(0, datasize(\"runtime\"))"
 
@@ -88,7 +95,11 @@ compile_object ind (MkYulObject { yulObjectName = oname
         code_fns <- mapM (compile_scoped_fn ind''') sfns
         pure $
           code_dispatcher <>
-          T.intercalate "\n" code_fns
+          T.intercalate "\n" code_fns <>
+          -- additional helpers, TODO move the code
+          ( cbracket1 ind''' "function allocate_unbounded() -> memPtr"
+            "memPtr := mload(64)" )
+
 
     -- sub objects code
     code_subobjs <- mapM (compile_object ind') subobjs <&> T.intercalate "\n"

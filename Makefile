@@ -67,7 +67,7 @@ test-yul-dsl:
 
 test-yol-suite:
 	yolc -m yul hs-pkgs/yol-suite/testsuite
-	cd hs-pkgs/yol-suite/testsuite && forge test
+	cd hs-pkgs/yol-suite/testsuite && forge test -vvv
 
 test-demo: test-demo-show test-demo-yul
 
@@ -77,7 +77,7 @@ test-demo-show:
 
 test-demo-yul:
 	yolc -m yul examples/demo
-	cd examples/demo && forge test
+	cd examples/demo && forge test -vvv
 
 dev:
 	nodemon -w hs-pkgs -w yol-demo -e "hs sol cabal" -x "make $(DEV_TARGETS) || exit 1"

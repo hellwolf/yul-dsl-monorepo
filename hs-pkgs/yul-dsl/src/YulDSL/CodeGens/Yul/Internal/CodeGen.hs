@@ -45,12 +45,11 @@ new_auto_var g@(MkAutoVarGen i0) = (cur_var g, MkAutoVarGen (i0 + 1))
 -- Examples:
 -- >>> gen_vars (Proxy @(INT256, BOOL))
 -- ["v_a","v_b"]
-gen_vars :: forall a. ABIType a => Proxy a -> [Var]
-gen_vars _ = let n = abi_type_count_vars @a
-             in snd $ foldr
-                (\ _ (gen, vars) -> new_auto_var gen & \ (var, gen') -> (gen', vars <> [var]))
-                (MkAutoVarGen 0, [])
-                (drop 1 [0..n])
+gen_vars :: Int -> [Var]
+gen_vars n = snd $ foldr
+             (\ _ (gen, vars) -> new_auto_var gen & \ (var, gen') -> (gen', vars <> [var]))
+             (MkAutoVarGen 0, [])
+             (drop 1 [0..n])
 
 -- is_let_var :: Val -> Bool
 -- is_let_var x = case x of LetVar _ -> True; _ -> False

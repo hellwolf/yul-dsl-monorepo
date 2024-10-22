@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE DerivingStrategies  #-}
 {-|
@@ -21,8 +20,11 @@ types and functions here.
 -}
 
 module YulDSL.Core.ContractABI.Types
-  ( -- * ABI Typeclasses
-    abi_type_uniq_name, abi_type_canon_name, abi_type_count_vars, abi_type_eq
+  ( -- * ABI Type Core
+    ABITypeInfo (..)
+  , abi_type_uniq_name, abi_type_uniq_name'
+  , abi_type_canon_name, abi_type_canon_name'
+  , abi_type_count_vars, abi_type_eq
 
     -- ** ABI Serialization
   , ABISerialize, abi_encode, abi_decode
@@ -80,7 +82,6 @@ import           Data.List             (intercalate)
 import           Data.Maybe            (fromJust)
 import           Data.Proxy            (Proxy (..))
 import           Data.Word             (Word32)
-import           GHC.Generics          (Generic)
 import           GHC.TypeNats          (KnownNat, Nat, SNat, natSing, natVal)
 import           Numeric               (showHex)
 -- bytestring
@@ -99,26 +100,7 @@ import           Data.NTuple
 import           Data.TypeBools
 
 ------------------------------------------------------------------------------------------------------------------------
--- Serialization
---
--- TODO implement Contract ABI compatible serialization.
-------------------------------------------------------------------------------------------------------------------------
-
--- | ABI serialization class. FIXME: currently an alias to Serialize from cereal library.
-type ABISerialize = S.Serialize
-
--- | ABI encoder.
-abi_encode :: ABISerialize a => a -> B.ByteString
-abi_encode = S.encode
-
--- | ABI decoder.
-abi_decode :: ABISerialize a => B.ByteString -> Maybe a
-abi_decode a = case S.decode a of
-                 Right b -> Just b
-                 Left _  -> Nothing
-
-------------------------------------------------------------------------------------------------------------------------
--- ABI Typeclasses
+-- ABI Type Core
 ------------------------------------------------------------------------------------------------------------------------
 
 -- | Contract ABI type information.
@@ -130,23 +112,29 @@ data ABITypeInfo where
   BYTES'  :: ABITypeInfo
   -- ARRAY'  :: ABIType a => Proxy a -> ABITypeInfo
 
--- | Unambiguous succinct and unique name for the type.
-abi_type_uniq_name :: forall a. ABIType a => String
-abi_type_uniq_name = intercalate "" $ fmap go (abi_type_info @a)
-  where go ADDR'       = "a"
-        go BOOL'       = "b"
-        go (INTx' s n) = if toBool s then "i" else "u" <> show (natVal n)
-        go (BYTESn' n) = "B" ++ show (natVal n)
-        go BYTES'      = "Bs"
+-- | Unambiguous succinct and unique name for the 'ABITypeInfo'.
+abi_type_uniq_name':: ABITypeInfo -> String
+abi_type_uniq_name' ADDR'       = "a"
+abi_type_uniq_name' BOOL'       = "b"
+abi_type_uniq_name' (INTx' s n) = if toBool s then "i" else "u" <> show (natVal n)
+abi_type_uniq_name' (BYTESn' n) = "B" ++ show (natVal n)
+abi_type_uniq_name' BYTES'      = "Bs"
 
--- | Canonical name used as argument of the selector.
+-- | Unambiguous succinct and unique name for the 'ABIType'.
+abi_type_uniq_name :: forall a. ABIType a => String
+abi_type_uniq_name = intercalate "" $ fmap abi_type_uniq_name' (abi_type_info @a)
+
+-- | Canonical name used as argument of the selector for the 'ABITypeInfo'.
+abi_type_canon_name' :: ABITypeInfo -> String
+abi_type_canon_name' ADDR'       = "address"
+abi_type_canon_name' BOOL'       = "bool"
+abi_type_canon_name' (INTx' s n) = if toBool s then "int" else "uint" <> show (natVal n * 8)
+abi_type_canon_name' (BYTESn' n) = "bytes" <> show (natVal n)
+abi_type_canon_name' BYTES'      = "bytes"
+
+-- | Canonical name used as argument of the selector for the 'ABIType'.
 abi_type_canon_name :: forall a. ABIType a =>  String
-abi_type_canon_name = intercalate "," $ fmap go (abi_type_info @a)
-  where go ADDR'       = "address"
-        go BOOL'       = "bool"
-        go (INTx' s n) = if toBool s then "int" else "uint" <> show (natVal n * 8)
-        go (BYTESn' n) = "bytes" <> show (natVal n)
-        go BYTES'      = "bytes"
+abi_type_canon_name = intercalate "," $ fmap abi_type_canon_name' (abi_type_info @a)
 
 -- | Number of yul primitive variables required to capture the value of this type.
 abi_type_count_vars :: forall a. ABIType a => Int
@@ -157,7 +145,7 @@ abi_type_eq :: forall a b. (ABIType a, ABIType b) => Bool
 abi_type_eq = abi_type_uniq_name @a == abi_type_uniq_name @b
 
 -- | Contract ABI type class for all primitive and composite ABI types.
-class (Show a, {- Typeable a, -} ABISerialize a) => ABIType a where
+class (Show a) => ABIType a where
   -- | Possible breakdown of the product object type.
   abi_prod_objs :: forall b c. a ~ (b, c) => Dict (ABIType b, ABIType c)
   -- ^ Default implementation returns (a, ())
@@ -168,11 +156,6 @@ class (Show a, {- Typeable a, -} ABISerialize a) => ABIType a where
 
   -- | List of yul expressions required to capture the value of this type.
   abi_type_list_vars :: a -> [String]
-
--- | Unit type of ABI Types
-instance ABIType () where
-  abi_type_info = []
-  abi_type_list_vars _ = []
 
 -- | Raw storage value for ABI value types.
 newtype SVALUE = SVALUE Integer deriving newtype (Eq, Show)
@@ -187,8 +170,15 @@ max_sval = SVALUE (2 ^ (256 :: Int) - 1)
 
 -- | ABI (static) value types.
 class ABIType a => ABIValue a where
+  -- | Convert from a storage value to an ABI typed value.
   from_svalue :: SVALUE -> a
+  -- | Convert from a ABI typed value to a storage value.
   to_svalue :: a -> SVALUE
+
+-- | Unit type of ABI Types
+instance ABIType () where
+  abi_type_info = []
+  abi_type_list_vars _ = []
 
 ------------------------------------------------------------------------------------------------------------------------
 -- * Primitive Types
@@ -210,9 +200,6 @@ instance ABIValue ADDR where
 
 instance Show ADDR where
   show (ADDR a) = "0x" ++ _lpad0 40 (showHex a) ""
-
-deriving instance Generic ADDR
-deriving newtype instance S.Serialize ADDR
 
 -- | The proverbial zero address.
 zero_address :: ADDR
@@ -257,9 +244,6 @@ instance Show BOOL where
   show (BOOL True)  = "true"
   show (BOOL False) = "false"
 
-deriving instance Generic BOOL
-deriving newtype instance S.Serialize BOOL
-
 -- | True value for 'BOOL'.
 true :: BOOL
 true = BOOL True
@@ -277,7 +261,19 @@ if' (BOOL False) _ y = y
 --
 
 -- | ABI integer value types, where @s@ is for signess and @n@ is the multiple of 8 bits
-newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer) deriving newtype (Ord, Eq)
+newtype INTx (s :: Bool) (n :: Nat) = INT (Maybe Integer)
+
+instance Eq (INTx s n) where
+  INT (Just a) == INT (Just b) = a == b
+  INT Nothing == INT Nothing   = True
+  INT Nothing == INT (Just _)  = False
+  INT (Just _) == INT Nothing  = False
+
+instance Ord (INTx s n) where
+  INT (Just a) <= INT (Just b) = a <= b
+  INT Nothing <= INT Nothing   = True
+  INT Nothing <= INT (Just _)  = False
+  INT (Just _) <= INT Nothing  = False
 
 instance forall s n. (KnownBool s, KnownNat n) => ABIType (INTx s n) where
   abi_type_info = [INTx' (SBool @s) (natSing @n)]
@@ -292,9 +288,6 @@ instance (KnownBool s, KnownNat n) => ABIValue (INTx s n) where
 instance (KnownBool s, KnownNat n) => Show (INTx s n) where
   show (INT (Just a)) = show a
   show (INT Nothing)  = "NaN"
-
-deriving instance Generic (INTx s n)
-deriving newtype instance S.Serialize (INTx s n)
 
 instance Enum (INTx s n) where
   fromEnum (INT (Just a)) = fromEnum a
@@ -416,9 +409,6 @@ instance ABIType BYTES where
 instance Show BYTES where
   show (BYTES a) = "0x" ++ (foldr (_lpad0 2 . showHex) "" . B.unpack) a
 
-deriving instance Generic BYTES
-deriving newtype instance S.Serialize BYTES
-
 ------------------------------------------------------------------------------------------------------------------------
 -- External Function Types
 ------------------------------------------------------------------------------------------------------------------------
@@ -443,9 +433,6 @@ instance ABIType SEL where
 instance Show SEL where
   show (SEL (sig, Just (fname, argTypes))) = "0x" ++ showHex sig " /* " ++  fname ++ "(" ++ argTypes ++ ") */"
   show (SEL (sig, Nothing))                = "0x" ++ showHex sig ""
-
-deriving instance Generic SEL
-deriving newtype instance S.Serialize SEL
 
 -- Generate ABI Contract compatible signature string.
 make_sig :: forall a. ABIType a => String -> String
@@ -488,15 +475,6 @@ instance forall a b. (ABIType a, ABIType b) => ABIType (FUNC a b) where
 instance Show (FUNC a b) where
   show _              = error "TODO Show FUNC"
 
-deriving instance Generic FuncStorage
-deriving anyclass instance S.Serialize FuncStorage
-
-deriving instance Generic FuncEffect
-deriving anyclass instance S.Serialize FuncEffect
-
-deriving instance Generic (FUNC a b)
-deriving newtype instance S.Serialize (FUNC a b)
-
 ------------------------------------------------------------------------------------------------------------------------
 -- Tuple Types (Product, N-ary Products & N-Tuples)
 ------------------------------------------------------------------------------------------------------------------------
@@ -510,9 +488,6 @@ instance forall a b. (ABIType a, ABIType b) => ABIType (a, b) where
 instance forall a b. (ABIType a, ABIType b) => ABIType (a :* b) where
   abi_type_info = abi_type_info @(a, b)
   abi_type_list_vars (a :* b) = abi_type_list_vars (a, b)
-
-deriving instance Generic (a :* b)
-deriving anyclass instance (ABISerialize a, ABISerialize b) => S.Serialize (a :* b)
 
 {- INTERNAL FUNCTIONS -}
 
@@ -556,10 +531,10 @@ NaN
 
 >>> show (SEL (Nothing, 69))
 >>> show (SEL (Just ("foo", ""), 0)) -- TODO 4bytes needs to be generated
-Couldn't match type: Maybe a0_a2OaB[tau:1]
+Couldn't match type: Maybe a0_a7sS4[tau:1]
                with: INTx 'False 4
 Expected: Sel4Bytes
-  Actual: Maybe a0_a2OaB[tau:1]
+  Actual: Maybe a0_a7sS4[tau:1]
 In the expression: Nothing
 In the first argument of `SEL', namely `(Nothing, 69)'
 In the first argument of `show', namely `(SEL (Nothing, 69))'
@@ -582,3 +557,23 @@ In the first argument of `show', namely `(SEL (Nothing, 69))'
 "0x68656c6c6f2c20776f726c64"
 "0x0402"
 -}
+
+
+------------------------------------------------------------------------------------------------------------------------
+-- Serialization
+--
+-- TODO implement Contract ABI compatible serialization.
+------------------------------------------------------------------------------------------------------------------------
+
+-- | ABI serialization class. FIXME: currently an alias to Serialize from cereal library.
+type ABISerialize = S.Serialize
+
+-- | ABI encoder.
+abi_encode :: ABISerialize a => a -> B.ByteString
+abi_encode = S.encode
+
+-- | ABI decoder.
+abi_decode :: ABISerialize a => B.ByteString -> Maybe a
+abi_decode a = case S.decode a of
+                 Right b -> Just b
+                 Left _  -> Nothing

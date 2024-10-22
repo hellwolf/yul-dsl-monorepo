@@ -22,18 +22,17 @@ mkConst :: ABIType a => a -> Fn () a
 mkConst a = lfn "mkConst" \u -> yulConst a u
 
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
-foo1 :: Fn UINT256 BOOL
+foo1 :: Fn UINT256 UINT256
 foo1 = lfn "foo1" \x ->
-  copy x & split & \(x1, x2) ->
-  yulConst true (to_addr' 0xdeadbeef <==@ x1 + x2)
+  dup2P x & \(x, x') -> x + x'
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns true.
 --
 --   Note: you can create any number of "unit" signals by adding '()' to the input list.
-foo2 :: Fn (UINT256 :* UINT256 :* ()) BOOL
-foo2 = lfn "foo2" \(x1 :* x2 :* u) ->
-  (to_addr' 0xdeadbeef <==@ x1 + x2) &
-  ignore u & yulConst true
+foo2 :: Fn (UINT256 :* UINT256) UINT256
+foo2 = lfn "foo2" \(x1 :* x2) ->
+  dup2P x2 & \(x2, x2') ->
+  x1 + (x2 + x2')
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
 foo3 :: Fn (UINT256 :* UINT256 :* ()) (BOOL, UINT256)
@@ -43,13 +42,12 @@ foo3 = lfn "foo3" \(x1 :* x2 :* u) ->
 
 -- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
 rangeSumLFn :: Fn (UINT256 :* UINT256 :* UINT256) UINT256
-rangeSumLFn = lfn "rangeSumLFn" \(i :* s :* t) ->
-  dup2P i & \(i, i') ->
-  dup2P s & \(s, s') ->
-  dup2P t & \(t, t') ->
-  dup2P (i + s) & \ (j, j') ->
-  mkUnit i' & \(i', u) ->
-  i' + if j <=? t then ap'lfn rangeSumLFn (j' :* s' :* t') else yulConst 0 u
+rangeSumLFn = lfn "rangeSumLFn" \(from :* step :* until) ->
+  mkUnit from & \(from, u) -> dup2P from & \(from, from') ->
+  dup2P step & \(step, step') ->
+  dup2P until & \(until, until') ->
+  dup2P (from + step) & \ (j, j') ->
+  from' + if j <=? until then ap'lfn rangeSumLFn (j' :* step' :* until') else yulConst 0 u
 
 -- | "rangeSum" implemented in a value function.
 rangeSumVFn :: Fn (UINT256 :* UINT256 :* UINT256) UINT256
@@ -57,7 +55,7 @@ rangeSumVFn = vfn "rangeSumVFn" \(i :* s :* t) ->
     ap'vfn go (YulEmbed 0 :* i :* s :* t)
   where
     go :: Fn (UINT256 :* UINT256 :* UINT256 :* UINT256) UINT256
-    go = vfn "rangeSumVFN_go" \(c :* i :* s :* t) ->
+    go = vfn "rangeSumVFn" \(c :* i :* s :* t) ->
       if (i + s) <=? t then ap'vfn go (c + i :* i + s :* s :* t) else c
 
 -- idVar :: Fn UINT256 UINT256
@@ -90,10 +88,11 @@ rangeSumVFn = vfn "rangeSumVFn" \(i :* s :* t) ->
   --         -- (copy x2 & split & \(x2, x2') -> go x2 x2')
 
 object = mkYulObject "Basic" ctor
-         [ -- externalFn foo1
-           -- , libraryFn  foo2
+         [ externalFn foo1
+         , externalFn foo2
            -- staticFn   foo3 -- FIXME this should not be possible with permission tag
-           staticFn   rangeSumLFn
+         , staticFn rangeSumLFn
+         -- , staticFn rangeSumVFn
            -- externalFn rangeSumVFn
          ]
          where ctor = YulId -- empty constructor

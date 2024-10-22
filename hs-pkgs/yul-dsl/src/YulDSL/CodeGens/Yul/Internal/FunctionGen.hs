@@ -96,9 +96,7 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
     out_vars <- declare_vars
     return ( mk_code' "dup" (Proxy @a) (Proxy @()) $
              wrap_let_vars out_vars ( assign_vals_to_vars ind vars_a1 vals_a <>
-                                      assign_vars_to_vars ind vars_a2 vars_a1 <>
-                                      -- TODO better looking code?
-                                      ind (vars_a2 !! 0 <> " := " <> vars_a1 !! 0)
+                                      assign_vars_to_vars ind vars_a2 vars_a1
                                     )
            , fmap LetVar (vars_a1 <> vars_a2) )
   go_jump :: forall a b. YulO2 a b => Proxy a -> Proxy b -> String -> YulCat a b -> CGState CGOutput

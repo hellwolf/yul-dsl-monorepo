@@ -51,12 +51,13 @@ rangeSumLFn = lfn "rangeSumLFn" \(from :* step :* until) ->
 
 -- | "rangeSum" implemented in a value function.
 rangeSumVFn :: Fn (UINT256 :* UINT256 :* UINT256) UINT256
-rangeSumVFn = vfn "rangeSumVFn" \(i :* s :* t) ->
-    ap'vfn go (YulEmbed 0 :* i :* s :* t)
+rangeSumVFn = vfn "rangeSumVFn" \(from :* step :* until) ->
+    ap'vfn go (from :* step :* until)
   where
-    go :: Fn (UINT256 :* UINT256 :* UINT256 :* UINT256) UINT256
-    go = vfn "rangeSumVFn" \(c :* i :* s :* t) ->
-      if (i + s) <=? t then ap'vfn go (c + i :* i + s :* s :* t) else c
+    go :: Fn (UINT256 :* UINT256 :* UINT256) UINT256
+    go = vfn "rangeSumVFn_go" \(from :* step :* until) ->
+      let j = from + step
+      in from + if j <=? until then ap'vfn go (j :* step :* until) else YulEmbed 0
 
 -- idVar :: Fn UINT256 UINT256
 -- idVar = lfn "idVar" \a -> a' + a'
@@ -92,7 +93,7 @@ object = mkYulObject "Basic" ctor
          , externalFn foo2
            -- staticFn   foo3 -- FIXME this should not be possible with permission tag
          , staticFn rangeSumLFn
-         -- , staticFn rangeSumVFn
-           -- externalFn rangeSumVFn
+         , staticFn rangeSumVFn
+         -- , externalFn rangeSumVFn
          ]
          where ctor = YulId -- empty constructor

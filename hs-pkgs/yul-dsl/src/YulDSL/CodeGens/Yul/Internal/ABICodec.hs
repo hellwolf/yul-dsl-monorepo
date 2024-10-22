@@ -36,7 +36,7 @@ abi_codec_deps c@(ABICodecStack _)       = [c]
 
 abi_codec_code :: ABICodec -> Indenter -> T.Text
 abi_codec_code c@(ABICodecDispatcher @a) ind =
-  if length vars > 0 then
+  if not (null vars) then
     ind ("// ABICodecDispatcher " <> T.pack (show c)) <>
     ind ("function " <> abi_decoder_name c <> "(headStart, dataEnd)" <>
          (case vars of [] -> ""; _ -> " -> " <> T.intercalate ", " vars <> "") <> " {"
@@ -63,7 +63,7 @@ abi_codec_code c@(ABICodecStack a) ind =
 
 abi_decoder_dispatcher_code :: [ABITypeInfo] -> [Var] -> Indenter -> T.Text
 abi_decoder_dispatcher_code ans vars ind =
-  ind ("// TODO size check if slt(sub(end - offset), ..) { .. }") <>
+  ind "// TODO size check if slt(sub(end - offset), ..) { .. }" <>
   go ans 0
   where go :: [ABITypeInfo] -> Int -> Code
         go (n:ns) slot = cbracket ind ""
@@ -77,7 +77,7 @@ abi_decoder_dispatcher_code ans vars ind =
 abi_decoder_stack_code :: ABITypeInfo -> Var -> Indenter -> T.Text
 abi_decoder_stack_code a ret ind = go a where
   go (INTx' s n) = ind (ret <> " := calldataload(offset)")
-  go _           = ind ("// TODO abi_decoder_code_final")
+  go _           = ind "// TODO abi_decoder_code_final"
 
 abi_encoder_dispatcher_code :: [ABITypeInfo] -> [Var] -> Indenter -> T.Text
 abi_encoder_dispatcher_code ans vars ind =

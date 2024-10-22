@@ -1,11 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module YulDSL.CodeGens.Yul.Internal.CodeGen where
 
-import qualified Control.Exception                           (assert)
 import           Control.Monad.State.Lazy                    (MonadState (..), State, evalState, modify)
 import           Data.Char                                   (chr)
 import           Data.Function                               ((&))
 import           Data.Typeable                               (Proxy (..))
+--
+import           GHC.Stack                                   (HasCallStack)
 --
 import qualified Data.Text.Lazy                              as T
 --
@@ -58,25 +59,27 @@ val_to_code :: Val -> Code
 val_to_code x = case x of LetVar c -> c; ValExpr e -> e
 
 vals_to_code :: [Val] -> Code
-vals_to_code = T.intercalate "," . map val_to_code
+vals_to_code = T.intercalate ", " . map val_to_code
 
 swap_vals :: forall a b. YulO2 a b => Proxy a -> Proxy b -> [Val] -> [Val]
-swap_vals _ _ vars = assert (ca + cb == length vars)
+swap_vals _ _ vars = gen_assert (ca + cb == length vars)
   (let (va, vb) = splitAt ca vars in vb <> va)
   where ca = abi_type_count_vars @a
         cb = abi_type_count_vars @b
 
 dis_vals :: forall a. YulO1 a => Proxy a -> [Val] -> [Val]
-dis_vals _ vars = assert (ca == length vars) []
+dis_vals _ vars = gen_assert (ca == length vars) []
   where ca = abi_type_count_vars @a
 
+-- | Extract value expressions of the first type @a@.
 fst_vals :: forall a b. YulO2 a b => Proxy a -> Proxy b -> [Val] -> [Val]
-fst_vals _ _ vars = assert (ca + cb == length vars) (take ca vars)
+fst_vals _ _ vars = gen_assert (ca + cb == length vars) (take ca vars)
   where ca = abi_type_count_vars @a
         cb = abi_type_count_vars @b
 
+-- | Extract value expressions of the second type @b@.
 snd_vals :: forall a b. YulO2 a b => Proxy a -> Proxy b -> [Val] -> [Val]
-snd_vals _ _ vars = assert (ca + cb == length vars) (drop ca vars)
+snd_vals _ _ vars = gen_assert (ca + cb == length vars) (drop ca vars)
   where ca = abi_type_count_vars @a
         cb = abi_type_count_vars @b
 
@@ -92,6 +95,7 @@ data CGStateData = MkCGStateData { var_gen         :: AutoVarGen
 
 type CGState = State CGStateData
 
+-- TODO remove this
 type CGOutput = (Code, [Val])
 
 init_cg :: CGStateData
@@ -101,10 +105,7 @@ init_cg = MkCGStateData { var_gen = MkAutoVarGen 0
                         }
 
 reset_var_gen :: CGState ()
-reset_var_gen = do
-  modify (\s -> (s { var_gen = MkAutoVarGen 0
-                   , undeclared_vars = []
-                   }))
+reset_var_gen = modify (const init_cg)
 
 next_var :: CGState Var
 next_var = do
@@ -115,18 +116,23 @@ next_var = do
          })
   return v
 
+-- | Make new locally scoped (let) variables.
 mk_let_vars :: forall a proxy. YulO1 a => proxy a -> CGState [Var]
 mk_let_vars _ = reverse <$> go (abi_type_count_vars @a) []
   where go n vars = next_var >>= \var ->
           if n > 1 then go (n - 1) (var:vars) else return (var:vars)
 
-forget_vars :: CGState ()
-forget_vars = modify $ \s -> s { undeclared_vars = [] }
+-- | Assigning variables.
+assign_vars_to_vars :: Indenter -> [Var] -> [Var] -> Code
+assign_vars_to_vars ind varsTo varsFrom = gen_assert (length varsTo == length varsFrom) $
+  T.intercalate "" (fmap (\(a,b) -> ind (a <> " := " <> b)) (zip varsTo varsFrom))
 
-assign_vars :: Indenter -> [Var] -> [Val] -> Code
-assign_vars ind vars vals = assert (length vars == length vals) $
+-- | Assigning expression @vals@ to variables @vars@.
+assign_vals_to_vars :: Indenter -> [Var] -> [Val] -> Code
+assign_vals_to_vars ind vars vals = gen_assert (length vars == length vals) $
   T.intercalate "" (fmap (\(a,b) -> ind (a <> " := " <> b)) (zip vars (fmap val_to_code vals)))
 
+-- | Declare variables.
 declare_vars :: CGState (Maybe Code)
 declare_vars = do
   s <- get
@@ -135,13 +141,18 @@ declare_vars = do
   put (s { undeclared_vars = [] })
   return code
 
+forget_vars :: CGState ()
+forget_vars = modify $ \s -> s { undeclared_vars = [] }
+
 mk_code :: forall a b. YulO2 a b => Indenter -> [Val] -> T.Text -> Proxy a -> Proxy b -> Code -> Code
 mk_code ind vals title _ _ code = ind (
-  "//dbg: " <> title <> " " <>
+  "//dbg: +" <> title <> "(" <>
   vals_to_code vals <>
   " : "  <> T.pack (abi_type_uniq_name @a) <>
-  " -> " <> T.pack (abi_type_uniq_name @b)
-  ) <> code
+  ") -> " <> T.pack (abi_type_uniq_name @b)
+  ) <>
+  code <>
+  ind ("//dbg: -" <> title)
 
 -- coerce_vals :: forall a b. YulO2 a b => Indenter -> Proxy a -> Proxy b -> [Val] -> Code
 -- coerce_vals ind pa pb vars = case (typeRep pa, typeRep pb) of
@@ -151,6 +162,6 @@ mk_code ind vals title _ _ code = ind (
 gen_code :: State CGStateData Code -> Code
 gen_code x = evalState x init_cg
 
--- FIXME
-assert :: Bool -> a -> a
-assert = Control.Exception.assert
+gen_assert :: HasCallStack => Bool -> a -> a
+gen_assert False _ = error "codegen assertion!"
+gen_assert _     x = x

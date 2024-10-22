@@ -59,8 +59,7 @@ Features
     - Derivative Types:
       - Tuple Types
         - [x] :L: `:*`, n-ary product.
-        - [ ] :S: `SOLO a`, demarcation solo tuple.
-        - [ ] 🔴 :L: `(,..)`, n-tuple types for function specification.
+        - [ ] :L: `(,..)`, solo and n-tuple types for function specification.
       - Function Types:
         - [x] `SEL`, selector data type.
         - [x] `mkTypedSelector, mkRawSelector`.
@@ -85,8 +84,8 @@ Features
         - [x] Catesian: `YulFork, ▵; YulExl, π₁; YulExr, π₂; YulDis, ε; YulDup, δ;`
       - Control Flow Primitives:
         - [x] `YulEmbed`, embedding constant.
-        - [ ] :M: `YulITE`, if-then-else.
-        - [ ] :M: `YulJump`, internal function calls.
+        - [x] :M: `YulITE`, if-then-else.
+        - [x] :M: `YulJump`, internal function calls.
         - [ ] :M: `YulCall`, external function calls.
         - [ ] :M: `YulMap, YulFoldl`, control structure for lists.
       - Storage Primitives:
@@ -151,7 +150,7 @@ Features
   - Output modes:
     - [x] Show output mode.
     - [x] Yul output mode.
-    - [ ] :M: PlantUML output mode.
+    - [ ] :M: Haskell diagrams output mode.
   - Compiler Modes:
     - [x] `symbol :: Fn a b`, fnMode
     - [x] `object :: YulObject`, objectMode

@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module YulDSL.CodeGens.Yul.Internal.ObjectGen (compile_object) where
 
+import           GHC.Stack                                   (HasCallStack)
+--
 import           Control.Monad                               (join)
 import           Data.Function                               ((&))
 import           Data.Functor                                ((<&>))
@@ -17,7 +19,7 @@ import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
 import           YulDSL.CodeGens.Yul.Internal.CodeGen
 import           YulDSL.CodeGens.Yul.Internal.FunctionGen
 
-compile_fn_dispatcher :: Indenter -> ScopedFn -> CGState (Maybe (Code, ABICodec, ABICodec))
+compile_fn_dispatcher :: HasCallStack => Indenter -> ScopedFn -> CGState (Maybe (Code, ABICodec, ABICodec))
 compile_fn_dispatcher ind (ExternalFn _ sel@(SEL (_, Just (fname, _))) (_ :: Fn a b)) = do
   vars_a <- mk_let_vars (Proxy @a)
   vars_b <- mk_let_vars (Proxy @b)
@@ -25,7 +27,7 @@ compile_fn_dispatcher ind (ExternalFn _ sel@(SEL (_, Just (fname, _))) (_ :: Fn 
   let ca = ABICodecDispatcher @a
       cb = ABICodecDispatcher @b
   let code = cbracket ind ("case " <> T.pack (show sel)) $ \ ind' ->
-        (case io_vars of Nothing -> ""; Just io_vars' -> ind' io_vars') <>
+        maybe "" ind' io_vars <>
         -- call abi decoder
         ind' ( T.intercalate "," vars_a <> " := " <>
                -- skip selector and (TODO) check if calldatasize is big enough
@@ -45,9 +47,9 @@ compile_fn_dispatcher ind (ExternalFn _ sel@(SEL (_, Just (fname, _))) (_ :: Fn 
 compile_fn_dispatcher _ (ExternalFn _ (SEL (_, Nothing)) _) = pure Nothing
 compile_fn_dispatcher _ (LibraryFn _) = pure Nothing
 
-compile_dispatchers :: Indenter -> [ScopedFn] -> CGState Code
+compile_dispatchers :: HasCallStack => Indenter -> [ScopedFn] -> CGState Code
 compile_dispatchers ind fns = cbracket_m ind "/* dispatcher */" $ \ind' -> do
-  externalFunctions <- sequence (map (compile_fn_dispatcher ind') fns)
+  externalFunctions <- mapM (compile_fn_dispatcher ind') fns
                        <&> catMaybes
   let code_cases = externalFunctions
                    & map (\(a, _, _) -> a)
@@ -56,19 +58,18 @@ compile_dispatchers ind fns = cbracket_m ind "/* dispatcher */" $ \ind' -> do
                        & map (\(_, b, c) -> abi_codec_deps b <> abi_codec_deps c)
                        & join
                        & nub
-                       & map (flip abi_codec_code ind')
+                       & map (`abi_codec_code` ind')
                        & T.intercalate "\n"
   pure $
     ind' "switch selector()" <>
     code_cases <>
     ind' "default { revert(0, 0) }" <>
-    ( cbracket1 ind' "function selector() -> s"
-      "s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)"
-    ) <>
+    cbracket1 ind' "function selector() -> s"
+      "s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)" <>
     "\n" <>
     code_abicodecs
 
-compile_object :: Indenter -> YulObject -> CGState Code
+compile_object :: HasCallStack => Indenter -> YulObject -> CGState Code
 compile_object ind (MkYulObject { yulObjectName = oname
                                 , yulObjectCtor = ctor
                                 , yulObjectSFns = sfns
@@ -87,7 +88,7 @@ compile_object ind (MkYulObject { yulObjectName = oname
         ind'' "return(0, datasize(\"runtime\"))"
 
     -- object runtime
-    code_runtime <- cbracket_m ind' ("object \"runtime\"") $ \ind'' -> do
+    code_runtime <- cbracket_m ind' "object \"runtime\"" $ \ind'' -> do
       cbracket_m ind'' "code" $ \ind''' -> do
         -- dispatcher
         code_dispatcher <- compile_dispatchers ind''' sfns
@@ -97,8 +98,9 @@ compile_object ind (MkYulObject { yulObjectName = oname
           code_dispatcher <>
           T.intercalate "\n" code_fns <>
           -- additional helpers, TODO move the code
-          ( cbracket1 ind''' "function allocate_unbounded() -> memPtr"
-            "memPtr := mload(64)" )
+          ind''' "" <>
+          cbracket1 ind''' "function allocate_unbounded() -> memPtr"
+            "memPtr := mload(64)"
 
 
     -- sub objects code

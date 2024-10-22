@@ -40,7 +40,6 @@ library
                     YulDSL.Core.YulObject
                     YulDSL.Core
                     YulDSL.Eval
-                    YulDSL.CodeGens.PlantUMLGen
                     YulDSL.CodeGens.YulGen
 
   other-modules:    YulDSL.CodeGens.Yul.Internal.CodeFormatters

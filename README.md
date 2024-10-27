@@ -56,49 +56,51 @@ YulDSL
 ------
 
 > [!NOTE]
+>
 > YulDSL, a DSL for Solidity/Yul.
 
 ## Types
 
-> [!NOTE] These include [Ethereum contract ABI specification](https://docs.soliditylang.org/en/latest/abi-spec.html)
+> [!NOTE]
+>
+> These include [Ethereum contract ABI specification](https://docs.soliditylang.org/en/latest/abi-spec.html)
 > implemented in Haskell types, higher order types, and dependently typed variants of some.
 
-| ABIType Instances | [ABICoreType]     | Name                         | Examples          |
-|-------------------|-------------------|------------------------------|-------------------|
-| *core types*      |                   |                              |                   |
-|-------------------|-------------------|------------------------------|-------------------|
-| ()                | []                | Unit                         |                   |
-| BOOL              | [BOOL']           | Boolean                      | true, false       |
-| INTx s n          | [INTx' s n]       | Fixed-precision integers     | -1, 0, 42, 0xffff |
-| ADDR              | [ADDR'            | Ethereum addresses           | #0xABC5...290a    |
-| BYTESn n          | [BYTESn' n]       | Fixed-size byte arrays       | TODO              |
-| BYTES             | [BYTES']          | Packed byte arrays           | TODO              |
-| ARRAY a           | [ARRAY' a]        | Arrays                       | TODO              |
-|-------------------|-------------------|------------------------------|-------------------|
-| *derived types*   |                   |                              |                   |
-|-------------------|-------------------|------------------------------|-------------------|
-| U32, ..., U256    | [INTx' False n]   | Aliases of unsigned integers | (see INTx)        |
-| I32, ..., I256    | [INTx' True n]    | Aliases of signed integers   | (see INTx)        |
-| B1, B2, .. B32    | [BYTESn n]        | Aliases of byte arrays       | (see BYTESn)      |
-| REF a w           | [B32']            | Memory or storage references | TODO              |
-| (a, b)            | [a', b']          | Tuples                       |                   |
-| NP xs             | xs'               | N-ary products               |                   |
-| NT n              | [a1', a2' .. an'] | N-ary tuples                 |                   |
-| STRUCT lens_xs    | xs'               | Struct with lenses           | TODO              |
-| STRING            | [BYTES']          | UTF-8 strings                | TODO              |
-| MAP a b           | [B32']            | Hash tables, aka. maps       | TODO              |
-| [REF a]           | [ARRAY' a, U256'] | Lazy-list of array iterators | TODO              |
-| FUNC c sel e d    | [BYTES32']        | Contract function pointer    | TODO              |
-|-------------------|-------------------|------------------------------|-------------------|
-| *dependent types* |                   |                              | TODO              |
-|-------------------|-------------------|------------------------------|-------------------|
-| BOOL'd v          | [BOOL']           | Dependent booleans           | TODO              |
-| INTx'd s n v      | [INTx' s n]       | Dependent integers           | TODO              |
-| BYTES'd l         | [BYTES']          | Length-indexed byte arrays   | TODO              |
-| ARRAY'd a l       | [ARRAY' a]        | Length-indexed arrays        | TODO              |
-| STRING'd v        | [BYTES']          | Dependent strings            | TODO              |
+| ABIType Instances   | [ABICoreType]     | Name                         | Examples          |
+|---------------------|-------------------|------------------------------|-------------------|
+| *(core types)*      |                   |                              |                   |
+| ()                  | []                | Unit                         |                   |
+| BOOL                | [BOOL']           | Boolean                      | true, false       |
+| INTx s n            | [INTx' s n]       | Fixed-precision integers     | -1, 0, 42, 0xffff |
+| ADDR                | [ADDR'            | Ethereum addresses           | #0xABC5...290a    |
+| BYTESn n            | [BYTESn' n]       | Fixed-size byte arrays       | TODO              |
+| BYTES               | [BYTES']          | Packed byte arrays           | TODO              |
+| ARRAY a             | [ARRAY' a]        | Arrays                       | TODO              |
+| *(derived types)*   |                   |                              |                   |
+| U32, ..., U256      | [INTx' False n]   | Aliases of unsigned integers | (see INTx)        |
+| I32, ..., I256      | [INTx' True n]    | Aliases of signed integers   | (see INTx)        |
+| B1, B2, .. B32      | [BYTESn n]        | Aliases of byte arrays       | (see BYTESn)      |
+| REF a w             | [B32']            | Memory or storage references | TODO              |
+| (a, b)              | [a', b']          | Tuples                       |                   |
+| NP xs               | xs'               | N-ary products               |                   |
+| NT n                | [a1', a2' .. an'] | N-ary tuples                 |                   |
+| STRUCT lens_xs      | xs'               | Struct with lenses           | TODO              |
+| STRING              | [BYTES']          | UTF-8 strings                | TODO              |
+| MAP a b             | [B32']            | Hash tables, aka. maps       | TODO              |
+| [REF a]             | [ARRAY' a, U256'] | Lazy-list of array iterators | TODO              |
+| FUNC c sel e d      | [BYTES32']        | Contract function pointer    | TODO              |
+| *(dependent types)* |                   |                              |                   |
+| BOOL'd v            | [BOOL']           | Dependent booleans           | TODO              |
+| INTx'd s n v        | [INTx' s n]       | Dependent integers           | TODO              |
+| BYTES'd l           | [BYTES']          | Length-indexed byte arrays   | TODO              |
+| ARRAY'd a l         | [ARRAY' a]        | Length-indexed arrays        | TODO              |
+| STRING'd v          | [BYTES']          | Dependent strings            | TODO              |
 
 ## YulCat
+
+> [!NOTE]
+>
+> DSL of Yul defined with categories.
 
 TODOs:
 
@@ -124,7 +126,18 @@ TODOs:
   - [ ] :M: `YulView`, for indexed or named position.
   - [ ] :M: `YulGet, YulPut` using `REF`, and remove `YulSet, YulSPut`.
 
+## Fn
+
+> [!NOTE]
+>
+> Function object for a YulCat.
+
 ## YulObject
+
+> [!NOTE]
+>
+> Yul object builder. Yul object specification can be found from [solidity
+> documentation](https://docs.soliditylang.org/en/latest/yul.html#specification-of-yul-object).
 
 TODOs:
 
@@ -132,11 +145,19 @@ TODOs:
 
 ## Eval
 
+> [!NOTE]
+>
+> Evaluation of a YulCat semantically.
+
 TODOs:
 
 - [ ] :L: Support all `YulDSL` constructors.
 
 ## CodeGens.YulGen
+
+> [!NOTE]
+>
+> Generate yul code for Fn, YuLCat, and YulObject.
 
 TODOs:
 
@@ -147,6 +168,10 @@ TODOs:
   - [ ] :M: constructor support.
 
 ## CodeGens.Diagrams
+
+> [!NOTE]
+>
+> Generate diagrams using Haskell diagrams package.
 
 YulDSL Linear-SMC Frontend
 --------------------------
@@ -170,10 +195,11 @@ TODOs:
 YOL Suite
 ---------
 
-TODOs:
 
-- YOL stands for *Yet Original Language*.
-- YOL suite is *For the New Pioneer* of EVM application development.
+> [!IMPORTANT]
+>
+> - YOL stands for *Yet Original Language*.
+> - YOL suite is *For the New Pioneer* of EVM application development.
 
 ## yolc: the evil twin of solc
 

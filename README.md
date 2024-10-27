@@ -1,5 +1,5 @@
-YOLC - Programming Solidity/Yul in Linear-typed (Lolipop ⊸) Functions
-=====================================================================
+YOLC - Programming Solidity/Yul in Advanced Haskell
+===================================================
 
 YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
 
@@ -37,75 +37,121 @@ Motivation
 * In the quest to provide an advanced, purely functional high-level programming language to the EVM ecosystem, the author
   embarked on a journey into creating this program known as **yolc**.
 
+-----
+
 STILL WORK IN PROGRESS
 ----------------------
 
-Contact me if you are interested in testing this project out soon!
+> [!IMPORTANT]
+>
+> Good news! After pausing for the good part of 2024 due to business reason, I am back to it. As of 2024 October, the
+> end-to-end is working and I have adjusted the roadmap and planned an exciting type system for the first release!
+>
+> Contact me if you are interested in testing this project out soon!
 
 Features
---------
+========
 
-## YulDSL
+YulDSL
+------
 
-- Core
-  - ContractABI: Solidity-Contract-ABI-Compatible Types
-    - Primitive Types:
-      - [x] Simple Static value types: `ADDR`, `BOOL`, `INTx (s :: KnownBool) (n :: KnownNat)`.
-      - [ ] :S: `SVALUE`, storage value.
-      - [ ] :S: `type BYTESnn = BYTES_N n`, static bytes value type.
-      - [ ] :L: `BYTES(l?) n?`, optionally-length-indexed dynamic bytes type.
-      - [ ] :M: `STRING`, dynamic utf-8 string type.
-      - [ ] :M: `ARRAY(l?) (True|False) n? a, DARR, SARR`, optionally-length-indexed dynamic or static array type.
-    - Derivative Types:
-      - Tuple Types
-        - [x] :L: `:*`, n-ary product.
-        - [ ] :L: `(,..)`, solo and n-tuple types for function specification.
-      - Function Types:
-        - [x] `SEL`, selector data type.
-        - [x] `mkTypedSelector, mkRawSelector`.
-        - [ ] :M: `sigToSelector`, similar to `cast sig`.
-        - [-] :S: `FUNC a b`, external function reference with `FuncStorage` and `FuncEffect` tags.
-          - Missing show instance.
-      - Lenses:
-        - [ ] :M: `a :@ "name"` to name a tuple element.
-    - Reference
-      - [ ] :M: `data REF = VREF | MREF | SREF SLOC; data SLOC = SLOT s o | SNAME name;`.
-    - **Completeness:**
-      - [ ] :M: **CLEAN-UP** inline-REPL docs.
-  - Storage Data Types:
-      - [ ] :M: `LIST(l?) n? a`, optionally-length-indexed singly-linked list type.
-      - [ ] :M: `MAP k v`, key-value storage.
-  - YulCat
-      - [x] `(>.>)` operator for the `YulDSL` morphism left-to-right composition.
-      - [ ] :M: `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
-      - SMC Primitives:
-        - [x] Category: `YulId; YulComp, ∘`;
-        - [x] Monoidal: `YulProd, ×; YulSwap, σ`;
-        - [x] Catesian: `YulFork, ▵; YulExl, π₁; YulExr, π₂; YulDis, ε; YulDup, δ;`
-      - Control Flow Primitives:
-        - [x] `YulEmbed`, embedding constant.
-        - [x] :M: `YulITE`, if-then-else.
-        - [x] :M: `YulJump`, internal function calls.
-        - [ ] :M: `YulCall`, external function calls.
-        - [ ] :M: `YulMap, YulFoldl`, control structure for lists.
-      - Storage Primitives:
-        - [ ] :M: `YulView`, for indexed or named position.
-        - [ ] :M: `YulGet, YulPut` using `REF`, and remove `YulSet, YulSPut`.
-  - YulObject
-    - [ ] :S: Module documentation.
-- Eval Monad:
-  - [ ] :L: Support all `YulDSL` constructors.
-- Yul CodeGen
-  - CodeGen core:
-    - [ ] 🚧 :M: Lazy semantics.
-    - [ ] :S: Fn autoId (instead of using yulCatDigest.)
-  - Object builder:
-    - [ ] 🚧 :XL: dispatcher builder with full dispatcher calldata codec support.
-    - [ ] :M: constructor support.
-- PlantUML CodeGen
-  - [ ] :L: Complete PlantUML codegen support.
+> [!NOTE]
+> YulDSL, a DSL for Solidity/Yul.
 
-## YulDSL Linear-SMC Frontend
+## Types
+
+> [!NOTE] These include [Ethereum contract ABI specification](https://docs.soliditylang.org/en/latest/abi-spec.html)
+> implemented in Haskell types, higher order types, and dependently typed variants of some.
+
+| ABIType Instances | [ABICoreType]     | Name                         | Examples          |
+|-------------------|-------------------|------------------------------|-------------------|
+| *core types*      |                   |                              |                   |
+|-------------------|-------------------|------------------------------|-------------------|
+| ()                | []                | Unit                         |                   |
+| BOOL              | [BOOL']           | Boolean                      | true, false       |
+| INTx s n          | [INTx' s n]       | Fixed-precision integers     | -1, 0, 42, 0xffff |
+| ADDR              | [ADDR'            | Ethereum addresses           | #0xABC5...290a    |
+| BYTESn n          | [BYTESn' n]       | Fixed-size byte arrays       | TODO              |
+| BYTES             | [BYTES']          | Packed byte arrays           | TODO              |
+| ARRAY a           | [ARRAY' a]        | Arrays                       | TODO              |
+|-------------------|-------------------|------------------------------|-------------------|
+| *derived types*   |                   |                              |                   |
+|-------------------|-------------------|------------------------------|-------------------|
+| U32, ..., U256    | [INTx' False n]   | Aliases of unsigned integers | (see INTx)        |
+| I32, ..., I256    | [INTx' True n]    | Aliases of signed integers   | (see INTx)        |
+| B1, B2, .. B32    | [BYTESn n]        | Aliases of byte arrays       | (see BYTESn)      |
+| REF a w           | [B32']            | Memory or storage references | TODO              |
+| (a, b)            | [a', b']          | Tuples                       |                   |
+| NP xs             | xs'               | N-ary products               |                   |
+| NT n              | [a1', a2' .. an'] | N-ary tuples                 |                   |
+| STRUCT lens_xs    | xs'               | Struct with lenses           | TODO              |
+| STRING            | [BYTES']          | UTF-8 strings                | TODO              |
+| MAP a b           | [B32']            | Hash tables, aka. maps       | TODO              |
+| [REF a]           | [ARRAY' a, U256'] | Lazy-list of array iterators | TODO              |
+| FUNC c sel e d    | [BYTES32']        | Contract function pointer    | TODO              |
+|-------------------|-------------------|------------------------------|-------------------|
+| *dependent types* |                   |                              | TODO              |
+|-------------------|-------------------|------------------------------|-------------------|
+| BOOL'd v          | [BOOL']           | Dependent booleans           | TODO              |
+| INTx'd s n v      | [INTx' s n]       | Dependent integers           | TODO              |
+| BYTES'd l         | [BYTES']          | Length-indexed byte arrays   | TODO              |
+| ARRAY'd a l       | [ARRAY' a]        | Length-indexed arrays        | TODO              |
+| STRING'd v        | [BYTES']          | Dependent strings            | TODO              |
+
+## YulCat
+
+TODOs:
+
+- Safety Features:
+  - [ ] :M: `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
+- SMC Primitives:
+  - [x] Category: `YulId; YulComp, ∘`;
+  - [x] Monoidal: `YulProd, ×; YulSwap, σ`;
+  - [x] Catesian: `YulFork, ▵; YulExl, π₁; YulExr, π₂; YulDis, ε; YulDup, δ;`
+- Control Flow Primitives:
+  - [x] `YulEmbed`, embedding constant.
+  - [x] :M: `YulITE`, if-then-else.
+  - [x] :M: `YulJump`, internal function calls.
+  - [ ] :M: `YulCall`, external function calls.
+  - [ ] :M: `YulMap, YulFoldl`, control structure for lists.
+- Utilities:
+  - [x] `(>.>)` and `(<.<)` operators for the directional morphisms.
+  - [x] MPOrd class
+  - [x] IfThenElse class
+  - [x] Num instance
+  - [-] Show instance
+- Storage Primitives:
+  - [ ] :M: `YulView`, for indexed or named position.
+  - [ ] :M: `YulGet, YulPut` using `REF`, and remove `YulSet, YulSPut`.
+
+## YulObject
+
+TODOs:
+
+- [ ] :S: Module documentation.
+
+## Eval
+
+TODOs:
+
+- [ ] :L: Support all `YulDSL` constructors.
+
+## CodeGens.YulGen
+
+TODOs:
+
+- CodeGen core:
+  - [ ] :S: Fn autoId (instead of using yulCatDigest.)
+- Object builder:
+  - [ ] 🚧 :XL: dispatcher builder with full dispatcher calldata codec support.
+  - [ ] :M: constructor support.
+
+## CodeGens.Diagrams
+
+YulDSL Linear-SMC Frontend
+--------------------------
+
+TODOs:
 
 - Multi-style functions:
   - [x] :S: composition of all styles using `(>.>)`.
@@ -121,12 +167,17 @@ Features
 - Prelude:
   - [ ] :L: Curation.
 
-## YOL Suite
+YOL Suite
+---------
+
+TODOs:
 
 - YOL stands for *Yet Original Language*.
 - YOL suite is *For the New Pioneer* of EVM application development.
 
-### yolc: the evil twin of solc
+## yolc: the evil twin of solc
+
+TODOs:
 
 - Project Builder
   - Manifest Builder:
@@ -156,7 +207,7 @@ Features
     - [x] `object :: YulObject`, objectMode
     - [x] `manifest :: Manifest`, projectMode
 
-### attila: who wields the foundry, forges his path
+## attila: who wields the foundry, forges his path
 
 - Test Pipeline: `attila test`
   - [ ] QuickCheck integration using Eval monad.
@@ -165,16 +216,19 @@ Features
   - [ ] Deploy the program (program is an unit of deployment.)
   - [ ] Etherscan verification pipeline.
 
-### drwitch: who persuades the tyrant, shapes our history
+## drwitch: who persuades the tyrant, shapes our history
+
+> [!NOTE]
+> This should be the counter part of the "cast" from foundry.
 
 
-### Software Distribution
+## Software Distribution
 
 - [ ] :M: Nix flake.
 
-Future Ideas
-------------
+Future Plans
+============
 
-- Liquid Haskell integration
+- Liquid Haskell integration.
 - YulDSL artifact.
-- Effect system?
+- Effect system.

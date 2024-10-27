@@ -34,8 +34,8 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
   wrap_let_vars = \case Nothing -> id; Just vars -> \body -> ind (vars <> " {") <> body <> ind "}"
   -- go functions
   go :: forall a b. YulO2 a b => YulCat a b -> CGState CGOutput
-  go YulCoerce        = ret_vars vals_a -- return (coerce_vals ind (Proxy @a) (Proxy @b) vals_a, vals_a)
-  go YulSplit         = ret_vars vals_a -- return (mk_code' "split"  (Proxy @a) (Proxy @b) "", vals_a)
+  go YulCoerce        = ret_vars vals_a
+  go YulSplit         = ret_vars vals_a
   go YulId            = ret_vars vals_a
   go (YulComp cb ac)  = go_comp cb ac
   go (YulProd ab cd)  = go_prod ab cd

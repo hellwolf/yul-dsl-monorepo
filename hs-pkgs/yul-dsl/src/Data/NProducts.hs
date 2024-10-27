@@ -24,12 +24,12 @@ Notes:
 
 module Data.NProducts
   ( (:*) (..)
-  , ScanNP, AtomizeNP, CountAtomsNP, HeadANP, TailANP
-  , UnM
+  , ScanNP, AtomizeNP, HeadANP, TailANP, CountAtomsNP
   ) where
 
-import           Data.Kind    (Type)
-import           GHC.TypeNats (Nat, type (+))
+import           Data.Functor.Identity (Identity)
+import           Data.Kind             (Type)
+import           GHC.TypeNats          (Nat, type (+))
 
 -- | Type constructor ':*' and its data constructor pun for creating currying n-ary products.
 data a :* b = a :* b
@@ -44,7 +44,7 @@ instance (Show a, Show b) => Show (a :* b) where
 -- Type-level Functions for the N-Ary Products (NP)
 ------------------------------------------------------------------------------------------------------------------------
 
--- | Scan through the n-ary products using the scanner @f@.
+-- | Scan through the n-ary products using the product constructor @f@.
 type family ScanNP (f :: k -> k -> k) (a :: k) :: k where
   ScanNP f (m (a1 :* a2)) = ScanNP f (m a1) `f` ScanNP f (m a2)
   ScanNP f (m a)          = m a
@@ -55,18 +55,23 @@ type AtomizeNP ma = ScanNP (:*) ma
 -- | Count number of "atoms" in the n-ary products.
 type CountAtomsNP a = NatBuild (ScanNP NatPlus (NatConst (NatVal 1) a))
 
-type family HeadANP (a :: Type) :: Type where
-  HeadANP () = ()
-  HeadANP (a1 :* a2) = a1
-  HeadANP a = a
+type family HeadANP' (a :: Type) :: Type where
+  HeadANP' () = ()
+  HeadANP' (a1 :* a2) = a1
+  HeadANP' a = a
 
-type family TailANP (a :: Type) :: Type where
-  TailANP (a1 :* a2) = a2
-  TailANP a = ()
+type HeadANP a = UnM (HeadANP' (AtomizeNP (Identity a)))
+
+type family TailANP' (a :: Type) :: Type where
+  TailANP' (a1 :* a2) = a2
+  TailANP' a = ()
+
+type TailANP a = UnM (TailANP' (AtomizeNP (Identity a)))
 
 -- Type level function utlities
 --
 
+-- | Remove the monadic @m@ from the type @ma@.
 type family UnM (ma :: Type) :: Type where UnM (m a) = a
 
 data NatBuilder where

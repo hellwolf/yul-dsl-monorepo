@@ -14,7 +14,6 @@ This module provides a function 'evalYulDSL' simulating the evaluation of the 'Y
 module YulDSL.Eval where
 
 import qualified Data.Map                as M
-import           Data.Maybe              (fromJust)
 
 import           YulDSL.Core.ContractABI
 import           YulDSL.Core.YulCat      (YulCat (..))

@@ -6,6 +6,7 @@ foo1 = lfn "foo1" \x ->
   copy x & split & \(x1, x2) ->
   yulConst true (to_addr' 0xdeadbeef <==@ x1 + x2)
 
+object :: YulObject
 object = mkYulObject "ObjectDispatcherTests" ctor
   [ externalFn foo1
   ]

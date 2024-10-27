@@ -76,7 +76,7 @@ abi_decoder_dispatcher_code ans vars ind =
 
 abi_decoder_stack_code :: ABITypeInfo -> Var -> Indenter -> T.Text
 abi_decoder_stack_code a ret ind = go a where
-  go (INTx' s n) = ind (ret <> " := calldataload(offset)")
+  go (INTx' _ _) = ind (ret <> " := calldataload(offset)")
   go _           = ind "// TODO abi_decoder_code_final"
 
 abi_encoder_dispatcher_code :: [ABITypeInfo] -> [Var] -> Indenter -> T.Text
@@ -94,5 +94,5 @@ abi_encoder_dispatcher_code ans vars ind =
 
 abi_encoder_stack_code :: ABITypeInfo -> Var -> Indenter -> T.Text
 abi_encoder_stack_code a var ind = go a where
-  go (INTx' s n) = ind ("mstore(pos, " <> var <> ")")
+  go (INTx' _ _) = ind ("mstore(pos, " <> var <> ")")
   go _           = ind "// TODO abi_encoder_code"

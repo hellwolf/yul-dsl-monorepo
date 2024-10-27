@@ -48,7 +48,6 @@ module YulDSL.Core.YulCat
 
 -- base
 import           Data.Char               (ord)
-import           Data.Functor.Identity   (Identity)
 import           Data.Kind               (Constraint, Type)
 import           GHC.Integer             (xorInteger)
 import           Text.Printf             (printf)
@@ -93,29 +92,29 @@ instance (KnownBool s, KnownNat n) => YulNum (INTx s n)
 
 -- TODO: YulCat Permissions
 
-data YulStoragePerm = YulStorageRO | YulStorageWO | YulStorageRW | YulStorageNoAccess
-data YulCallPerm = YulAllowAnyCall | YulAllowStaticCall | YulNoCallAllowed
-
-data FnPerm = FnPerm YulStoragePerm YulCallPerm
-
-type FullFn :: FnPerm
-type FullFn = 'FnPerm 'YulStorageRW 'YulAllowAnyCall
+-- data YulStoragePerm = YulStorageRO | YulStorageWO | YulStorageRW | YulStorageNoAccess
+-- data YulCallPerm = YulAllowAnyCall | YulAllowStaticCall | YulNoCallAllowed
+--
+-- data FnPerm = FnPerm YulStoragePerm YulCallPerm
+--
+-- type FullFn :: FnPerm
+-- type FullFn = 'FnPerm 'YulStorageRW 'YulAllowAnyCall
 -- type FullFn = FnPerm YulStorageRW YulAllowAnyCall
 -- type PureFn = FnPerm YulStorageNoAccess YulNoCallAllowed
 -- type ViewFn = FnPerm YulStorageRO YulAllowStaticCall
 
-class YulStorageReadAllowed a
-class YulStorageWriteAllowed a
-class YulTransactionCallAllowed a
-class YulStaticCallAllowed a
-
-instance YulStorageReadAllowed '(YulStorageRO, a)
-instance YulStorageReadAllowed '(YulStorageRW, a)
-instance YulStorageWriteAllowed '(YulStorageWO, a)
-instance YulStorageWriteAllowed '(YulStorageRW, a)
-instance YulTransactionCallAllowed '(a, YulAllowAnyCall)
-instance YulStaticCallAllowed '(a, YulAllowAnyCall)
-instance YulStaticCallAllowed '(a, YulAllowStaticCall)
+-- class YulStorageReadAllowed a
+-- class YulStorageWriteAllowed a
+-- class YulTransactionCallAllowed a
+-- class YulStaticCallAllowed a
+--
+-- instance YulStorageReadAllowed '(YulStorageRO, a)
+-- instance YulStorageReadAllowed '(YulStorageRW, a)
+-- instance YulStorageWriteAllowed '(YulStorageWO, a)
+-- instance YulStorageWriteAllowed '(YulStorageRW, a)
+-- instance YulTransactionCallAllowed '(a, YulAllowAnyCall)
+-- instance YulStaticCallAllowed '(a, YulAllowAnyCall)
+-- instance YulStaticCallAllowed '(a, YulAllowStaticCall)
 
 ------------------------------------------------------------------------------------------------------------------------
 -- The Cat
@@ -127,11 +126,10 @@ instance YulStaticCallAllowed '(a, YulAllowStaticCall)
 --  while the actual category is "Yul Category".
 data YulCat a b where
   -- Type-level Operations (Zero Runtime Cost)
-  --
+  -- | Convert between coercible Yul objects.
   YulCoerce :: forall a b. (YulO2 a b, YulCoercible a b) => YulCat a b
   -- | Split the head and tail of the atomized type.
-  YulSplit :: forall a r . YulO2 a r => YulCat r ( UnM (HeadANP (AtomizeNP (Identity a)))
-                                                 , UnM (TailANP (AtomizeNP (Identity a))))
+  YulSplit :: forall a as. YulO2 a as => YulCat (a :* as) (a, as)
 
   -- SMC Primitives
   --  Category
@@ -158,9 +156,9 @@ data YulCat a b where
   -- | If-then-else.
   YulITE   :: forall a    . YulO1 a     => YulCat (BOOL, (a, a)) a
   -- | Mapping over a list.
-  YulMap   :: forall a b  . YulO2 a b   => YulCat a b -> YulCat [a] [b]
+  YulMap   :: forall a b  . YulO2 a b   => YulCat a b %1 -> YulCat [a] [b]
   -- | Folding over a list from the left.
-  YulFoldl :: forall a b  . YulO2 a b   => YulCat (b, a) b -> YulCat [a] b
+  YulFoldl :: forall a b  . YulO2 a b   => YulCat (b, a) b %1 -> YulCat [a] b
 
   -- YulVal Primitives
   --
@@ -189,11 +187,11 @@ data YulCat a b where
 data AnyYulCat = forall a b. YulO2 a b => MkAnyYulCat (YulCat a b)
 
 -- | Left to right composition of 'YulCat'.
-(>.>) :: forall a b c. YulO3 a b c => YulCat a b -> YulCat b c -> YulCat a c
+(>.>) :: forall a b c. YulO3 a b c => YulCat a b %1 -> YulCat b c %1 -> YulCat a c
 m >.> n = n `YulComp` m
 
 -- | Right-to-left composition of 'YulCat'.
-(<.<) :: forall a b c. YulO3 a b c => YulCat b c -> YulCat a b -> YulCat a c
+(<.<) :: forall a b c. YulO3 a b c => YulCat b c %1 -> YulCat a b %1 -> YulCat a c
 (<.<) = YulComp
 
 infixr 1 >.>, <.<
@@ -251,33 +249,33 @@ instance YulO2 a r => IfThenElse (YulCat r BOOL) (YulCat r a) where
 --   * It is deliberately done so for compactness of the string representation of the 'YulCat'.
 --   * It is meant also for strong equality checking of 'YulCat' used in yul object building.
 instance Show (YulCat a b) where
-  show YulCoerce           = "coerce" <> abi_type_name' @a <> abi_type_name' @b
+  show YulCoerce           = "coerce" <> abi_type_name @a <> abi_type_name @b
   show YulId               = "id"
-  show YulSplit            = "▿" <> abi_type_name' @a
+  show YulSplit            = "▿" <> abi_type_name @a
   show (YulComp cb ac)     = "(" <> show ac <> ");(" <> show cb <> ")"
   show (YulProd ab cd)     = "×(" <> show ab <> ")(" <> show cd <> ")"
-  show YulSwap             = "σ" <> abi_type_name' @a <> abi_type_name' @b
+  show YulSwap             = "σ" <> abi_type_name @a <> abi_type_name @b
   show (YulFork ab ac)     = "▵(" <> show ab <> ")(" <> show ac <> ")"
-  show YulExl              = "π₁" <> abi_type_name' @a
-  show YulExr              = "π₂" <> abi_type_name' @a
-  show YulDis              = "ε" <> abi_type_name' @a
-  show YulDup              = "δ" <> abi_type_name' @a
+  show YulExl              = "π₁" <> abi_type_name @a
+  show YulExr              = "π₂" <> abi_type_name @a
+  show YulDis              = "ε" <> abi_type_name @a
+  show YulDup              = "δ" <> abi_type_name @a
   show (YulEmbed x)        = "{" <> show x <> "}" -- TODO: x should be escaped ideally, especially for equality checks
   show (YulJump cid _)     = "jump " <> cid
   show (YulCall c)         = "call " <> show c
-  show YulITE              = "?" <> abi_type_name' @a
+  show YulITE              = "?" <> abi_type_name @a
   show YulNot              = "not"
   show YulAnd              = "and"
   show YulOr               = "or"
-  show YulNumAdd           = "add" <> abi_type_name' @a
-  show YulNumNeg           = "neg" <> abi_type_name' @a
+  show YulNumAdd           = "add" <> abi_type_name @a
+  show YulNumNeg           = "neg" <> abi_type_name @a
   show (YulNumCmp (i,j,k)) = "cmp" <> s i <> s j <> s k where s x = if x == true then "t" else "f"
-  show YulSGet             = "sget" <> abi_type_name' @a
-  show YulSPut             = "sput" <> abi_type_name' @a
-
+  show YulSGet             = "sget" <> abi_type_name @a
+  show YulSPut             = "sput" <> abi_type_name @a
+  show _                   = error "Show YulCat TODO"
 
 {- INTERNAL FUNCTIONs -}
 
--- | A 'abi_type_name' variant, enclosing name with "@()".
-abi_type_name' :: forall a. ABIType a => String
-abi_type_name' = "@" <> abi_type_uniq_name @a
+-- | A 'abi_type_name variant, enclosing name with "@()".
+abi_type_name :: forall a. ABIType a => String
+abi_type_name = "@" <> abi_type_uniq_name @a

@@ -17,13 +17,13 @@ data ScopedFn where
   ExternalFn :: forall a b. YulO2 a b => FuncEffect -> SEL -> Fn a b -> ScopedFn
   LibraryFn  :: forall a b. YulO2 a b => Fn a b -> ScopedFn
 
-externalFn :: forall a b p. YulO2 a b => Fn a b -> ScopedFn
+externalFn :: forall a b. YulO2 a b => Fn a b -> ScopedFn
 externalFn fn = ExternalFn FuncTx (mkTypedSelector @a (fnId fn)) fn
 
-staticFn :: forall a b p. YulO2 a b => Fn a b -> ScopedFn
+staticFn :: forall a b. YulO2 a b => Fn a b -> ScopedFn
 staticFn fn = ExternalFn FuncStatic (mkTypedSelector @a (fnId fn)) fn
 
-libraryFn :: forall a b p. YulO2 a b => Fn a b -> ScopedFn
+libraryFn :: forall a b. YulO2 a b => Fn a b -> ScopedFn
 libraryFn = LibraryFn
 
 show_fn_spec :: forall a b. YulO2 a b => Fn a b -> String

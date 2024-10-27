@@ -147,7 +147,6 @@ abi_type_eq = abi_type_uniq_name @a == abi_type_uniq_name @b
 class (Show a) => ABIType a where
   -- | Possible breakdown of the product object type.
   abi_prod_objs :: forall b c. a ~ (b, c) => Dict (ABIType b, ABIType c)
-  -- ^ Default implementation returns (a, ())
   abi_prod_objs = error "abi_prod_objs should only be implemented by the product of ABIType"
 
   -- | Returns a list of ABI type information represented by this ABI type.
@@ -530,10 +529,10 @@ NaN
 
 >>> show (SEL (Nothing, 69))
 >>> show (SEL (Just ("foo", ""), 0)) -- TODO 4bytes needs to be generated
-Couldn't match type: Maybe a0_a7sS4[tau:1]
+Couldn't match type: Maybe a0_aljZ0[tau:1]
                with: INTx 'False 4
 Expected: Sel4Bytes
-  Actual: Maybe a0_a7sS4[tau:1]
+  Actual: Maybe a0_aljZ0[tau:1]
 In the expression: Nothing
 In the first argument of `SEL', namely `(Nothing, 69)'
 In the first argument of `show', namely `(SEL (Nothing, 69))'

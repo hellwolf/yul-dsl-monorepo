@@ -98,14 +98,13 @@ instance (KnownBool s, KnownNat n) => YulCatReducible (INTx s n)
 instance YulCatReducible BYTES
 
 instance forall a as. (YulCatReducible a, YulCatReducible as) => YulCatReducible (a :* as) where
-  -- Using unsafeCoerce to avoid difficult type level proofs
   yul_cat_reduce c = yul_cat_reduce @a (exl `YulComp` s) :*
                      yul_cat_reduce @as (exr `YulComp` s)
-    where s = unsafeCoerce @(YulCat (a :* as) _) @_ (YulSplit @(a :* as)) ∘ c
+    where s = YulSplit @a @as ∘ c
 
   yul_cat_merge :: forall r. YulObj r => AtomizeNP (YulCat r (a :* as)) -> YulCat r (a :* as)
-  yul_cat_merge c = let (b :* bs) = unsafeCoerce @_ @(AtomizeNP (YulCat r a) :* AtomizeNP (YulCat r as)) c
-                    in YulCoerce ∘ yul_cat_merge @a b ▵ yul_cat_merge @as bs
+  yul_cat_merge c = YulCoerce ∘ yul_cat_merge @a b ▵ yul_cat_merge @as bs
+    where (b :* bs) = unsafeCoerce @_ @(AtomizeNP (YulCat r a) :* AtomizeNP (YulCat r as)) c
 
 --
 -- YulNum typeclass instances for the 'linear-base'.
@@ -124,13 +123,14 @@ instance (YulObj r, YulNum a) => AdditiveGroup (YulCat r a) where
 -- Value Functions utilities
 --
 
-vfn :: forall a b p. (YulO2 a b, YulCatReducible a)
-    => String -> (AtomizeNP (YulCat a a) -> YulCat a b)
+vfn :: forall a b. (YulO2 a b, YulCatReducible a)
+    => String
+    -> (AtomizeNP (YulCat a a) -> YulCat a b)
     -> Fn a b
 vfn fname fn = MkFn fname $ fn (yul_cat_reduce @a YulId)
 
-ap'vfn :: forall a b p r. (YulCatReducible a, YulO3 a b r)
-      => Fn a b -> AtomizeNP (YulCat r a) -> YulCat r b
+ap'vfn :: forall a b r. (YulCatReducible a, YulO3 a b r)
+       => Fn a b -> AtomizeNP (YulCat r a) -> YulCat r b
 ap'vfn fn a = YulJump (fnId fn) (fnCat fn) `YulComp` yul_cat_merge @a a
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -235,7 +235,7 @@ class YulObj a => YulPortReducible a where
   yul_port_merge = id
 
 -- Irreducible yul ports:
-instance YulPortReducible () where
+instance YulPortReducible ()
 instance YulPortReducible ADDR
 instance YulPortReducible BOOL
 instance (KnownBool s, KnownNat n) => YulPortReducible (INTx s n)
@@ -252,12 +252,12 @@ instance forall a as. (YulPortReducible a, YulPortReducible as) => YulPortReduci
 --
 
 -- | Define a `YulCat` morphism from a linear port function.
-lfn :: forall a b p. (YulO2 a b, YulPortReducible a) =>
-       String ->
-       (forall r. YulObj r => AtomizeNP (YulP r a) ⊸ YulP r b) ->
-       Fn a b
+lfn :: forall a b. (YulO2 a b, YulPortReducible a)
+    => String
+    -> (forall r. YulObj r => AtomizeNP (YulP r a) ⊸ YulP r b)
+    -> Fn a b
 lfn fname f = MkFn fname $ decode (f . yul_port_reduce)
 
-ap'lfn :: forall a b p r. (YulPortReducible a, YulO3 a b r)
-      => Fn a b -> AtomizeNP (YulP r a) ⊸ YulP r b
+ap'lfn :: forall a b r. (YulPortReducible a, YulO3 a b r)
+       => Fn a b -> AtomizeNP (YulP r a) ⊸ YulP r b
 ap'lfn fn a = encode (YulJump (fnId fn) (fnCat fn)) (yul_port_merge @a a)

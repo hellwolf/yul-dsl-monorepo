@@ -1,0 +1,52 @@
+cabal-version:  3.0
+name:           eth-abi
+version:        0.1.0.0
+category:       Data Structures
+synopsis:       Ethereum contracts
+description:    These include Ethereum contract ABI specification, https://docs.soliditylang.org/en/latest/abi-spec.html
+                implemented in Haskell types, their derived types, and dependently typed variants of some.
+
+license:        MIT
+license-file:   LICENSE
+author:         Miao, ZhiCheng
+maintainer:     zhicheng.miao@gmail.com
+copyright:      (c) 2024 Miao, ZhiCheng
+
+tested-with:    GHC==9.10.1
+build-type:     Simple
+
+common basic-options
+  default-language: GHC2024
+  ghc-options:      -Wall
+                    -Wunused-packages
+  build-depends:    base >= 4.20.0.0 && < 666
+
+library
+  import:           basic-options
+  hs-source-dirs:   src
+  exposed-modules:  Data.TypeBools
+                    Ethereum.ContractABI.ABICoreType
+                    Ethereum.ContractABI.ABITypeable
+                    Ethereum.ContractABI.CoreType.BOOL
+                    Ethereum.ContractABI.CoreType.INTx
+                    Ethereum.ContractABI.CoreType.NP
+                    Ethereum.ContractABI.ExtendedType.TUPLEn
+  build-depends:    constraints >= 0.14
+  --                bytestring >= 0.11,
+  --                   text >= 2.0.1,
+  --                   constraints >= 0.13,
+  --                   containers >= 0.6.7,
+  --                   mtl >= 2.3.1,
+  --                   crypton >= 0.32,
+  --                   memory >= 0.18.0
+
+Test-Suite test-eth-abi
+  import:           basic-options
+  ghc-options:      -Wno-missing-signatures
+  type:             exitcode-stdio-1.0
+  build-depends:    eth-abi,
+                    QuickCheck >= 2.15,
+                    hspec >= 2.11
+  hs-source-dirs:   test
+  other-modules:    INTx_prop
+  main-is:          Main.hs

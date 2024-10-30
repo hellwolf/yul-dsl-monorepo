@@ -2,7 +2,7 @@
 {-# LANGUAGE DerivingStrategies  #-}
 {-|
 
-Copyright   : (c) 2023-2004 Miao, ZhiCheng
+Copyright   : (c) 2023-2024 Miao, ZhiCheng
 License     : LGPL-3
 Maintainer  : zhicheng.miao@gmail.com
 Stability   : experimental
@@ -144,7 +144,7 @@ abi_type_eq :: forall a b. (ABIType a, ABIType b) => Bool
 abi_type_eq = abi_type_uniq_name @a == abi_type_uniq_name @b
 
 -- | Contract ABI type class for all primitive and composite ABI types.
-class (Show a) => ABIType a where
+class Show a => ABIType a where
   -- | Possible breakdown of the product object type.
   abi_prod_objs :: forall b c. a ~ (b, c) => Dict (ABIType b, ABIType c)
   abi_prod_objs = error "abi_prod_objs should only be implemented by the product of ABIType"

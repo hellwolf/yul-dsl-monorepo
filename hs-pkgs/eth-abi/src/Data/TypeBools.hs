@@ -1,15 +1,19 @@
 {-# LANGUAGE DataKinds #-}
 
-{-
--- |
--- Module      :  Data.TypeBools
--- License     :  LGPL-3
--- Maintainer: :  zhicheng.miao@gmail.com
--- Stability   :  experimental
--- Portability :  not portable
---
--- Additional singletons to work with type-level booleans in addition to the 'Data.Type.Bool' module.
---
+{-|
+
+Module      : Data.TypeBools
+Copyright   : (c) 2024 Miao, ZhiCheng
+License     : MIT
+
+Maintainer  : zhicheng.miao@gmail.com
+Stability   : experimental
+Portability : GHC2024
+
+= Description
+
+Additional singletons to work with type-level booleans in addition to the 'Data.Type.Bool' module.
+
 -}
 
 module Data.TypeBools where

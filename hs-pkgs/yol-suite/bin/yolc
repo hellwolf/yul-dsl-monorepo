@@ -191,6 +191,7 @@ build_yol_module() {
   cat > "$yol_dir"/cabal.project <<EOF
 packages:
   $dist_path/3rd-parties/linear-smc-2.2.3
+  $dist_path/hs-pkgs/eth-abi
   $dist_path/hs-pkgs/yul-dsl
   $dist_path/hs-pkgs/yul-dsl-linear-smc
   $dist_path/hs-pkgs/yol-suite

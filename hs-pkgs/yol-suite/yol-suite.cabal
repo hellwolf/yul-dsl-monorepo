@@ -21,20 +21,20 @@ copyright:       (c) 2023-2024 Miao, ZhiCheng
 build-type:      Simple
 extra-doc-files: CHANGELOG.md
 
-common warnings
+common basic-options
   default-language: GHC2024
   ghc-options:      -Wall
+                    -Wunused-packages
   build-depends:    base >=4.20.0.0 && < 666
 
 library
-  import:           warnings
+  import:           basic-options
   exposed-modules:  YolSuite.TH
                     YolSuite.YOLC.Manifest
                     YolSuite.YOLC.Builder
   -- other-modules:
   -- other-extensions:
-  build-depends:    bytestring >= 0.11,
-                    text >= 2.0.1,
+  build-depends:    text >= 2.0.1,
                     process >= 1.6.17,
                     template-haskell >= 2.19.0,
                     PyF >= 0.11.1,

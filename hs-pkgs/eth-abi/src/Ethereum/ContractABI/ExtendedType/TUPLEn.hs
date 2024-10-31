@@ -6,13 +6,7 @@ module Ethereum.ContractABI.ExtendedType.TUPLEn where
 import           Ethereum.ContractABI.ABITypeable (ABITypeable (ABITypeDerivedOf, abiFromCoreType, abiToCoreType))
 import           Ethereum.ContractABI.CoreType.NP (NP (..))
 
--- | ABI typeable unit.
-instance ABITypeable () where
-  type ABITypeDerivedOf () = NP '[]
-  abiToCoreType () = Nil
-  abiFromCoreType Nil = ()
-
-{- AUTO GENERATED TupleN for N = [2..64]
+{- AUTO GENERATED TupleN for N = [3..64]
 
 @
 import Data.List
@@ -31,8 +25,8 @@ gen n =
         nprod = intercalate ":*" $ fmap (("a" <>) . show) [1..n] <> ["Nil"]
 
 main = do
-  mapM (putStrLn . gen) [2..8]
-  mapM (putStrLn . genNPToTUpleNLine) [2..8]
+  mapM (putStrLn . gen) [3..8]
+  mapM (putStrLn . genNPToTUpleNLine) [3..8]
 @
 -}
 
@@ -47,11 +41,6 @@ type family NPToTupleN (np) where
   NPToTupleN (NP '[a1,a2,a3,a4,a5,a6,a7]) = (a1,a2,a3,a4,a5,a6,a7)
   NPToTupleN (NP '[a1,a2,a3,a4,a5,a6,a7,a8]) = (a1,a2,a3,a4,a5,a6,a7,a8)
 
-instance (ABITypeable a1,ABITypeable a2) =>
- ABITypeable (a1,a2) where
-  type ABITypeDerivedOf (a1,a2) = NP '[a1,a2]
-  abiToCoreType(a1,a2)=a1:*a2:*Nil
-  abiFromCoreType(a1:*a2:*Nil)=(a1,a2)
 instance (ABITypeable a1,ABITypeable a2,ABITypeable a3) =>
  ABITypeable (a1,a2,a3) where
   type ABITypeDerivedOf (a1,a2,a3) = NP '[a1,a2,a3]

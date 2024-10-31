@@ -11,12 +11,12 @@ import           YulDSL.Core
 
 
 data ABICodec where
-  ABICodecDispatcher :: forall a. ABIType a => ABICodec
-  ABICodecStack :: ABITypeInfo -> ABICodec
+  ABICodecDispatcher :: forall a. ABITypeable a => ABICodec
+  ABICodecStack :: ABICoreType -> ABICodec
 
 instance Show ABICodec where
-  show (ABICodecDispatcher @a) = "_dispatcher_" <> abi_type_uniq_name @a
-  show (ABICodecStack a)       = "_stack_" <> abi_type_uniq_name' a
+  show (ABICodecDispatcher @a) = "_dispatcher_" <> abiTypeCompactName @a
+  show (ABICodecStack a)       = "_stack_" <> abiCoreTypeCompactName a
 
 instance Eq ABICodec where
   a == b = show a == show b
@@ -31,7 +31,7 @@ abi_decoder_name :: ABICodec -> Code
 abi_decoder_name c = "__abidec" <> T.pack (show c)
 
 abi_codec_deps :: ABICodec -> [ABICodec]
-abi_codec_deps c@(ABICodecDispatcher @a) = fmap ABICodecStack (abi_type_info @a) <> [c]
+abi_codec_deps c@(ABICodecDispatcher @a) = fmap ABICodecStack (abiTypeInfo @a) <> [c]
 abi_codec_deps c@(ABICodecStack _)       = [c]
 
 abi_codec_code :: ABICodec -> Indenter -> T.Text
@@ -48,7 +48,7 @@ abi_codec_code c@(ABICodecDispatcher @a) ind =
     ind "}\n"
   else "" -- no code for the unit type
   where
-    ans = abi_type_info @a
+    ans = abiTypeInfo @a
     vars = gen_vars (length ans)
 abi_codec_code c@(ABICodecStack a) ind =
     ind ("// ABICodecStack " <> T.pack (show c)) <>
@@ -61,11 +61,11 @@ abi_codec_code c@(ABICodecStack a) ind =
   where
     var = gen_vars 1 !! 0
 
-abi_decoder_dispatcher_code :: [ABITypeInfo] -> [Var] -> Indenter -> T.Text
+abi_decoder_dispatcher_code :: [ABICoreType] -> [Var] -> Indenter -> T.Text
 abi_decoder_dispatcher_code ans vars ind =
   ind "// TODO size check if slt(sub(end - offset), ..) { .. }" <>
   go ans 0
-  where go :: [ABITypeInfo] -> Int -> Code
+  where go :: [ABICoreType] -> Int -> Code
         go (n:ns) slot = cbracket ind ""
           (\ind' ->
              ind' ("let offset := " <> T.pack(show (slot * 32))) <>
@@ -74,16 +74,16 @@ abi_decoder_dispatcher_code ans vars ind =
           go ns (slot + 1)
         go [] _ = ""
 
-abi_decoder_stack_code :: ABITypeInfo -> Var -> Indenter -> T.Text
+abi_decoder_stack_code :: ABICoreType -> Var -> Indenter -> T.Text
 abi_decoder_stack_code a ret ind = go a where
   go (INTx' _ _) = ind (ret <> " := calldataload(offset)")
   go _           = ind "// TODO abi_decoder_code_final"
 
-abi_encoder_dispatcher_code :: [ABITypeInfo] -> [Var] -> Indenter -> T.Text
+abi_encoder_dispatcher_code :: [ABICoreType] -> [Var] -> Indenter -> T.Text
 abi_encoder_dispatcher_code ans vars ind =
   ind ("tail := add(headStart, " <> T.pack (show dataSize) <> ")") <>
   go ans 0
-  where go :: [ABITypeInfo] -> Int -> Code
+  where go :: [ABICoreType] -> Int -> Code
         go (n:ns) slot = ind (abi_encoder_name (ABICodecStack n) <> "(" <>
                               "add(headStart, " <> T.pack(show (slot * 32)) <> "), " <>
                               vars !! slot <> ")"
@@ -92,7 +92,7 @@ abi_encoder_dispatcher_code ans vars ind =
         go _ _         = ""
         dataSize = length ans * 32
 
-abi_encoder_stack_code :: ABITypeInfo -> Var -> Indenter -> T.Text
+abi_encoder_stack_code :: ABICoreType -> Var -> Indenter -> T.Text
 abi_encoder_stack_code a var ind = go a where
   go (INTx' _ _) = ind ("mstore(pos, " <> var <> ")")
   go _           = ind "// TODO abi_encoder_code"

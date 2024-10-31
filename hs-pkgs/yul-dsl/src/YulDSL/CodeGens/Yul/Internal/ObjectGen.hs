@@ -20,7 +20,7 @@ import           YulDSL.CodeGens.Yul.Internal.CodeGen
 import           YulDSL.CodeGens.Yul.Internal.FunctionGen
 
 compile_fn_dispatcher :: HasCallStack => Indenter -> ScopedFn -> CGState (Maybe (Code, ABICodec, ABICodec))
-compile_fn_dispatcher ind (ExternalFn _ sel@(SEL (_, Just (fname, _))) (_ :: Fn a b)) = do
+compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, _)))) (_ :: Fn a b)) = do
   vars_a <- mk_let_vars (Proxy @a)
   vars_b <- mk_let_vars (Proxy @b)
   io_vars <- declare_vars
@@ -44,7 +44,7 @@ compile_fn_dispatcher ind (ExternalFn _ sel@(SEL (_, Just (fname, _))) (_ :: Fn 
              ) <>
         ind' "return(memPos, sub(memEnd, memPos))"
   pure (Just (code, ca, cb))
-compile_fn_dispatcher _ (ExternalFn _ (SEL (_, Nothing)) _) = pure Nothing
+compile_fn_dispatcher _ (ExternalFn _ (SELECTOR (_, Nothing)) _) = pure Nothing
 compile_fn_dispatcher _ (LibraryFn _) = pure Nothing
 
 compile_dispatchers :: HasCallStack => Indenter -> [ScopedFn] -> CGState Code

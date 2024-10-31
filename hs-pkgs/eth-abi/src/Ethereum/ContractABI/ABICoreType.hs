@@ -17,13 +17,17 @@ contract ABI types to support the entire contract ABI specification.
 
 module Ethereum.ContractABI.ABICoreType
   ( ABICoreType (..)
+  , KnownNat, natVal -- for working with INTx
+  , abiCoreTypeCanonName, abiCoreTypeCompactName
   , WORD, word, wordVal, defWord, maxWord, ABIWordValue (..)
   ) where
 
 -- base
 import           Control.Exception (assert)
+import           Data.Char         (toUpper)
 import           Data.Coerce       (coerce)
-import           GHC.TypeNats      (KnownNat, SNat, fromSNat)
+import           GHC.TypeLits      (KnownNat, SNat, fromSNat, natVal)
+import           Numeric           (showHex)
 --
 import           Data.TypeBools    (KnownBool, SBool, toBool)
 
@@ -42,6 +46,8 @@ data ABICoreType where
   BYTES'  :: ABICoreType
   -- ^ Arrays of values of the same ABI core type
   ARRAY'  :: ABICoreType -> ABICoreType
+  -- ^ Optional values
+  MAYBE'  :: ABICoreType -> ABICoreType
 
 instance Eq ABICoreType where
   BOOL' == BOOL'               = True
@@ -52,8 +58,29 @@ instance Eq ABICoreType where
   (ARRAY' a) == (ARRAY' b)     = a == b
   _ == _                       = False
 
+abiCoreTypeCanonName :: ABICoreType -> String
+abiCoreTypeCanonName BOOL'       = "bool"
+abiCoreTypeCanonName (INTx' s n) = if toBool s then "int" else "uint" <> show (natVal n * 8)
+abiCoreTypeCanonName ADDR'       = "address"
+abiCoreTypeCanonName (BYTESn' n) = "bytes" ++ show (natVal n)
+abiCoreTypeCanonName BYTES'      = "bytes"
+abiCoreTypeCanonName (ARRAY' a)  = abiCoreTypeCanonName a ++ "[]"
+abiCoreTypeCanonName (MAYBE' a)  = "bool," ++ abiCoreTypeCanonName a
+
+abiCoreTypeCompactName :: ABICoreType -> String
+abiCoreTypeCompactName BOOL'       = "b"
+abiCoreTypeCompactName (INTx' s n) = if toBool s then "i" else "u" <> show (natVal n)
+abiCoreTypeCompactName ADDR'       = "a"
+abiCoreTypeCompactName (BYTESn' n) = "B" ++ show (natVal n)
+abiCoreTypeCompactName BYTES'      = "Bs"
+abiCoreTypeCompactName (ARRAY' a)  = "A" ++ abiCoreTypeCompactName a
+abiCoreTypeCompactName (MAYBE' a)  = "M" ++ abiCoreTypeCompactName a
+
 -- | Raw storage value for ABI value types.
 newtype WORD = WORD Integer deriving newtype (Eq, Ord)
+
+instance Show WORD where
+    show (WORD a) = "0x" ++ fmap toUpper (showHex a "")
 
 word :: Integer -> WORD
 word a = assert (a >= 0 && a <= coerce maxWord) WORD a

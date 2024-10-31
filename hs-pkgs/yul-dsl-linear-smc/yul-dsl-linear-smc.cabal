@@ -31,6 +31,7 @@ common yolc-deps
   build-depends:    base >= 4.20.0.0 && < 666,
                     linear-base >= 0.3.1,
                     linear-smc >= 2.2.3,
+                    eth-abi,
                     yul-dsl
 
 library

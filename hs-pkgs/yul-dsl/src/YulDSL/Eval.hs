@@ -13,14 +13,16 @@ This module provides a function 'evalYulDSL' simulating the evaluation of the 'Y
 
 module YulDSL.Eval where
 
-import qualified Data.Map                as M
-
-import           YulDSL.Core.ContractABI
-import           YulDSL.Core.YulCat      (YulCat (..))
+-- containers
+import qualified Data.Map             as M
+-- eth-abi
+import           Ethereum.ContractABI
+--
+import           YulDSL.Core.YulCat   (YulCat (..))
 
 
 {-# ANN EvalState "HLint: ignore Use newtype instead of data" #-}
-data EvalState = EvalState { store_map :: M.Map ADDR SVALUE
+data EvalState = EvalState { store_map :: M.Map ADDR WORD
                            }
                deriving Show
 
@@ -42,8 +44,7 @@ evalYulDSL s (YulEmbed b)      _  = (s, b)
 evalYulDSL s  YulNumNeg       a   = (s, negate a)
 evalYulDSL s  YulNumAdd    (a, b) = (s, a + b)
 evalYulDSL s  YulSGet          r  = (s, case M.lookup r (store_map s) of
-                                          Just a  -> from_svalue a
-                                          Nothing -> from_svalue def_sval)
-evalYulDSL s  YulSPut      (r, a) = (s', ()) where s' = s { store_map = M.insert r (to_svalue a) (store_map s) }
+                                          Just a  -> fromWord a
+                                          Nothing -> Nothing)
+evalYulDSL s  YulSPut      (r, a) = (s', ()) where s' = s { store_map = M.insert r (toWord a) (store_map s) }
 evalYulDSL _ _ _ = error "evalYulDSL"
--- evalYulDSL s  (YulDefun _ f)   () = (s', () ::)

@@ -1,10 +1,15 @@
 module YulDSL.Core.YulObject where
 
-import           Data.List               (intercalate)
-
-import           YulDSL.Core.ContractABI
+import           Data.List                                  (intercalate)
+-- eth-abi
+import           Ethereum.ContractABI.ABITypeable           (abiTypeCanonName)
+import           Ethereum.ContractABI.ExtendedType.SELECTOR (SELECTOR, mkTypedSelector)
+--
 import           YulDSL.Core.YulCat
 
+
+-- | Effect type for the external function call.
+data FuncEffect = FuncTx | FuncStatic
 
 data Fn a b where
   MkFn :: forall a b. YulO2 a b => { fnId :: String, fnCat :: YulCat a b } -> Fn a b
@@ -14,7 +19,7 @@ data AnyFn = forall a b. YulO2 a b => MkAnyFn (Fn a b)
 instance YulO2 a b => Show (Fn a b) where show (MkFn _ cat) = show cat
 
 data ScopedFn where
-  ExternalFn :: forall a b. YulO2 a b => FuncEffect -> SEL -> Fn a b -> ScopedFn
+  ExternalFn :: forall a b. YulO2 a b => FuncEffect -> SELECTOR -> Fn a b -> ScopedFn
   LibraryFn  :: forall a b. YulO2 a b => Fn a b -> ScopedFn
 
 externalFn :: forall a b. YulO2 a b => Fn a b -> ScopedFn
@@ -27,7 +32,7 @@ libraryFn :: forall a b. YulO2 a b => Fn a b -> ScopedFn
 libraryFn = LibraryFn
 
 show_fn_spec :: forall a b. YulO2 a b => Fn a b -> String
-show_fn_spec fn = "fn " <> fnId fn <> "(" <> abi_type_uniq_name @a <> ") -> " <> abi_type_uniq_name @b
+show_fn_spec fn = "fn " <> fnId fn <> "(" <> abiTypeCanonName @a <> ") -> " <> abiTypeCanonName @b
 
 instance Show ScopedFn where
   show (ExternalFn FuncTx _ fn)     = "external " <> show_fn_spec fn <> "\n" <> show (fnCat fn)

@@ -18,6 +18,7 @@ license-file:   LICENSE
 author:         Miao, ZhiCheng
 maintainer:     zhicheng.miao@gmail.com
 copyright:      (c) 2023-2024 Miao, ZhiCheng
+
 tested-with:    GHC==9.10.1
 build-type:     Simple
 -- extra-doc-files:    CHANGELOG.md
@@ -26,15 +27,12 @@ common basic-options
   default-language: GHC2024
   ghc-options:      -Wall
                     -Wunused-packages
-  build-depends:    base >=4.20.0.0 && < 666
+  build-depends:    base >= 4.20.0.0 && < 666
 
 library
   import:           basic-options
   hs-source-dirs:   src
-  exposed-modules:  YulDSL.Core.ContractABI.Types
-                    YulDSL.Core.ContractABI.Coerce
-                    YulDSL.Core.ContractABI
-                    YulDSL.Core.YulCat
+  exposed-modules:  YulDSL.Core.YulCat
                     YulDSL.Core.YulObject
                     YulDSL.Core
                     YulDSL.Eval
@@ -47,13 +45,8 @@ library
   build-depends:    eth-abi ^>= 0.1.0.0,
                     bytestring >= 0.11,
                     text >= 2.0.1,
-                    constraints >= 0.13,
                     containers >= 0.6.7,
-                    mtl >= 2.3.1,
-                    crypton >= 0.32,
-                    memory >= 0.18.0,
-                    -- TODO remove cereal dependency
-                    cereal >= 0.5.8
+                    mtl >= 2.3.1
 
 Test-Suite test-yul-dsl
   import:           basic-options

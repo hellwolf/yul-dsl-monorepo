@@ -2,7 +2,7 @@
 
 {-|
 
-Module      : Ethereum.ContractABI.Type.BOOL
+Module      : Ethereum.ContractABI.CoreType.BOOL
 Copyright   : (c) 2024 Miao, ZhiCheng
 License     : MIT
 
@@ -12,8 +12,12 @@ Portability : GHC2024
 
 -}
 
-module Ethereum.ContractABI.CoreType.BOOL where
+module Ethereum.ContractABI.CoreType.BOOL
+  ( module Data.TypeBools
+  , BOOL (BOOL), true, false
+  ) where
 
+import           Data.TypeBools
 import           Ethereum.ContractABI.ABICoreType (ABICoreType (BOOL'), ABIWordValue (..), word, wordVal)
 import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
 

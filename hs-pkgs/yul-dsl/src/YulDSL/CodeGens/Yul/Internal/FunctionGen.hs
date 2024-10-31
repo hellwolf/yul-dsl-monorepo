@@ -47,7 +47,7 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
   go YulDup           = go_dup (Proxy @a)
   go YulSGet          = ret_expr $ "sload(" <> vals_to_code vals_a <> ")"
   go YulSPut          = return (ind ("sstore(" <> vals_to_code vals_a <> ")"), [])
-  go (YulEmbed a)     = ret_vars $ fmap (ValExpr . T.pack) (abi_type_list_vars a)
+  go (YulEmbed a)     = ret_vars $ fmap (ValExpr . T.pack) [show a]
   -- go (YulCall c)        =
   go (YulJump i c)    = go_jump (Proxy @a) (Proxy @b) i c
   -- go (YulMap (MkFn n _)) = _
@@ -60,7 +60,9 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
   go YulNumAdd        = ret_expr $ "add(" <> vals_to_code vals_a <> ")"
   go YulNumNeg        = ret_expr $ "sub(0, " <> vals_to_code vals_a <> ")"
   go (YulNumCmp @m s) = go_num_cmp s (Proxy @m)
-  go _                = error $ "do_compile_cat unimpl:" <> abi_type_uniq_name @a <> " ~> " <> abi_type_uniq_name @b -- FIXME remove
+  go _                = error $
+    -- FIXME remove
+    "do_compile_cat unimpl:" <> abiTypeCompactName @a <> " ~> " <> abiTypeCompactName @b
   go_comp :: forall a b c. YulO3 a b c => YulCat c b -> YulCat a c -> CGState CGOutput
   go_comp cb ac = do
     (code_ac, vals_c) <- do_compile_cat ind (MkAnyYulCat ac) vals_a

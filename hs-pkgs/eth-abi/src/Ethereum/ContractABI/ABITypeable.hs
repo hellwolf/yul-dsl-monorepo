@@ -4,17 +4,21 @@
 
 module Ethereum.ContractABI.ABITypeable
  ( ABITypeable (..)
- , AnyABITypeDerivedOf (ABIDerivedType)
+ , AnyABITypeable (MkAnyABITypeable)
+ , AnyABITypeDerivedOf (MkAnyABIDerivedType)
+ , ABITypeCoercible
+ , abiTypeCanonName, abiTypeCompactName
  ) where
 
-import           Data.Constraint                  (Dict (..))
+import           Data.Constraint                  (Dict)
+import           Data.List                        (intercalate)
 --
-import           Ethereum.ContractABI.ABICoreType (ABICoreType)
+import           Ethereum.ContractABI.ABICoreType (ABICoreType (..), abiCoreTypeCanonName, abiCoreTypeCompactName)
 
 
 -- | Type information for all core and derived contract ABI types.
-class ABITypeable a where
-  -- | Convert @a@ to the compatible ABI core type it derives from.
+class Show a => ABITypeable a where
+  -- | Convert @a@ to the ABI core type it derives from.
   type ABITypeDerivedOf a
 
   -- | Possible breakdown of the product object type.
@@ -37,8 +41,26 @@ class ABITypeable a where
   default abiFromCoreType :: a ~ ABITypeDerivedOf a => ABITypeDerivedOf a -> a
   abiFromCoreType = id
 
+-- | Existential type of all abi types.
+data AnyABITypeable = forall a. ABITypeable a => MkAnyABITypeable a
 
-data AnyABITypeDerivedOf c = forall a. ( ABITypeable a, c ~ ABITypeDerivedOf a
-                                       ) => ABIDerivedType a
+instance Show AnyABITypeable where show (MkAnyABITypeable a) = show a
 
--- FIXME: REMOVE THESE
+-- | Existential type of all abi types that derive from the same core type @c@.
+data AnyABITypeDerivedOf c = forall a. (ABITypeable a, c ~ ABITypeDerivedOf a) => MkAnyABIDerivedType a
+
+-- | Coercible abi types when they share the same core type.
+type ABITypeCoercible a b = ABITypeDerivedOf a ~ ABITypeDerivedOf b
+
+-- | Maybe types of any abi type is also an abi type.
+instance ABITypeable a => ABITypeable (Maybe a) where
+  type instance ABITypeDerivedOf (Maybe a) = Maybe a
+  abiTypeInfo = fmap MAYBE' (abiTypeInfo @a)
+
+-- | Canonical name of the type that is used for computing the function selector.
+abiTypeCanonName :: forall a. ABITypeable a => String
+abiTypeCanonName = intercalate "," $ (fmap abiCoreTypeCanonName (abiTypeInfo @a))
+
+-- | A 'abiTypeCanonName' variant that is compact to saving characters.
+abiTypeCompactName :: forall a. ABITypeable a => String
+abiTypeCompactName = intercalate "" (fmap abiCoreTypeCompactName (abiTypeInfo @a))

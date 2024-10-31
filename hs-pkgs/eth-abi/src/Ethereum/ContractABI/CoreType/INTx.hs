@@ -3,7 +3,7 @@
 
 {-|
 
-Module      : Ethereum.ContractABI.Type.INTx
+Module      : Ethereum.ContractABI.CoreType.INTx
 Copyright   : (c) 2024 Miao, ZhiCheng
 License     : MIT
 
@@ -13,21 +13,32 @@ Portability : GHC2024
 
 -}
 
-module Ethereum.ContractABI.CoreType.INTx where
+module Ethereum.ContractABI.CoreType.INTx
+  ( INTx, intxVal, intxSign, intxNBits
+    -- *** Assorted INTx Types
+  , U8,U16,U24,U32,U40,U48,U56,U64
+  , U72,U80,U88,U96,U104,U112,U120,U128
+  , U136,U144,U152,U160,U168,U176,U184,U192
+  , U200,U208,U216,U224,U232,U240,U248,U256
+  , I8,I16,I24,I32,I40,I48,I56,I64
+  , I72,I80,I88,I96,I104,I112,I120,I128
+  , I136,I144,I152,I160,I168,I176,I184,I192
+  , I200,I208,I216,I224,I232,I240,I248,I256
+  ) where
 
 -- base
 import           Data.Bits                        (shift)
 import           Data.Coerce                      (coerce)
 import           Data.Proxy                       (Proxy (Proxy))
 import           Data.TypeBools                   (KnownBool (..), SBool (SBool))
-import           GHC.TypeNats
+import           GHC.TypeNats                     (KnownNat (..), Nat, natVal)
 -- eth-abi
 import           Ethereum.ContractABI.ABICoreType (ABICoreType (INTx'), ABIWordValue (..), word, wordVal)
 import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
 
 
 -- | ABI integer value types, where @s@ is for signess and @n@ is the multiple of 8 bits
-newtype INTx (s :: Bool) (n :: Nat) = INT Integer deriving (Eq, Ord, Enum, Show)
+newtype INTx (s :: Bool) (n :: Nat) = INT Integer deriving newtype (Eq, Ord, Enum)
 
 intxVal :: INTx s n -> Integer
 intxVal (INT x) = x
@@ -110,6 +121,9 @@ instance (KnownBool s, KnownNat n) => ABIWordValue (INTx s n) where
                         then word a
                         else word (a + 1 `shift` intxNBits @(INTx s n))
                    else word a
+
+instance (KnownBool s, KnownNat n) => Show (INTx s n) where
+  show (INT a) = show a
 
 {- Assorted Fixed-Precision Integer Aliases -}
 

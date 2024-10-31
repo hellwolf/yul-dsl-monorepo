@@ -1,15 +1,17 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE OverloadedStrings   #-}
+
 module YulDSL.CodeGens.Yul.Internal.CodeGen where
 
+-- base
 import           Control.Monad.State.Lazy                    (MonadState (..), State, evalState, modify)
 import           Data.Char                                   (chr)
 import           Data.Function                               ((&))
 import           Data.Typeable                               (Proxy (..))
---
 import           GHC.Stack                                   (HasCallStack)
---
+-- text
 import qualified Data.Text.Lazy                              as T
---
+-- containers
 import qualified Data.Map.Strict                             as M'
 --
 import           YulDSL.Core
@@ -148,8 +150,8 @@ mk_code :: forall a b. YulO2 a b => Indenter -> [Val] -> T.Text -> Proxy a -> Pr
 mk_code ind vals title _ _ code = ind (
   "//dbg: +" <> title <> "(" <>
   vals_to_code vals <>
-  " : "  <> T.pack (abi_type_uniq_name @a) <>
-  ") -> " <> T.pack (abi_type_uniq_name @b)
+  " : "  <> T.pack (abiTypeCompactName @a) <>
+  ") -> " <> T.pack (abiTypeCompactName @b)
   ) <>
   code <>
   ind ("//dbg: -" <> title)
@@ -161,6 +163,10 @@ mk_code ind vals title _ _ code = ind (
 
 gen_code :: State CGStateData Code -> Code
 gen_code x = evalState x init_cg
+
+
+abi_type_count_vars :: forall a. ABITypeable a => Int
+abi_type_count_vars = length (abiTypeInfo @a)
 
 gen_assert :: HasCallStack => Bool -> a -> a
 gen_assert False _ = error "codegen assertion!"

@@ -47,15 +47,14 @@ module YulDSL.Core.YulCat
   ) where
 
 -- base
-import           Data.Char               (ord)
-import           Data.Kind               (Constraint, Type)
-import           GHC.Integer             (xorInteger)
-import           Text.Printf             (printf)
--- byteStringb
-
-import qualified Data.ByteString.Char8   as B
---
-import           YulDSL.Core.ContractABI
+import           Data.Char             (ord)
+import           Data.Kind             (Constraint, Type)
+import           GHC.Integer           (xorInteger)
+import           Text.Printf           (printf)
+-- bytestring
+import qualified Data.ByteString.Char8 as B
+-- eth-abi
+import           Ethereum.ContractABI
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -64,7 +63,7 @@ import           YulDSL.Core.ContractABI
 
 -- | All objects in the 'YulCat' category is simply a 'ABIType'.
 type YulObj :: Type -> Constraint
-type YulObj = ABIType
+type YulObj = ABITypeable
 
 -- Convenient aliases for declaring YulObj constraints.
 
@@ -75,14 +74,14 @@ type YulO4 a b c d = (YulObj a, YulObj b, YulObj c, YulObj d)
 type YulO5 a b c d e = (YulObj a, YulObj b, YulObj c, YulObj d, YulObj e)
 
 -- | Value-type objects in the category.
-class (YulObj a, ABIValue a) => YulVal a
+class (YulObj a, ABIWordValue a) => YulVal a
 
 instance YulVal BOOL
 instance YulVal ADDR
 instance (KnownBool s, KnownNat n) => YulVal (INTx s n)
 
 -- | Number-type objects in the category.
-class (YulVal a, Num a) => YulNum a
+class (YulVal a, Num (Maybe a)) => YulNum a
 
 instance (KnownBool s, KnownNat n) => YulNum (INTx s n)
 
@@ -127,9 +126,9 @@ instance (KnownBool s, KnownNat n) => YulNum (INTx s n)
 data YulCat a b where
   -- Type-level Operations (Zero Runtime Cost)
   -- | Convert between coercible Yul objects.
-  YulCoerce :: forall a b. (YulO2 a b, YulCoercible a b) => YulCat a b
-  -- | Split the head and tail of the atomized type.
-  YulSplit :: forall a as. YulO2 a as => YulCat (a :* as) (a, as)
+  YulCoerce :: forall a b. (YulO2 a b, ABITypeCoercible a b) => YulCat a b
+  -- | Split the head and tail of a n-ary product where n >= 1.
+  YulSplit :: forall as. YulO1 (NP as) => YulCat (NP as) (NP (NPHead as), NP (NPTail as))
 
   -- SMC Primitives
   --  Category
@@ -152,13 +151,13 @@ data YulCat a b where
   -- | Call a yul internal function by reference its id.
   YulJump  :: forall a b  . YulO2 a b   => String -> YulCat a b %1 -> YulCat a b
   -- | Call a external function.
-  YulCall  :: forall a b r. YulO3 a b r => YulCat r (FUNC a b) %1 -> YulCat a b
+  -- YulCall  :: forall a b r. YulO3 a b r => YulCat r (FUNC a b) %1 -> YulCat a b
   -- | If-then-else.
   YulITE   :: forall a    . YulO1 a     => YulCat (BOOL, (a, a)) a
   -- | Mapping over a list.
-  YulMap   :: forall a b  . YulO2 a b   => YulCat a b %1 -> YulCat [a] [b]
+  -- YulMap   :: forall a b  . YulO2 a b   => YulCat a b %1 -> YulCat [a] [b]
   -- | Folding over a list from the left.
-  YulFoldl :: forall a b  . YulO2 a b   => YulCat (b, a) b %1 -> YulCat [a] b
+  -- YulFoldl :: forall a b  . YulO2 a b   => YulCat (b, a) b %1 -> YulCat [a] b
 
   -- YulVal Primitives
   --
@@ -167,20 +166,21 @@ data YulCat a b where
   YulAnd :: YulCat (BOOL, BOOL) BOOL
   YulOr  :: YulCat (BOOL, BOOL) BOOL
   -- * Num Types
-  YulNumAdd :: forall a. YulNum a => YulCat (a, a) a
-  YulNumMul :: forall a. YulNum a => YulCat (a, a) a
-  YulNumAbs :: forall a. YulNum a => YulCat a a
-  YulNumSig :: forall a. YulNum a => YulCat a a
-  YulNumNeg :: forall a. YulNum a => YulCat a a
+  YulNumAdd :: forall a. YulNum a => YulCat (Maybe a, Maybe a) (Maybe a)
+  YulNumMul :: forall a. YulNum a => YulCat (Maybe a, Maybe a) (Maybe a)
+  YulNumAbs :: forall a. YulNum a => YulCat (Maybe a) (Maybe a)
+  YulNumSig :: forall a. YulNum a => YulCat (Maybe a) (Maybe a)
+  YulNumNeg :: forall a. YulNum a => YulCat (Maybe a) (Maybe a)
   -- * Number comparison with a three-way boolean-switches (LT, EQ, GT).
   YulNumCmp :: forall a. YulNum a => (BOOL, BOOL, BOOL) -> YulCat (a, a) BOOL
+
   -- * Contract ABI Serialization
-  YulAbiEnc :: YulObj a => YulCat a BYTES
-  YulAbiDec :: YulObj a => YulCat BYTES (Maybe a)
+  -- YulAbiEnc :: YulObj a => YulCat a BYTES
+  -- YulAbiDec :: YulObj a => YulCat BYTES (Maybe a)
 
   -- Storage Primitives
   --
-  YulSGet :: forall a. YulVal a => YulCat ADDR a
+  YulSGet :: forall a. YulVal a => YulCat ADDR (Maybe a)
   YulSPut :: forall a. YulVal a => YulCat (ADDR, a) ()
 
 -- | Existential wrapper of the 'YulCat'.
@@ -224,7 +224,7 @@ class MPOrd a b | a -> b where
 class IfThenElse a b where
   ifThenElse :: forall w. a %w -> b %w -> b %w -> b
 
-instance (YulObj r, YulNum a) => Num (YulCat r a) where
+instance (YulObj r, YulNum a) => Num (YulCat r (Maybe a)) where
   a + b = YulNumAdd `YulComp` YulProd a b `YulComp` YulDup
   a * b = YulNumMul `YulComp` YulProd a b `YulComp` YulDup
   abs = YulComp YulNumAbs
@@ -260,22 +260,25 @@ instance Show (YulCat a b) where
   show YulExr              = "π₂" <> abi_type_name @a
   show YulDis              = "ε" <> abi_type_name @a
   show YulDup              = "δ" <> abi_type_name @a
-  show (YulEmbed x)        = "{" <> show x <> "}" -- TODO: x should be escaped ideally, especially for equality checks
+  show (YulEmbed x)        = "{" <> {- show x <>  -} "}" -- TODO: x should be escaped ideally, especially for equality checks
   show (YulJump cid _)     = "jump " <> cid
-  show (YulCall c)         = "call " <> show c
+  -- show (YulCall c)         = "call " <> show c
   show YulITE              = "?" <> abi_type_name @a
   show YulNot              = "not"
   show YulAnd              = "and"
   show YulOr               = "or"
   show YulNumAdd           = "add" <> abi_type_name @a
+  show YulNumMul           = "mul" <> abi_type_name @a
+  show YulNumSig           = "sig" <> abi_type_name @a
+  show YulNumAbs           = "abs" <> abi_type_name @a
   show YulNumNeg           = "neg" <> abi_type_name @a
   show (YulNumCmp (i,j,k)) = "cmp" <> s i <> s j <> s k where s x = if x == true then "t" else "f"
   show YulSGet             = "sget" <> abi_type_name @a
   show YulSPut             = "sput" <> abi_type_name @a
-  show _                   = error "Show YulCat TODO"
+--  show _                   = error "Show YulCat TODO"
 
 {- INTERNAL FUNCTIONs -}
 
 -- | A 'abi_type_name variant, enclosing name with "@()".
-abi_type_name :: forall a. ABIType a => String
-abi_type_name = "@" <> abi_type_uniq_name @a
+abi_type_name :: forall a. ABITypeable a => String
+abi_type_name = "@" ++ abiTypeCompactName @a

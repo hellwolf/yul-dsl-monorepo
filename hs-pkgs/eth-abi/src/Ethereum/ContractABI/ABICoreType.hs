@@ -1,6 +1,5 @@
 {-|
 
-Module      : Ethereum.ContractABI.ABICoreType
 Copyright   : (c) 2024 Miao, ZhiCheng
 License     : MIT
 
@@ -14,7 +13,6 @@ All derived types and dependent types are mapped to the underlying core types, s
 contract ABI types to support the entire contract ABI specification.
 
 -}
-
 module Ethereum.ContractABI.ABICoreType
   ( ABICoreType (..)
   , KnownNat, natVal -- for working with INTx
@@ -23,13 +21,13 @@ module Ethereum.ContractABI.ABICoreType
   ) where
 
 -- base
-import           Control.Exception (assert)
-import           Data.Char         (toUpper)
-import           Data.Coerce       (coerce)
-import           GHC.TypeLits      (KnownNat, SNat, fromSNat, natVal)
-import           Numeric           (showHex)
+import           Control.Exception       (assert)
+import           Data.Char               (toUpper)
+import           Data.Coerce             (coerce)
+import           GHC.TypeLits            (KnownNat, SNat, fromSNat, natVal)
+import           Numeric                 (showHex)
 --
-import           Data.TypeBools    (KnownBool, SBool, toBool)
+import           Internal.Data.Type.Bool (KnownBool, SBool, toBool)
 
 
 -- | Contract ABI core types.
@@ -56,6 +54,7 @@ instance Eq ABICoreType where
   (BYTESn' n) == (BYTESn' n')  = fromSNat n == fromSNat n'
   BYTES' == BYTES'             = True
   (ARRAY' a) == (ARRAY' b)     = a == b
+  (MAYBE' a) == (MAYBE' b)     = a == b
   _ == _                       = False
 
 abiCoreTypeCanonName :: ABICoreType -> String

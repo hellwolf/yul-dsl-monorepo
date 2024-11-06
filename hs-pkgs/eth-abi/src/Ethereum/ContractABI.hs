@@ -7,10 +7,12 @@ module Ethereum.ContractABI
   , module Ethereum.ContractABI.CoreType.NP
   , module Ethereum.ContractABI.ExtendedType.TUPLEn
   , module Ethereum.ContractABI.ExtendedType.SELECTOR
+  , module Ethereum.ContractABI.ABITypeCoercible
   ) where
 
 import           Ethereum.ContractABI.ABICoreType
 import           Ethereum.ContractABI.ABITypeable
+import           Ethereum.ContractABI.ABITypeCoercible
 import           Ethereum.ContractABI.CoreType.ADDR
 import           Ethereum.ContractABI.CoreType.BOOL
 import           Ethereum.ContractABI.CoreType.INTx

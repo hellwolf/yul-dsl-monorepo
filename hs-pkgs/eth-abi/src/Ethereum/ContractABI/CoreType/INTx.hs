@@ -3,13 +3,17 @@
 
 {-|
 
-Module      : Ethereum.ContractABI.CoreType.INTx
 Copyright   : (c) 2024 Miao, ZhiCheng
 License     : MIT
 
 Maintainer  : zhicheng.miao@gmail.com
 Stability   : experimental
 Portability : GHC2024
+
+
+= Description
+
+Ethereum contract ABI assorted integer types.
 
 -}
 
@@ -30,11 +34,11 @@ module Ethereum.ContractABI.CoreType.INTx
 import           Data.Bits                        (shift)
 import           Data.Coerce                      (coerce)
 import           Data.Proxy                       (Proxy (Proxy))
-import           Data.TypeBools                   (KnownBool (..), SBool (SBool))
 import           GHC.TypeNats                     (KnownNat (..), Nat, natVal)
 -- eth-abi
 import           Ethereum.ContractABI.ABICoreType (ABICoreType (INTx'), ABIWordValue (..), word, wordVal)
 import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
+import           Internal.Data.Type.Bool          (KnownBool (..), SBool (SBool))
 
 
 -- | ABI integer value types, where @s@ is for signess and @n@ is the multiple of 8 bits

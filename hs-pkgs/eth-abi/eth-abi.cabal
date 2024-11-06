@@ -24,24 +24,22 @@ common basic-options
 library
   import:           basic-options
   hs-source-dirs:   src
-  exposed-modules:  Data.TypeBools
-                    Ethereum.ContractABI.ABICoreType
+  exposed-modules:  Ethereum.ContractABI.ABICoreType
                     Ethereum.ContractABI.ABITypeable
                     Ethereum.ContractABI.CoreType.BOOL
                     Ethereum.ContractABI.CoreType.INTx
                     Ethereum.ContractABI.CoreType.ADDR
                     Ethereum.ContractABI.CoreType.NP
+                    Ethereum.ContractABI.ABITypeCoercible
                     Ethereum.ContractABI.ExtendedType.TUPLEn
                     Ethereum.ContractABI.ExtendedType.SELECTOR
                     Ethereum.ContractABI
+  other-modules:    Internal.Data.Type.Bool
+                    Internal.Data.Type.List
   build-depends:    constraints >= 0.14,
                     bytestring >= 0.11,
                     crypton >= 0.32,
                     memory >= 0.18.0
-  --                   text >= 2.0.1,
-  --                   constraints >= 0.13,
-  --                   containers >= 0.6.7,
-  --                   mtl >= 2.3.1,
 
 Test-Suite test-eth-abi
   import:           basic-options
@@ -52,4 +50,5 @@ Test-Suite test-eth-abi
                     hspec >= 2.11
   hs-source-dirs:   test
   other-modules:    INTx_prop
+                    NP_test
   main-is:          Main.hs

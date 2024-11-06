@@ -3,7 +3,6 @@
 
 {-|
 
-Module      : Ethereum.ContractABI.CoreType.ADDR
 Copyright   : (c) 2024 Miao, ZhiCheng
 License     : MIT
 
@@ -11,8 +10,11 @@ Maintainer  : zhicheng.miao@gmail.com
 Stability   : experimental
 Portability : GHC2024
 
--}
+= Description
 
+Ethereum contract ABI address type.
+
+-}
 module Ethereum.ContractABI.CoreType.ADDR
   ( ADDR, zeroAddress, maxAddr, toAddr
   ) where

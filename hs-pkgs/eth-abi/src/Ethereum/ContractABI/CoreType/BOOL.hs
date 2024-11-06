@@ -2,7 +2,6 @@
 
 {-|
 
-Module      : Ethereum.ContractABI.CoreType.BOOL
 Copyright   : (c) 2024 Miao, ZhiCheng
 License     : MIT
 
@@ -10,16 +9,19 @@ Maintainer  : zhicheng.miao@gmail.com
 Stability   : experimental
 Portability : GHC2024
 
--}
+= Description
 
+Ethereum contract ABI boolean type.
+
+-}
 module Ethereum.ContractABI.CoreType.BOOL
-  ( module Data.TypeBools
+  ( module Internal.Data.Type.Bool
   , BOOL (BOOL), true, false
   ) where
 
-import           Data.TypeBools
 import           Ethereum.ContractABI.ABICoreType (ABICoreType (BOOL'), ABIWordValue (..), word, wordVal)
 import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
+import           Internal.Data.Type.Bool
 
 
 -- | ABI boolean value type.

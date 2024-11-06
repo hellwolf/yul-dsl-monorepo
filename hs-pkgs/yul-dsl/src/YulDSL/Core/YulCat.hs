@@ -126,9 +126,9 @@ instance (KnownBool s, KnownNat n) => YulNum (INTx s n)
 data YulCat a b where
   -- Type-level Operations (Zero Runtime Cost)
   -- | Convert between coercible Yul objects.
-  YulCoerce :: forall a b. (YulO2 a b, ABITypeCoercible a b) => YulCat a b
+  YulCoerce :: forall a b. (YulO2 a b) => ABITypeCoercible a b -> YulCat a b
   -- | Split the head and tail of a n-ary product where n >= 1.
-  YulSplit :: forall as. YulO1 (NP as) => YulCat (NP as) (NP (NPHead as), NP (NPTail as))
+  YulSplit :: forall as. YulO1 (NP as) => YulCat (NP as) (Head as, NP (Tail as))
 
   -- SMC Primitives
   --  Category
@@ -147,13 +147,13 @@ data YulCat a b where
   -- Control Flow Primitives
   --
   -- | Embed a constant value.
-  YulEmbed :: forall r a  . YulO2 r a   => a -> YulCat r a
+  YulEmbed :: forall r a  . YulO2 r a => a -> YulCat r a
   -- | Call a yul internal function by reference its id.
-  YulJump  :: forall a b  . YulO2 a b   => String -> YulCat a b %1 -> YulCat a b
+  YulJump  :: forall a b  . YulO2 a b => String -> YulCat a b %1 -> YulCat a b
   -- | Call a external function.
   -- YulCall  :: forall a b r. YulO3 a b r => YulCat r (FUNC a b) %1 -> YulCat a b
   -- | If-then-else.
-  YulITE   :: forall a    . YulO1 a     => YulCat (BOOL, (a, a)) a
+  YulITE   :: forall a    . YulO1 a => YulCat (BOOL, (a, a)) a
   -- | Mapping over a list.
   -- YulMap   :: forall a b  . YulO2 a b   => YulCat a b %1 -> YulCat [a] [b]
   -- | Folding over a list from the left.
@@ -249,32 +249,32 @@ instance YulO2 a r => IfThenElse (YulCat r BOOL) (YulCat r a) where
 --   * It is deliberately done so for compactness of the string representation of the 'YulCat'.
 --   * It is meant also for strong equality checking of 'YulCat' used in yul object building.
 instance Show (YulCat a b) where
-  show YulCoerce           = "coerce" <> abi_type_name @a <> abi_type_name @b
-  show YulId               = "id"
-  show YulSplit            = "▿" <> abi_type_name @a
+  show (YulCoerce _)       = "coerce" <> abi_type_name @a <> abi_type_name @b
+  show (YulId)             = "id"
+  show (YulSplit)          = "▿" <> abi_type_name @a
   show (YulComp cb ac)     = "(" <> show ac <> ");(" <> show cb <> ")"
   show (YulProd ab cd)     = "×(" <> show ab <> ")(" <> show cd <> ")"
-  show YulSwap             = "σ" <> abi_type_name @a <> abi_type_name @b
+  show (YulSwap)           = "σ" <> abi_type_name @a <> abi_type_name @b
   show (YulFork ab ac)     = "▵(" <> show ab <> ")(" <> show ac <> ")"
-  show YulExl              = "π₁" <> abi_type_name @a
-  show YulExr              = "π₂" <> abi_type_name @a
-  show YulDis              = "ε" <> abi_type_name @a
-  show YulDup              = "δ" <> abi_type_name @a
-  show (YulEmbed x)        = "{" <> {- show x <>  -} "}" -- TODO: x should be escaped ideally, especially for equality checks
+  show (YulExl)            = "π₁" <> abi_type_name @a
+  show (YulExr)            = "π₂" <> abi_type_name @a
+  show (YulDis)            = "ε" <> abi_type_name @a
+  show (YulDup)            = "δ" <> abi_type_name @a
+  show (YulEmbed x)        = "{" <> show x <>  "}"
   show (YulJump cid _)     = "jump " <> cid
   -- show (YulCall c)         = "call " <> show c
-  show YulITE              = "?" <> abi_type_name @a
-  show YulNot              = "not"
-  show YulAnd              = "and"
-  show YulOr               = "or"
-  show YulNumAdd           = "add" <> abi_type_name @a
-  show YulNumMul           = "mul" <> abi_type_name @a
-  show YulNumSig           = "sig" <> abi_type_name @a
-  show YulNumAbs           = "abs" <> abi_type_name @a
-  show YulNumNeg           = "neg" <> abi_type_name @a
+  show (YulITE)            = "?" <> abi_type_name @a
+  show (YulNot)            = "not"
+  show (YulAnd)            = "and"
+  show (YulOr)             = "or"
+  show (YulNumAdd)         = "add" <> abi_type_name @a
+  show (YulNumMul)         = "mul" <> abi_type_name @a
+  show (YulNumSig)         = "sig" <> abi_type_name @a
+  show (YulNumAbs)         = "abs" <> abi_type_name @a
+  show (YulNumNeg)         = "neg" <> abi_type_name @a
   show (YulNumCmp (i,j,k)) = "cmp" <> s i <> s j <> s k where s x = if x == true then "t" else "f"
-  show YulSGet             = "sget" <> abi_type_name @a
-  show YulSPut             = "sput" <> abi_type_name @a
+  show (YulSGet)           = "sget" <> abi_type_name @a
+  show (YulSPut)           = "sput" <> abi_type_name @a
 --  show _                   = error "Show YulCat TODO"
 
 {- INTERNAL FUNCTIONs -}

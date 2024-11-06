@@ -23,7 +23,7 @@ import           Data.Constraint              (Dict (Dict))
 -- linear-smc
 import           Control.Category.Constrained (Cartesian (..), Category (..), Monoidal (..), ProdObj (..))
 --
-import           Ethereum.ContractABI
+import           Ethereum.ContractABI         (ABITypeCoercible (..), ABITypeable (abiProdObjs))
 import           YulDSL.Core.YulCat           (YulCat (..), YulObj)
 
 -- | Instance for linear-smc 'ProdObj' for the objects in the category.
@@ -39,10 +39,10 @@ instance Category YulCat where
 
 instance Monoidal YulCat where
   (×)     = YulProd
-  unitor  = YulCoerce
-  unitor' = YulCoerce
-  assoc   = YulCoerce
-  assoc'  = YulCoerce
+  unitor  = YulCoerce CoercibleUnitor
+  unitor' = YulCoerce CoercibleUnitor'
+  assoc   = YulCoerce CoercibleAssoc
+  assoc'  = YulCoerce CoercibleAssoc'
   swap    = YulSwap
 
 instance Cartesian YulCat where

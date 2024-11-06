@@ -3,6 +3,7 @@ module YulDSL.Core.YulObject where
 import           Data.List                                  (intercalate)
 -- eth-abi
 import           Ethereum.ContractABI.ABITypeable           (abiTypeCanonName)
+-- import Ethereum.ContractABI.CoreType.NP
 import           Ethereum.ContractABI.ExtendedType.SELECTOR (SELECTOR, mkTypedSelector)
 --
 import           YulDSL.Core.YulCat
@@ -12,7 +13,8 @@ import           YulDSL.Core.YulCat
 data FuncEffect = FuncTx | FuncStatic
 
 data Fn a b where
-  MkFn :: forall a b. YulO2 a b => { fnId :: String, fnCat :: YulCat a b } -> Fn a b
+  MkFn :: forall as b. YulO2 as b => { fnId :: String, fnCat :: YulCat as b } -> Fn as b
+
 
 data AnyFn = forall a b. YulO2 a b => MkAnyFn (Fn a b)
 

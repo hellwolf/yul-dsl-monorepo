@@ -58,9 +58,8 @@ test_most_intx g f = do
   it "128bits" $ g (f (Proxy @I128))
   it "256bits" $ g (f (Proxy @I256))
 
-tests = describe "Ethereum.ContractABI types" $ do
-  describe "INTx" $ do
-    describe "Minimum and maximum bounds" $ test_most_intx id validate_bounds
-    describe "Property of bounds for unary operators" $ test_most_intx property test_bounds_op1
-    describe "property of bounds for binary operators" $ test_most_intx property test_bounds_op2
-    describe "Two's complement law" $ test_most_intx property test_twos_complement_law
+tests = describe "INTx" $ do
+  describe "Minimum and maximum bounds" $ test_most_intx id validate_bounds
+  describe "Property of bounds for unary operators" $ test_most_intx property test_bounds_op1
+  describe "property of bounds for binary operators" $ test_most_intx property test_bounds_op2
+  describe "Two's complement law" $ test_most_intx property test_twos_complement_law

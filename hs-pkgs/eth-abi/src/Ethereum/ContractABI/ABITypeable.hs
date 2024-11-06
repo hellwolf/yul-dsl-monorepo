@@ -2,11 +2,24 @@
 {-# LANGUAGE DefaultSignatures   #-}
 {-# LANGUAGE TypeFamilies        #-}
 
+{-|
+
+Copyright   : (c) 2024 Miao, ZhiCheng
+License     : MIT
+
+Maintainer  : zhicheng.miao@gmail.com
+Stability   : experimental
+Portability : GHC2024
+
+= Description
+
+'ABITypeable' is the required type class for extended types.
+
+-}
 module Ethereum.ContractABI.ABITypeable
  ( ABITypeable (..)
  , AnyABITypeable (MkAnyABITypeable)
  , AnyABITypeDerivedOf (MkAnyABIDerivedType)
- , ABITypeCoercible
  , abiTypeCanonName, abiTypeCompactName
  ) where
 
@@ -44,13 +57,11 @@ class Show a => ABITypeable a where
 -- | Existential type of all abi types.
 data AnyABITypeable = forall a. ABITypeable a => MkAnyABITypeable a
 
-instance Show AnyABITypeable where show (MkAnyABITypeable a) = show a
+instance Show AnyABITypeable where
+  show (MkAnyABITypeable a) = show a
 
 -- | Existential type of all abi types that derive from the same core type @c@.
 data AnyABITypeDerivedOf c = forall a. (ABITypeable a, c ~ ABITypeDerivedOf a) => MkAnyABIDerivedType a
-
--- | Coercible abi types when they share the same core type.
-type ABITypeCoercible a b = ABITypeDerivedOf a ~ ABITypeDerivedOf b
 
 -- | Maybe types of any abi type is also an abi type.
 instance ABITypeable a => ABITypeable (Maybe a) where

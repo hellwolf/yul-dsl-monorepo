@@ -34,7 +34,7 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
   wrap_let_vars = \case Nothing -> id; Just vars -> \body -> ind (vars <> " {") <> body <> ind "}"
   -- go functions
   go :: forall a b. YulO2 a b => YulCat a b -> CGState CGOutput
-  go (YulCoerce _)        = ret_vars vals_a
+  go (YulCoerce)        = ret_vars vals_a
   go (YulSplit)         = ret_vars vals_a
   go (YulId)            = ret_vars vals_a
   go (YulComp cb ac)  = go_comp cb ac
@@ -138,25 +138,25 @@ compile_cat ind acat (vars_a, vars_r) = do
     code <>
     assign_vals_to_vars ind vars_r vals_b
 
-compile_one_fn :: forall a b. (HasCallStack, YulO2 a b) => Indenter -> Fn a b -> CGState Code
-compile_one_fn ind fn = do
+compile_one_fn :: forall a b. (HasCallStack, YulO2 a b) => Indenter -> FnCat a b -> CGState Code
+compile_one_fn ind f = do
   reset_var_gen
   vars_a <- mk_let_vars (Proxy @a)
   vars_b <- mk_let_vars (Proxy @b)
   forget_vars -- these variables will not be declared separately
-  cbracket_m ind ("function " <> T.pack (fnId fn) <>
+  cbracket_m ind ("function " <> T.pack (fnId f) <>
                    "(" <> T.intercalate ", " vars_a <> ")" <>
                    (case vars_b of [] -> ""; _ -> " -> " <> T.intercalate ", " vars_b)
                  )
     ( \ind' -> do
-        code <- compile_cat ind' (fnCat fn) (vars_a, vars_b)
+        code <- compile_cat ind' (fnCat f) (vars_a, vars_b)
         pure $
           code <>
           ind' "leave"
     )
 
 compile_one_any_fn :: HasCallStack => Indenter -> AnyFn -> CGState Code
-compile_one_any_fn ind (MkAnyFn fn)= compile_one_fn ind fn
+compile_one_any_fn ind (MkAnyFn f)= compile_one_fn ind f
 
 -- | Compile dependencies with a function id filter @fidFilter@.
 compile_deps :: HasCallStack => Indenter -> (String -> Bool) -> CGState [Code]
@@ -168,10 +168,10 @@ compile_deps ind fidFilter = do
           <$> get
   mapM (compile_one_any_fn ind) deps
 
-compile_fn :: forall a b. (HasCallStack, YulO2 a b) => Indenter -> Fn a b -> CGState Code
-compile_fn ind fn = do
-  main_code <- compile_one_fn ind fn
-  deps_codes <- compile_deps ind (/= fnId fn)
+compile_fn :: forall a b. (HasCallStack, YulO2 a b) => Indenter -> FnCat a b -> CGState Code
+compile_fn ind f = do
+  main_code <- compile_one_fn ind f
+  deps_codes <- compile_deps ind (/= fnId f)
   return $
     ind "// main code" <>
     main_code <> "\n" <>
@@ -179,4 +179,4 @@ compile_fn ind fn = do
     T.intercalate "" deps_codes
 
 compile_scoped_fn :: HasCallStack => Indenter -> ScopedFn -> CGState Code
-compile_scoped_fn ind sfn = case removeScope sfn of MkAnyFn fn -> compile_fn ind fn
+compile_scoped_fn ind f = case removeScope f of MkAnyFn f' -> compile_fn ind f'

@@ -1,7 +1,6 @@
 {-# LANGUAGE LinearTypes           #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
 {-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE TypeFamilies          #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
@@ -21,27 +20,21 @@ module YulDSL.LinearSMC where
 
 -- base
 import qualified Prelude                      as BasePrelude
-import           Unsafe.Coerce                (unsafeCoerce)
 -- linear-base
 import           Prelude.Linear
 import qualified Unsafe.Linear                as UnsafeLinear
 -- linear-smc
-import           Control.Category.Constrained (Cartesian (..), Category (Obj, (∘)), O2, O3, O4, type (⊗))
+import           Control.Category.Constrained (Cartesian, Category (Obj), O2, O3, O4, type (⊗))
 import           Control.Category.Linear      (P, copy, decode, discard, encode, merge, mkUnit, split)
 -- yul-dsl
 import           YulDSL.Core
 -- import Linear-SMC instances
 import           YulDSL.LinearSMC.Categories  ()
 
+
 ------------------------------------------------------------------------------------------------------------------------
 -- Extra Linear SMC Combinators
 ------------------------------------------------------------------------------------------------------------------------
-
-instance FromInteger Integer where
-  fromInteger = id
-
-instance (KnownBool s, KnownNat n) => FromInteger (Maybe (INTx s n)) where
-  fromInteger = UnsafeLinear.toLinear BasePrelude.fromInteger
 
 copy' :: forall k con r a.
          ( Cartesian k {-<-}, O2 k r a, con ~ Obj k {->-}
@@ -68,132 +61,64 @@ passAp :: forall k con r a b.
 passAp i = copyAp' i id
 
 ------------------------------------------------------------------------------------------------------------------------
--- YulCat Combinators
+-- linear-base instances
 ------------------------------------------------------------------------------------------------------------------------
 
---
--- YulNum typeclass instances for the 'linear-base'.
---
+instance FromInteger Integer where
+  fromInteger = id
+
+instance (KnownBool s, KnownNat n) => FromInteger (Maybe (INTx s n)) where
+  fromInteger = UnsafeLinear.toLinear BasePrelude.fromInteger
 
 instance (YulObj r, YulNum a) => Additive (YulCat r (Maybe a)) where
-  a + b = YulNumAdd `YulComp` YulProd a b `YulComp` YulDup
+  a + b = YulNumAdd <.< YulProd a b <.< YulDup
 
 instance (YulObj r, YulNum a) => AddIdentity (YulCat r (Maybe a)) where
   zero = YulEmbed (fromIntegral (0 :: Integer))
 
 instance (YulObj r, YulNum a) => AdditiveGroup (YulCat r (Maybe a)) where
-  negate a = YulNumNeg `YulComp` a
-
---
--- Value Functions utilities
---
-
--- uncurry (b)
-instance forall a b m.
-         ( m ~ YulCat a
-         ) => UncurriableNP (YulCat a) (m b) '[] b where
-  uncurryNP x _ = x
-
--- uncurry (x -> ...xs -> b)
-instance forall a x xs b m g.
-         ( m ~ YulCat a
-         , YulO3 a x (NP xs)
-         , UncurriableNP m g xs b
-         ) => UncurriableNP (YulCat a) (m x -> g) (x:xs) b where
-  uncurryNP f as = uncurryNP (f x) xs
-    where ass = as >.> YulSplit
-          x  = ass >.> YulExl
-          xs = ass >.> YulExr
-
--- buildNP (x -> (x))
-instance forall a x m.
-         ( m ~ YulCat a
-         , YulO2 a x
-         ) => BuildableNP (YulCat a) x '[] where
-  buildNP x _ = x >.> YulCoerce CoercibleSolo
-
-instance forall a x x' xs'.
-         ( YulO4 a x x' (NP xs')
-         , BuildableNP (YulCat a) x' xs'
-         ) => BuildableNP (YulCat a) x (x':xs') where
-  buildNP x as = YulFork x (buildNP x' xs')
-                 >.> YulCoerce CoercibleTupleAndNP
-    where ass = as >.> YulSplit
-          x'  = ass >.> YulExl
-          xs' = ass >.> YulExr
-
--- | Define currying pure function of yul values.
-fn :: forall as b m f.
-      ( YulO2 (NP as) b
-      , m ~ YulCat (NP as)
-      , f ~ LiftFunction (CurryNP (NP as) b) m Many
-      , UncurriableNP m f as b
-      )
-   => String -> f -> Fn (NP as) b
-fn fid f = MkFn fid $ uncurryNP f (YulId @(NP as))
-
-foo0 :: Fn (NP '[]) (Maybe U8)
-foo0 = fn "id" (YulEmbed 42)
-
-foo1 :: Fn (NP '[Maybe U8]) (Maybe U8)
-foo1 = fn "id" (\a -> a + a)
-
-foo2 :: Fn (NP '[Maybe U8, Maybe U8]) (Maybe U8)
-foo2 = fn "id" (\a b -> a + b)
-
-foo3 :: Fn (NP '[Maybe U8, Maybe U8, Maybe U8]) (Maybe U8)
-foo3 = fn "id" (\a b c -> a + b + c)
-
-foo4 :: Fn (NP '[Maybe U8, Maybe U8, Maybe U8, Maybe U8]) (Maybe U8)
-foo4 = fn "id" (\a b c d -> a + b + c + d)
-
--- ap'vfn :: forall a b r. (YulCatReducible a, YulO3 a b r)
---       => Fn a b -> AtomizeNP (YulCat r a) -> YulCat r b
-
--- ap'vfn fn a = YulJump (fnId fn) (fnCat fn) `YulComp` yul_cat_merge @a a
+  negate a = YulNumNeg <.< a
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Yul Port Combinators
 ------------------------------------------------------------------------------------------------------------------------
 
---
--- Yul port Types
---
+{- Yul port Types -}
 
 -- | Polymorphic port type for linear function APIs of YulDSL
-type YulP r a = P YulCat r a
+type Yul'P r a = P YulCat r a
 
-type UNIT'p  r = YulP r ()
-type ADDR'p  r = YulP r ADDR
-type BOOL'p  r = YulP r BOOL
-type U256'p  r = YulP r U256
-type I256'p  r = YulP r I256
+type UNIT'P  r = Yul'P r ()
+type ADDR'P  r = Yul'P r ADDR
+type BOOL'P  r = Yul'P r BOOL
+type U256'P  r = Yul'P r U256
+type I256'P  r = Yul'P r I256
 
-yulConst :: forall a d r. YulO3 a d r
-         => a -> (YulP r d ⊸ YulP r a)
-yulConst a = encode (YulEmbed a) . discard
+const'l :: forall a d r. YulO3 a d r
+        => a -> (Yul'P r d ⊸ Yul'P r a)
+const'l a = encode (YulEmbed a) . discard
 
--- coerceP :: forall a b r. (YulO3 r a b, YulCoercible a b)
---         => YulP r a ⊸ YulP r b
--- coerceP = encode YulCoerce
+coerce'l :: forall a b r. (YulO3 a b r, ABITypeCoercible a b)
+         => (Yul'P r a ⊸ Yul'P r b)
+coerce'l = encode YulCoerce
 
---
--- YulNum utilities
---
+dup2'l :: forall a r. YulO2 a r
+       => Yul'P r a ⊸ (Yul'P r a, Yul'P r a)
+dup2'l = split . copy
 
-instance (YulNum a, YulObj r) => Additive (YulP r (Maybe a)) where
+{- YulNum utilities -}
+
+instance (YulNum a, YulObj r) => Additive (Yul'P r (Maybe a)) where
   a + b = encode YulNumAdd (merge (a, b))
 
-instance (YulNum a, YulObj r) => AddIdentity (YulP r (Maybe a)) where
+instance (YulNum a, YulObj r) => AddIdentity (Yul'P r (Maybe a)) where
   -- Note: uni-port is forbidden in linear-smc, but linear-base AdditiveGroup requires this instance.
   zero = error "unit not supported for Ports"
 
-instance (YulNum a, YulObj r) => AdditiveGroup (YulP r (Maybe a)) where
+instance (YulNum a, YulObj r) => AdditiveGroup (Yul'P r (Maybe a)) where
   negate = encode YulNumNeg
-dup2P :: YulO2 a r => YulP r a ⊸ (YulP r a, YulP r a)
-dup2P = split . copy
 
-instance (YulObj r, YulNum a) => MPOrd (YulP r a) (BOOL'p r) where
+instance (YulObj r, YulNum a) => MPOrd (Yul'P r a) (BOOL'P r) where
   a  <? b = encode (YulNumCmp (true , false, false)) (merge (a, b))
   a <=? b = encode (YulNumCmp (true , true , false)) (merge (a, b))
   a  >? b = encode (YulNumCmp (false, false, true )) (merge (a, b))
@@ -201,12 +126,12 @@ instance (YulObj r, YulNum a) => MPOrd (YulP r a) (BOOL'p r) where
   a ==? b = encode (YulNumCmp (false, true , false)) (merge (a, b))
   a /=? b = encode (YulNumCmp (true , false, true )) (merge (a, b))
 
--- Control flow utilities
+{- Control flow utilities -}
 
 -- ifThenElse :: forall a r. YulO2 a r
---            => BoolP r ⊸ YulP r a ⊸ YulP r a ⊸ YulP r a
+--            => BoolP r ⊸ Yul'P r a ⊸ Yul'P r a ⊸ Yul'P r a
 
-instance YulO2 a r => IfThenElse (BOOL'p r) (YulP r a) where
+instance YulO2 a r => IfThenElse (BOOL'P r) (Yul'P r a) where
   ifThenElse c a b = encode YulITE (merge(c, merge(a, b)))
 
 instance Consumable a => IfThenElse Bool a where
@@ -218,53 +143,38 @@ instance Consumable a => IfThenElse Bool a where
 --
 
 sget :: forall v r. (YulObj r, YulVal v)
-     => YulP r ADDR ⊸ YulP r (Maybe v)
+     => Yul'P r ADDR ⊸ Yul'P r (Maybe v)
 sget = encode YulSGet
 
 sput :: forall v r. (YulObj r, YulVal v)
-     => YulP r ADDR ⊸ YulP r v ⊸ YulP r ()
+     => Yul'P r ADDR ⊸ Yul'P r v ⊸ Yul'P r ()
 sput toP valP = encode YulSPut (merge (toP, valP))
 (<==) :: forall v r. (YulObj r, YulVal v)
-      => YulP r ADDR ⊸ YulP r v ⊸ YulP r ()
+      => Yul'P r ADDR ⊸ Yul'P r v ⊸ Yul'P r ()
 (<==) = sput
 
 sputAt :: forall v r. (YulObj r, YulVal v)
-       => ADDR -> YulP r v ⊸ YulP r ()
-sputAt to v = mkUnit v & \(v', u) -> yulConst to u & \a -> sput a v'
+       => ADDR -> Yul'P r v ⊸ Yul'P r ()
+sputAt to v = mkUnit v & \(v', u) -> const'l to u & \a -> sput a v'
 (<==@) :: forall v r. (YulObj r, YulVal v)
-      => ADDR -> YulP r v ⊸ YulP r ()
+      => ADDR -> Yul'P r v ⊸ Yul'P r ()
 (<==@) = sputAt
 infixr 1 <==, <==@
 
---
--- Linear Function utilities
---
-
-instance forall r b m.
-         ( m ~ P YulCat r
-         ) => UncurriableNP (P YulCat r) (m b) '[] b where
-  uncurryNP x _ = x
-
--- -- uncurry (x -> ...xs -> b)
--- instance forall a x xs b m g.
---          ( m ~ YulCat a
---          , YulO3 a x (NP xs)
---          , UncurriableNP m g xs b
---          ) => UncurriableNP (YulCat a) (m x -> g) (x:xs) b where
---   uncurryNP f as = uncurryNP (f x) xs
---     where ass = as >.> YulSplit
---           x  = ass >.> YulExl
---           xs = ass >.> YulExr
+{- Linear Function utilities -}
 
 -- | Define a `YulCat` morphism from a linear port function.
-fn'l :: forall a b. (YulO2 a b)
-    => String
-    -> (forall r. YulObj r => LiftFunction (CurryNP a b) (P YulCat r) One)
-    -> Fn a b
-fn'l = _
+fn'l :: forall as b. YulO2 (NP as) b
+     => String
+     -> (forall r. YulO1 r => Yul'P r (NP as) ⊸ Yul'P r b)
+     -> FnNP as b
+fn'l fid f = MkFn fid $ decode f
+
+-- class BuildableNP'P r x xs where
+--   buildNP'p :: P YulCat r x ⊸  P YulCat r (NP xs) ⊸  P YulCat r (NP (x:xs))
 
 -- fn'l fname f = MkFn fname $ decode (f . yul_port_reduce)
 
 -- ap'lfn :: forall a b r. (YulPortReducible a, YulO3 a b r)
---        => Fn a b -> AtomizeNP (YulP r a) ⊸ YulP r b
+--        => Fn a b -> AtomizeNP (Yul'P r a) ⊸ Yul'P r b
 -- ap'lfn fn a = encode (YulJump (fnId fn) (fnCat fn)) (yul_port_merge @a a)

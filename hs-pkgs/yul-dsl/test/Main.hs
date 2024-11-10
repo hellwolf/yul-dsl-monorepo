@@ -1,8 +1,8 @@
 import           Test.Hspec
 
 import qualified Eval_prop
-import qualified Types_prop
+import qualified Fn_prop
 
 main = hspec $ do
-  Types_prop.tests
+  Fn_prop.tests
   Eval_prop.tests

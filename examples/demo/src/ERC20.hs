@@ -4,16 +4,16 @@ module ERC20 where
 
 -- | ERC20 balance storage location for the account.
 -- TODO should use hashing of course.
-erc20_balance_storage :: forall r. YulObj r => AddrP r ⊸ AddrP r
+erc20_balance_storage :: forall r. YulObj r => ADDR'P r ⊸ ADDR'P r
 erc20_balance_storage account = mkUnit account & \(account, unit) -> coerceP $
-  coerceP account + yulConst (to_intx @UINT256 0x42) unit
+  coerceP account + yulConst (to_intx @U256 0x42) unit
 
 -- | ERC20 balance of the account.
-erc20_balance_of :: YulObj r => AddrP r ⊸ Uint256P r
+erc20_balance_of :: YulObj r => ADDR'P r ⊸ U256'P r
 erc20_balance_of account = sget (erc20_balance_storage account)
 
 -- | ERC20 transfer function (no negative balance check for simplicity).
-erc20_transfer :: Fn (ADDR :* ADDR :* UINT256) BOOL
+erc20_transfer :: Fn (ADDR :* ADDR :* U256) BOOL
 erc20_transfer = lfn "transfer" \(from :* to :* amount) ->
     copyAp amount
     (\amount -> passAp from erc20_balance_of & \(from, balance) ->

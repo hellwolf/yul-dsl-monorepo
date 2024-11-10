@@ -33,6 +33,7 @@ library
   import:           basic-options
   hs-source-dirs:   src
   exposed-modules:  YulDSL.Core.YulCat
+                    YulDSL.Core.Fn
                     YulDSL.Core.YulObject
                     YulDSL.Core
                     YulDSL.Eval
@@ -54,9 +55,10 @@ Test-Suite test-yul-dsl
   type:             exitcode-stdio-1.0
   build-depends:    QuickCheck >=2.13,
                     hspec >=2.11,
+                    eth-abi,
                     yul-dsl
   hs-source-dirs:   test
-  other-modules:    Eval_prop
-                    TestCommon
-                    Types_prop
+  other-modules:    TestCommon
+                    Fn_prop
+                    Eval_prop
   main-is:          Main.hs

@@ -1,7 +1,7 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 {-|
 
-Copyright   : (c) 2023 Miao, ZhiCheng
+Copyright   : (c) 2023-2024 Miao, ZhiCheng
 License     : LGPL-3
 Maintainer  : zhicheng.miao@gmail.com
 Stability   : experimental
@@ -21,9 +21,11 @@ The Core of the YulDSL is the 'YulDSL.Core.ContractABI' & 'YulDSL.Core.YulDSL' m
 module YulDSL.Core
   ( module Ethereum.ContractABI
   , module YulDSL.Core.YulCat
+  , module YulDSL.Core.Fn
   , module YulDSL.Core.YulObject
   ) where
 
 import           Ethereum.ContractABI
+import           YulDSL.Core.Fn
 import           YulDSL.Core.YulCat
 import           YulDSL.Core.YulObject

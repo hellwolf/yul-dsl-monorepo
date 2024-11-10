@@ -33,6 +33,7 @@ module Ethereum.ContractABI.CoreType.INTx
 -- base
 import           Data.Bits                        (shift)
 import           Data.Coerce                      (coerce)
+import           Data.Maybe                       (fromJust)
 import           Data.Proxy                       (Proxy (Proxy))
 import           GHC.TypeNats                     (KnownNat (..), Nat, natVal)
 -- eth-abi
@@ -60,13 +61,13 @@ instance forall s n. (KnownBool s, KnownNat n) => ABITypeable (INTx s n) where
 
   abiTypeInfo = [INTx' (SBool @s) (natSing @n)]
 
-{-  Num hierarchy classes -}
+{-  Num hierarchy classes for (Maybe INTx s n) -}
 
-instance (KnownBool s, KnownNat n) => Bounded (INTx s n) where
-  minBound = INT $
+instance (KnownBool s, KnownNat n) => Bounded (Maybe (INTx s n)) where
+  minBound = Just . INT $
     if intxSign @(INTx s n) then negate (1 `shift` (nbits - 1)) else 0
     where nbits = intxNBits @(INTx s n)
-  maxBound = INT $
+  maxBound = Just . INT $
     if intxSign @(INTx s n) then (1 `shift` (nbits - 1)) - 1 else (1 `shift` nbits) - 1
     where nbits = intxNBits @(INTx s n)
 
@@ -90,6 +91,10 @@ instance (KnownBool s, KnownNat n) => Num (Maybe (INTx s n)) where
                   in if a' >= minBound @(INTx s n) && a' <= maxBound @(INTx s n)
                      then Just a' else Nothing
 
+instance (KnownBool s, KnownNat n) => Real (Maybe (INTx s n)) where
+  toRational (Just (INT a)) = toRational a
+  toRational Nothing        = error "INTx.toRational Nothing"
+
 instance Enum (Maybe (INTx s n)) where
   fromEnum (Just (INT a)) = fromEnum a
   fromEnum Nothing        = error "INTx.fromEnum Nothing"
@@ -103,9 +108,28 @@ instance (KnownBool s, KnownNat n) => Integral (Maybe (INTx s n)) where
   quotRem (Just (INT a)) (Just (INT b)) = let (c, d) = quotRem a b in (Just (INT c), Just (INT d))
   quotRem _              _              = (Nothing, Nothing)
 
-instance (KnownBool s, KnownNat n) => Real (Maybe (INTx s n)) where
-  toRational (Just (INT a)) = toRational a
-  toRational Nothing        = error "INTx.toRational Nothing"
+{-  Num hierarchy classes for (INTx s n) -}
+
+instance (KnownBool s, KnownNat n) => Bounded (INTx s n) where
+  minBound = fromJust minBound
+  maxBound = fromJust maxBound
+
+instance (KnownBool s, KnownNat n) => Num (INTx s n) where
+  a + b = fromJust (Just a + Just b)
+  a * b = fromJust (Just a * Just b)
+  abs = fromJust . abs . Just
+  signum = fromJust . signum . Just
+  fromInteger = fromJust . fromInteger
+  negate = fromJust . negate . Just
+
+instance (KnownBool s, KnownNat n) => Real (INTx s n) where
+  toRational = toRational . Just
+
+instance (KnownBool s, KnownNat n) => Integral (INTx s n) where
+  toInteger = toInteger . Just
+  quotRem a b = let (a', b') = quotRem (Just a) (Just b) in (fromJust a', fromJust b')
+
+{-  ABICoreType -}
 
 instance (KnownBool s, KnownNat n) => ABIWordValue (INTx s n) where
   fromWord w = let maxVal = coerce (maxBound @(INTx s n))

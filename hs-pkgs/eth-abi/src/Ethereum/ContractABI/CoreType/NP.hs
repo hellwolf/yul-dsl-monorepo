@@ -1,5 +1,6 @@
-{-# LANGUAGE LinearTypes  #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE LinearTypes            #-}
+{-# LANGUAGE TypeFamilies           #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
@@ -17,9 +18,11 @@ Ethereum contract ABI compatible tuples encoded as n-ary products (NP).
 
 -}
 module Ethereum.ContractABI.CoreType.NP
-  ( NP (..), showNP
+  ( NP (Nil, (:*)), showNP
   , LiftFunction, Multiplicity (Many, One)
-  , CurryNP, UncurriableNP (..), BuildableNP (..)
+  , CurryNP
+  , UncurryNP'L, UncurryNP'R, UncurryNP
+  , UncurriableNP (uncurryNP), ConstructibleNP (consNP)
   , module Internal.Data.Type.List
   ) where
 
@@ -77,7 +80,7 @@ instance Show x => Show (NP (x : xs)) where
 
 -- | Build a new currying function type from the function signature @f@ with a type function @m@ for each of its
 -- arguments that is also linearity polymorphic to @p@.
-type family LiftFunction (f :: Type) (m :: Type -> Type) (p :: Multiplicity) where
+type family LiftFunction f (m :: Type -> Type) (p :: Multiplicity) where
   LiftFunction (a -> b -> c) m p = m a %p-> LiftFunction (b -> c) m p
   LiftFunction (a -> b) m p = m a %p-> m b
   LiftFunction b m _ = m b
@@ -87,10 +90,23 @@ type family CurryNP a b where
   CurryNP (NP '[]) b = b
   CurryNP (NP (a:as)) b = a -> CurryNP (NP as) b
 
--- | Uncurriable functions for 'NP' types with result type @b@.
-class UncurriableNP m f xs b where
-  -- | Function 'f' that takes in @m (NP xs)@ and outputs a @m b@.
-  uncurryNP :: f -> m (NP xs) -> m b
+type family UncurryNP'L f :: [Type] where
+  UncurryNP'L (a1 -> a2 -> g) = a1 : UncurryNP'L (a2 -> g)
+  UncurryNP'L (a1 -> b) = '[a1]
+  UncurryNP'L b = '[]
 
-class BuildableNP m x xs where
-  buildNP :: m x -> m (NP xs) -> m (NP (x:xs))
+type family UncurryNP'R f :: Type where
+  UncurryNP'R (a1 -> a2 -> g) = UncurryNP'R (a2 -> g)
+  UncurryNP'R (a1 -> b) = b
+  UncurryNP'R b = b
+
+type UncurryNP f = NP (UncurryNP'L f) -> UncurryNP'R f
+
+-- | Uncurriable functions for 'NP' types with result type @b@.
+class UncurriableNP f (m :: Type -> Type) xs b (p :: Multiplicity) | f -> m where
+  -- | TODO
+  uncurryNP :: f %p-> m (NP xs) %p-> m b
+
+-- | TODO
+class ConstructibleNP (m :: Type -> Type) x xs (p :: Multiplicity) where
+  consNP :: m x %p-> m (NP xs) %p-> m (NP (x:xs))

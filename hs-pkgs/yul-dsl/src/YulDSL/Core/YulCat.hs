@@ -126,7 +126,7 @@ instance (KnownBool s, KnownNat n) => YulNum (INTx s n)
 data YulCat a b where
   -- Type-level Operations (Zero Runtime Cost)
   -- | Convert between coercible Yul objects.
-  YulCoerce :: forall a b. (YulO2 a b) => ABITypeCoercible a b -> YulCat a b
+  YulCoerce :: forall a b. (YulO2 a b, ABITypeCoercible a b) => YulCat a b
   -- | Split the head and tail of a n-ary product where n >= 1.
   YulSplit :: forall as. YulO1 (NP as) => YulCat (NP as) (Head as, NP (Tail as))
 
@@ -194,6 +194,8 @@ m >.> n = n `YulComp` m
 (<.<) :: forall a b c. YulO3 a b c => YulCat b c %1 -> YulCat a b %1 -> YulCat a c
 (<.<) = YulComp
 
+-- Same precedence as (>>>) (<<<);
+-- see https://hackage.haskell.org/package/base-4.20.0.1/docs/Control-Category.html
 infixr 1 >.>, <.<
 
 -- | It's not as scary as it sounds. It produces a fingerprint for the morphism.
@@ -206,42 +208,45 @@ digestYulCat = printf "%x" . digest_c8 . B.pack . show
         go_digest_c8 (b, bs') = c8 (0 :: Integer) (B.unpack b) `xorInteger`
                                 if B.length bs' == 0 then 0 else digest_c8 bs'
 
+
 ------------------------------------------------------------------------------------------------------------------------
--- Useful Type Classes
+-- Utility Instances For NP
 ------------------------------------------------------------------------------------------------------------------------
 
--- | Multi-parameter ordering typeclass where boolean type is @b@
-class MPOrd a b | a -> b where
-  ( <?) :: forall w. a %w -> a %w -> b
-  (<=?) :: forall w. a %w -> a %w -> b
-  ( >?) :: forall w. a %w -> a %w -> b
-  (>=?) :: forall w. a %w -> a %w -> b
-  (==?) :: forall w. a %w -> a %w -> b
-  (/=?) :: forall w. a %w -> a %w -> b
-  infixr 4 <?, <=?, >?, >=?, ==?, /=?
+-- uncurry (b)
+instance forall a b. UncurriableNP (YulCat a b) (YulCat a) '[] b Many where
+  uncurryNP x _ = x
 
--- | IfThenElse for enabling rebindable syntax.
-class IfThenElse a b where
-  ifThenElse :: forall w. a %w -> b %w -> b %w -> b
+-- uncurry (x -> x' -> ...xs' -> b)
+instance forall a x xs b g.
+         ( YulO3 a x (NP xs)
+         , UncurriableNP g (YulCat a) xs b Many
+         ) => UncurriableNP (YulCat a x -> g) (YulCat a) (x:xs) b Many where
+  uncurryNP f as = uncurryNP (f x) xs
+    where ass = as >.> YulSplit
+          x   = ass >.> YulExl
+          xs  = ass >.> YulExr
 
-instance (YulObj r, YulNum a) => Num (YulCat r (Maybe a)) where
-  a + b = YulNumAdd `YulComp` YulProd a b `YulComp` YulDup
-  a * b = YulNumMul `YulComp` YulProd a b `YulComp` YulDup
-  abs = YulComp YulNumAbs
-  signum = YulComp YulNumSig
-  fromInteger = YulEmbed . fromInteger
-  negate a = YulNumNeg `YulComp` a
+-- buildNP (x -> (x))
+instance forall r x.
+         ( YulO2 r x
+         ) => ConstructibleNP (YulCat r) x '[] Many where
+  consNP x _ = x >.> YulCoerce
 
-instance (YulObj r, YulNum a) => MPOrd (YulCat r a) (YulCat r BOOL) where
-  a  <? b = YulNumCmp (true , false, false) `YulComp` YulProd a b `YulComp` YulDup
-  a <=? b = YulNumCmp (true , true , false) `YulComp` YulProd a b `YulComp` YulDup
-  a  >? b = YulNumCmp (false, false, true ) `YulComp` YulProd a b `YulComp` YulDup
-  a >=? b = YulNumCmp (false, true , true ) `YulComp` YulProd a b `YulComp` YulDup
-  a ==? b = YulNumCmp (false, true , false) `YulComp` YulProd a b `YulComp` YulDup
-  a /=? b = YulNumCmp (true , false, true ) `YulComp` YulProd a b `YulComp` YulDup
+-- buildNP (x -> xs -> (x, ...xs)
+instance forall r x x' xs'.
+         ( YulO4 r x x' (NP xs')
+         , ConstructibleNP (YulCat r) x' xs' Many
+         ) => ConstructibleNP (YulCat r) x (x':xs') Many where
+  consNP x as = YulFork x (consNP x' xs')
+                 >.> YulCoerce
+    where ass = as >.> YulSplit
+          x'  = ass >.> YulExl
+          xs' = ass >.> YulExr
 
-instance YulO2 a r => IfThenElse (YulCat r BOOL) (YulCat r a) where
-  ifThenElse c a b = YulITE `YulComp` YulFork c (YulFork a b)
+------------------------------------------------------------------------------------------------------------------------
+-- Show Instance For Unique String Representation Of Cats
+------------------------------------------------------------------------------------------------------------------------
 
 -- | Bespoke show instance for YulCat.
 --
@@ -249,7 +254,7 @@ instance YulO2 a r => IfThenElse (YulCat r BOOL) (YulCat r a) where
 --   * It is deliberately done so for compactness of the string representation of the 'YulCat'.
 --   * It is meant also for strong equality checking of 'YulCat' used in yul object building.
 instance Show (YulCat a b) where
-  show (YulCoerce _)       = "coerce" <> abi_type_name @a <> abi_type_name @b
+  show (YulCoerce)         = "coerce" <> abi_type_name @a <> abi_type_name @b
   show (YulId)             = "id"
   show (YulSplit)          = "▿" <> abi_type_name @a
   show (YulComp cb ac)     = "(" <> show ac <> ");(" <> show cb <> ")"
@@ -276,6 +281,43 @@ instance Show (YulCat a b) where
   show (YulSGet)           = "sget" <> abi_type_name @a
   show (YulSPut)           = "sput" <> abi_type_name @a
 --  show _                   = error "Show YulCat TODO"
+
+------------------------------------------------------------------------------------------------------------------------
+-- Useful Type Classes For Custom Prelude
+------------------------------------------------------------------------------------------------------------------------
+
+instance (YulObj r, YulNum a) => Num (YulCat r (Maybe a)) where
+  a + b = YulNumAdd <.< YulProd a b <.< YulDup
+  a * b = YulNumMul <.< YulProd a b <.< YulDup
+  abs = YulComp YulNumAbs
+  signum = YulComp YulNumSig
+  fromInteger = YulEmbed . fromInteger
+  negate a = YulNumNeg <.< a
+
+-- | Multi-parameter ordering typeclass where boolean type is @b@
+class MPOrd a b | a -> b where
+  ( <?) :: forall w. a %w -> a %w -> b
+  (<=?) :: forall w. a %w -> a %w -> b
+  ( >?) :: forall w. a %w -> a %w -> b
+  (>=?) :: forall w. a %w -> a %w -> b
+  (==?) :: forall w. a %w -> a %w -> b
+  (/=?) :: forall w. a %w -> a %w -> b
+  infixr 4 <?, <=?, >?, >=?, ==?, /=?
+
+instance (YulObj r, YulNum a) => MPOrd (YulCat r a) (YulCat r BOOL) where
+  a  <? b = YulNumCmp (true , false, false) <.< YulProd a b <.< YulDup
+  a <=? b = YulNumCmp (true , true , false) <.< YulProd a b <.< YulDup
+  a  >? b = YulNumCmp (false, false, true ) <.< YulProd a b <.< YulDup
+  a >=? b = YulNumCmp (false, true , true ) <.< YulProd a b <.< YulDup
+  a ==? b = YulNumCmp (false, true , false) <.< YulProd a b <.< YulDup
+  a /=? b = YulNumCmp (true , false, true ) <.< YulProd a b <.< YulDup
+
+-- | IfThenElse for enabling rebindable syntax.
+class IfThenElse a b where
+  ifThenElse :: forall w. a %w -> b %w -> b %w -> b
+
+instance YulO2 a r => IfThenElse (YulCat r BOOL) (YulCat r a) where
+  ifThenElse c a b = YulITE <.< YulFork c (YulFork a b)
 
 {- INTERNAL FUNCTIONs -}
 

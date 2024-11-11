@@ -24,5 +24,5 @@ test_tf_ncurry_examples = and
   ]
 
 tests = describe "NP" $ do
-  it "LiftFunction examples" $ test_tf_lift_function_examples
-  it "NCurry examples" $ test_tf_ncurry_examples
+  it "LiftFunction examples" test_tf_lift_function_examples
+  it "NCurry examples" test_tf_ncurry_examples

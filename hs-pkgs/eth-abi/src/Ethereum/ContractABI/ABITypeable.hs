@@ -70,7 +70,7 @@ instance ABITypeable a => ABITypeable (Maybe a) where
 
 -- | Canonical name of the type that is used for computing the function selector.
 abiTypeCanonName :: forall a. ABITypeable a => String
-abiTypeCanonName = intercalate "," $ (fmap abiCoreTypeCanonName (abiTypeInfo @a))
+abiTypeCanonName = intercalate "," (fmap abiCoreTypeCanonName (abiTypeInfo @a))
 
 -- | A 'abiTypeCanonName' variant that is compact to saving characters.
 abiTypeCompactName :: forall a. ABITypeable a => String

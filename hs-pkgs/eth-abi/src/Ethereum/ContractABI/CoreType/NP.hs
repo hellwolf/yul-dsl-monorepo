@@ -35,7 +35,7 @@ import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
 import           Internal.Data.Type.List
 
 
--- | N-ary product simplified form comparing to the sop package.
+-- | N-ary product with simplified than its homonym in the sop package.
 data NP :: [Type] -> Type where
   Nil  :: NP '[]
   (:*) :: ABITypeable x => x -> NP xs -> NP (x : xs)
@@ -76,31 +76,38 @@ instance Show (NP '[]) where
 instance Show x => Show (NP (x : xs)) where
   show as = "(" ++ intercalate "," (showNP (MkAnyNP as)) ++ ")"
 
--- | Build a new currying function type from the function signature @f@ with a type function @m@ for each of its
--- arguments that is also linearity polymorphic to @p@.
+-- | Lift a new currying function type from the simple function signature @f@ with a type function @m@ for each of its
+--   arguments with multiplicity arrows in @p@.
 type family LiftFunction f (m :: Type -> Type) (p :: Multiplicity) where
   LiftFunction (a -> b -> c) m p = m a %p-> LiftFunction (b -> c) m p
   LiftFunction      (a -> b) m p = m a %p-> m b
   LiftFunction           (b) m _ = m b
 
--- | Convert a NP function to a curried function.
-type family CurryNP a b (p :: Multiplicity) where
-  CurryNP (NP (a:as)) b p = a %p-> CurryNP (NP as) b p
-  CurryNP (NP    '[]) b _ = b
+-- | Convert a function in ts NP form @np -> b@ to a curried function with multiplicity arrows in @p@.
+--
+--   Note: To add multiplicity-polymorphic arrows or to decorate arguments with additional type function, use
+--   'LiftFunction'.
+type family CurryNP np b where
+  CurryNP (NP (a:as)) b = a -> CurryNP (NP as) b
+  CurryNP (NP    '[]) b = b
 
+-- | Uncurry the arguments of a function to a list of types.
 type family UncurryNP'Fst f :: [Type] where
-  UncurryNP'Fst (a1 %p-> a2 %_-> g) = a1 : UncurryNP'Fst (a2 %p-> g)
+  UncurryNP'Fst (a1 %_-> a2 %_-> g) = a1 : UncurryNP'Fst (a2 -> g)
   UncurryNP'Fst         (a1 %_-> b) = a1 : UncurryNP'Fst (b)
   UncurryNP'Fst                 (b) = '[]
 
+-- | Uncurry the result of a function.
 type family UncurryNP'Snd f :: Type where
   UncurryNP'Snd (a1 %p-> a2 %_-> g) = UncurryNP'Snd (a2 %p-> g)
   UncurryNP'Snd       (a1   %_-> b) = UncurryNP'Snd (b)
   UncurryNP'Snd                 (b) = b
 
+-- | Uncurry and extract the multiplicity of the last arrow.
 type family UncurryNP'Multiplicity f :: Multiplicity where
   UncurryNP'Multiplicity (a1 %_-> a2 %p-> g) = UncurryNP'Multiplicity (a2 %p-> g)
   UncurryNP'Multiplicity         (a1 %p-> b) = p
   UncurryNP'Multiplicity                 (b) = Many
 
+-- | Uncurry a function to its NP form whose multiplicity of the last arrow is preserved.
 type UncurryNP f = NP (UncurryNP'Fst f) %(UncurryNP'Multiplicity f)-> UncurryNP'Snd f

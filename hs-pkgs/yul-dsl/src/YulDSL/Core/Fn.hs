@@ -11,15 +11,24 @@ import           YulDSL.Core.YulCat
 
 {- Fn Family -}
 
+-- | Yul functions are encoded in their categorical forms.
 data FnCat a b where
-  MkFn :: forall a b. YulO2 a b => { fnId :: String, fnCat :: YulCat a b } -> FnCat a b
+  -- | Create a yul function from its unique id and morphism from @a@ to @b@.
+  MkFn :: forall a b. YulO2 a b => { fnId :: String       -- ^ the unique id of the yul function
+                                   , fnCat :: YulCat a b  -- ^ the morphism of the yul function
+                                   } -> FnCat a b
 
 instance YulO2 a b => Show (FnCat a b) where show (MkFn _ cat) = show cat
 
+-- | Yul functions that have their arguments in 'NP' forms.
 type FnNP as b = FnCat (NP as) b
 
+-- | Yul functions that denoted in currying function forms.
+--
+--   Note: Fn (a1 -> a2 -> ...aN -> b) ~ FnNP (NP [a1,a2...aN]) b
 type Fn f = FnNP (UncurryNP'Fst f) (UncurryNP'Snd f)
 
+-- | Existential type for any @FnCat a b@.
 data AnyFn = forall a b. YulO2 a b => MkAnyFn (FnCat a b)
 
 deriving instance Show AnyFn

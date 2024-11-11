@@ -15,6 +15,7 @@ foo1 :: Fn (Maybe U8 -> Maybe U8)
 foo1 = fn @(Maybe U8 -> Maybe U8) "id"
        (\a -> a + a)
 
+{-# ANN foo2 "HLint: ignore Avoid lambda" #-}
 foo2 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8) "id"
        (\a b -> a + b)
 

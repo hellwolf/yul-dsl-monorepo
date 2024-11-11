@@ -27,7 +27,7 @@ test_coerce_commutative a b c = a == a' && b == b' && c == c' &&
         (_, (a'',(b'',c''))) = evalYulDSL initEvalState (YulCoerce @((p, q), r) @(p, (q, r))) ((a, b), c)
 
 test_num_add :: U256 -> U256 -> Bool
-test_num_add a b = isJust c && (a + b) == fromJust c
+test_num_add a b = Just (a + b) == c
   where (_, c) = evalYulDSL initEvalState YulNumAdd (Just a, Just b)
 
 tests = describe "YulDSL.Eval tests" $ do

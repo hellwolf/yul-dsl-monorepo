@@ -167,8 +167,8 @@ infixr 1 <==, <==@
 
 {- Linear Function utilities -}
 
-class UncurriableFn'L f as xs b where
-  uncurryFn'l :: forall r f'.
+class UncurriableFn'L f as xs b r where
+  uncurryFn'l :: forall f'.
                  ( YulO4 (NP as) (NP xs) b r
                  , f' ~ LiftFunction  f (P YulCat r) One
                  , xs ~ UncurryNP'Fst f
@@ -178,15 +178,14 @@ class UncurriableFn'L f as xs b where
               ⊸ YulCat'P r (NP as) (NP xs)
               -> YulCat'P r (NP as) b
 
-instance forall as x.
-         ( YulO2 (NP as) x
-         , UncurryNP'Snd x ~ x
+instance forall as x r.
+         ( UncurryNP'Snd x ~ x
          , UncurryNP'Fst x ~ '[]
          , Identity x ~ LiftFunction x Identity One
          , UncurryNP'Snd (Identity x) ~ Identity x
-         ) => UncurriableFn'L x as '[] x where
-  uncurryFn'l :: forall r f'.
-                 ( YulO1 r
+         ) => UncurriableFn'L x as '[] x r where
+  uncurryFn'l :: forall f'.
+                 ( YulO3 (NP as) x r
                  , f' ~ LiftFunction x (P YulCat r) One
                  )
               => f'                          -- b
@@ -201,14 +200,14 @@ instance forall as x.
     --       ~ P YulCat r x
     where b' = UnsafeLinear.coerce @_ @(Yul'P r x) (b :: f')
 
-instance forall as x xs b g.
-         ( YulO4 (NP as) x (NP xs) b
-         , UncurriableFn'L g as xs b
+instance forall as x xs b g r.
+         ( YulO2 x (NP xs)
+         , UncurriableFn'L g as xs b r
          , UncurryNP'Fst g ~ xs
          , UncurryNP'Snd g ~ b
-         ) => UncurriableFn'L (x -> g) as (x:xs) b where
-  uncurryFn'l :: forall r f'.
-                 ( YulO1 r
+         ) => UncurriableFn'L (x -> g) as (x:xs) b r where
+  uncurryFn'l :: forall f'.
+                 ( YulO4 (NP as) (NP (x:xs)) b r
                  , f'     ~ LiftFunction  (x -> g) (P YulCat r) One
                  , (x:xs) ~ UncurryNP'Fst (x -> g)
                  , b      ~ UncurryNP'Snd (x -> g)
@@ -235,7 +234,7 @@ curry'l :: forall f as b r f'.
         , as ~ UncurryNP'Fst f
         , b  ~ UncurryNP'Snd f
         , f' ~ LiftFunction f (P YulCat r) One
-        , UncurriableFn'L f as as b
+        , UncurriableFn'L f as as b r
         )
         => f'
         -> YulCat'P r (NP as) b

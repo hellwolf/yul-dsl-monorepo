@@ -1,6 +1,5 @@
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE LinearTypes            #-}
-{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE LinearTypes  #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
@@ -21,8 +20,7 @@ module Ethereum.ContractABI.CoreType.NP
   ( NP (Nil, (:*)), showNP
   , LiftFunction, Multiplicity (Many, One)
   , CurryNP
-  , UncurryNP'L, UncurryNP'R, UncurryNP
-  , UncurriableNP (uncurryNP), ConstructibleNP (consNP)
+  , UncurryNP'Fst, UncurryNP'Snd, UncurryNP
   , module Internal.Data.Type.List
   ) where
 
@@ -82,31 +80,27 @@ instance Show x => Show (NP (x : xs)) where
 -- arguments that is also linearity polymorphic to @p@.
 type family LiftFunction f (m :: Type -> Type) (p :: Multiplicity) where
   LiftFunction (a -> b -> c) m p = m a %p-> LiftFunction (b -> c) m p
-  LiftFunction (a -> b) m p = m a %p-> m b
-  LiftFunction b m _ = m b
+  LiftFunction      (a -> b) m p = m a %p-> m b
+  LiftFunction           (b) m _ = m b
 
 -- | Convert a NP function to a curried function.
-type family CurryNP a b where
-  CurryNP (NP '[]) b = b
-  CurryNP (NP (a:as)) b = a -> CurryNP (NP as) b
+type family CurryNP a b (p :: Multiplicity) where
+  CurryNP (NP (a:as)) b p = a %p-> CurryNP (NP as) b p
+  CurryNP (NP    '[]) b _ = b
 
-type family UncurryNP'L f :: [Type] where
-  UncurryNP'L (a1 -> a2 -> g) = a1 : UncurryNP'L (a2 -> g)
-  UncurryNP'L (a1 -> b) = '[a1]
-  UncurryNP'L b = '[]
+type family UncurryNP'Fst f :: [Type] where
+  UncurryNP'Fst (a1 %p-> a2 %_-> g) = a1 : UncurryNP'Fst (a2 %p-> g)
+  UncurryNP'Fst         (a1 %_-> b) = a1 : UncurryNP'Fst (b)
+  UncurryNP'Fst                 (b) = '[]
 
-type family UncurryNP'R f :: Type where
-  UncurryNP'R (a1 -> a2 -> g) = UncurryNP'R (a2 -> g)
-  UncurryNP'R (a1 -> b) = b
-  UncurryNP'R b = b
+type family UncurryNP'Snd f :: Type where
+  UncurryNP'Snd (a1 %p-> a2 %_-> g) = UncurryNP'Snd (a2 %p-> g)
+  UncurryNP'Snd       (a1   %_-> b) = UncurryNP'Snd (b)
+  UncurryNP'Snd                 (b) = b
 
-type UncurryNP f = NP (UncurryNP'L f) -> UncurryNP'R f
+type family UncurryNP'Multiplicity f :: Multiplicity where
+  UncurryNP'Multiplicity (a1 %_-> a2 %p-> g) = UncurryNP'Multiplicity (a2 %p-> g)
+  UncurryNP'Multiplicity         (a1 %p-> b) = p
+  UncurryNP'Multiplicity                 (b) = Many
 
--- | Uncurriable functions for 'NP' types with result type @b@.
-class UncurriableNP f (m :: Type -> Type) xs b (p :: Multiplicity) | f -> m where
-  -- | TODO
-  uncurryNP :: f %p-> m (NP xs) %p-> m b
-
--- | TODO
-class ConstructibleNP (m :: Type -> Type) x xs (p :: Multiplicity) where
-  consNP :: m x %p-> m (NP xs) %p-> m (NP (x:xs))
+type UncurryNP f = NP (UncurryNP'Fst f) %(UncurryNP'Multiplicity f)-> UncurryNP'Snd f

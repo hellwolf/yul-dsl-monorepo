@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE LinearTypes           #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
 {-# LANGUAGE QuantifiedConstraints #-}
@@ -19,13 +20,14 @@ This module provides extra combinators to program 'YulDSL' in linear-types, in a
 module YulDSL.LinearSMC where
 
 -- base
+import           Data.Functor.Identity        (Identity)
 import qualified Prelude                      as BasePrelude
 -- linear-base
 import           Prelude.Linear
 import qualified Unsafe.Linear                as UnsafeLinear
 -- linear-smc
 import           Control.Category.Constrained (Cartesian, Category (Obj), O2, O3, O4, type (⊗))
-import           Control.Category.Linear      (P, copy, decode, discard, encode, merge, mkUnit, split)
+import           Control.Category.Linear      (P, copy, decode, discard, encode, ignore, merge, mkUnit, split)
 -- yul-dsl
 import           YulDSL.Core
 -- import Linear-SMC instances
@@ -94,12 +96,14 @@ type BOOL'P  r = Yul'P r BOOL
 type U256'P  r = Yul'P r U256
 type I256'P  r = Yul'P r I256
 
+type YulCat'P r a b = Yul'P r a ⊸ Yul'P r b
+
 const'l :: forall a d r. YulO3 a d r
         => a -> (Yul'P r d ⊸ Yul'P r a)
 const'l a = encode (YulEmbed a) . discard
 
 coerce'l :: forall a b r. (YulO3 a b r, ABITypeCoercible a b)
-         => (Yul'P r a ⊸ Yul'P r b)
+         => Yul'P r a ⊸ Yul'P r b
 coerce'l = encode YulCoerce
 
 dup2'l :: forall a r. YulO2 a r
@@ -163,12 +167,86 @@ infixr 1 <==, <==@
 
 {- Linear Function utilities -}
 
+class UncurriableFn'L f as xs b where
+  uncurryFn'l :: forall r f'.
+                 ( YulO4 (NP as) (NP xs) b r
+                 , f' ~ LiftFunction  f (P YulCat r) One
+                 , xs ~ UncurryNP'Fst f
+                 , b  ~ UncurryNP'Snd f
+                 )
+              => f'
+              ⊸ YulCat'P r (NP as) (NP xs)
+              -> YulCat'P r (NP as) b
+
+instance forall as x.
+         ( YulO2 (NP as) x
+         , UncurryNP'Snd x ~ x
+         , UncurryNP'Fst x ~ '[]
+         , Identity x ~ LiftFunction x Identity One
+         , UncurryNP'Snd (Identity x) ~ Identity x
+         ) => UncurriableFn'L x as '[] x where
+  uncurryFn'l :: forall r f'.
+                 ( YulO1 r
+                 , f' ~ LiftFunction x (P YulCat r) One
+                 )
+              => f'                          -- b
+              ⊸  YulCat'P r (NP as) (NP '[]) -- g
+              -> YulCat'P r (NP as) x
+  -- putting a lot of type annotations since it's getting hard for brains.
+  uncurryFn'l b g as = ignore (coerce'l (g as)) b'
+    -- NOTE: Sorry GHC, I cannot convince you that we have evidences from the instance constraints for:
+    -- Proof:
+    --    f' ~ LiftFunction x (P YulCat r) One
+    --       ~ P YulCat r (UncurryNP'Snd x)
+    --       ~ P YulCat r x
+    where b' = UnsafeLinear.coerce @_ @(Yul'P r x) (b :: f')
+
+instance forall as x xs b g.
+         ( YulO4 (NP as) x (NP xs) b
+         , UncurriableFn'L g as xs b
+         , UncurryNP'Fst g ~ xs
+         , UncurryNP'Snd g ~ b
+         ) => UncurriableFn'L (x -> g) as (x:xs) b where
+  uncurryFn'l :: forall r f'.
+                 ( YulO1 r
+                 , f'     ~ LiftFunction  (x -> g) (P YulCat r) One
+                 , (x:xs) ~ UncurryNP'Fst (x -> g)
+                 , b      ~ UncurryNP'Snd (x -> g)
+                 )
+              => f'                             -- f
+              ⊸  YulCat'P r (NP as) (NP (x:xs)) -- g
+              -> YulCat'P r (NP as) b
+  uncurryFn'l f g as =
+    dup2'l as
+    & \(as', as'') -> split (coerce'l @_ @(x, (NP xs)) (g as'))
+    & \(x, xs) -> ignore (discard xs) (uncurryFn'l @g (f' x) g' as'')
+    where
+      -- NOTE: Sorry GHC, again, I can't convince you so I will coerce you.
+      -- Proof:
+      --   f' ~ LiftFunction  (x -> g) (P YulCat r) One
+      --      ~ Yul'P r x ⊸ LiftFunction g (P YulCat r) One
+      f' = UnsafeLinear.coerce @_ @(Yul'P r x ⊸ LiftFunction g (P YulCat r) One) (f :: f')
+      g' :: YulCat'P r (NP as) (NP xs)
+      g' as' = split (coerce'l @_ @(x, (NP xs)) (g as'))
+               & \(x, xs) -> ignore (discard x) xs
+
+curry'l :: forall f as b r f'.
+        ( YulO3 (NP as) b r
+        , as ~ UncurryNP'Fst f
+        , b  ~ UncurryNP'Snd f
+        , f' ~ LiftFunction f (P YulCat r) One
+        , UncurriableFn'L f as as b
+        )
+        => f'
+        -> YulCat'P r (NP as) b
+curry'l f = uncurryFn'l @f f id
+
 -- | Define a `YulCat` morphism from a linear port function.
 fn'l :: forall as b. YulO2 (NP as) b
      => String
-     -> (forall r. YulO1 r => Yul'P r (NP as) ⊸ Yul'P r b)
+     -> (forall r. YulCat'P r (NP as) b)
      -> FnNP as b
-fn'l fid f = MkFn fid $ decode f
+fn'l fid cat'l = MkFn fid $ decode cat'l
 
 -- class BuildableNP'P r x xs where
 --   buildNP'p :: P YulCat r x ⊸  P YulCat r (NP xs) ⊸  P YulCat r (NP (x:xs))

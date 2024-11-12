@@ -1,5 +1,6 @@
-{-# LANGUAGE LinearTypes  #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE LinearTypes         #-}
+{-# LANGUAGE TypeFamilies        #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
@@ -21,6 +22,8 @@ module Ethereum.ContractABI.CoreType.NP
   , LiftFunction, Multiplicity (Many, One)
   , CurryNP
   , UncurryNP'Fst, UncurryNP'Snd, UncurryNP
+  , UncurriableNP (uncurryNP)
+  , ConstructibleNP (consNP)
   , module Internal.Data.Type.List
   ) where
 
@@ -111,3 +114,14 @@ type family UncurryNP'Multiplicity f :: Multiplicity where
 
 -- | Uncurry a function to its NP form whose multiplicity of the last arrow is preserved.
 type UncurryNP f = NP (UncurryNP'Fst f) %(UncurryNP'Multiplicity f)-> UncurryNP'Snd f
+
+class UncurriableNP f (as :: [Type]) b (m :: Type -> Type) (p :: Multiplicity) where
+  uncurryNP :: forall f'.
+               ( f' ~ LiftFunction f m p
+               , as ~ UncurryNP'Fst f
+               , b  ~ UncurryNP'Snd f
+               )
+            => f' %p-> (m (NP as) -> m b)
+
+class ConstructibleNP x (xs :: [Type]) (m :: Type -> Type) (p :: Multiplicity) where
+  consNP :: m x %p-> m (NP xs) %p-> m (NP (x:xs))

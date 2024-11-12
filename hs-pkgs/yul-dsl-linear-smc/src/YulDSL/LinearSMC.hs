@@ -97,6 +97,7 @@ type U256'P  r = Yul'P r U256
 type I256'P  r = Yul'P r I256
 
 type YulCat'P r a b = Yul'P r a ⊸ Yul'P r b
+data YulCat'P' r a b = YulCat'P' (Yul'P r a ⊸ Yul'P r b)
 
 const'l :: forall a d r. YulO3 a d r
         => a -> (Yul'P r d ⊸ Yul'P r a)

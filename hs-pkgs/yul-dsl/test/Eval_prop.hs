@@ -1,10 +1,9 @@
 module Eval_prop (tests) where
 
-import           Data.Maybe
---
+-- hspec, quickcheck
 import           Test.Hspec
 import           Test.QuickCheck
---
+-- yul-dsl
 import           YulDSL.Core
 import           YulDSL.Eval
 --

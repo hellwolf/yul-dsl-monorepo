@@ -21,9 +21,9 @@ module Ethereum.ContractABI.CoreType.NP
   ( NP (Nil, (:*)), showNP
   , LiftFunction, Multiplicity (Many, One)
   , CurryNP
-  , UncurryNP'Fst, UncurryNP'Snd, UncurryNP
-  , UncurriableNP (uncurryNP)
-  , ConstructibleNP (consNP)
+  , UncurryNP'Fst, UncurryNP'Snd, UncurryNP'Multiplicity, UncurryNP
+  , UncurriableNP (uncurriableNP)
+  , ConstructibleNP (consNP), NPCurrier (curryNP)
   , module Internal.Data.Type.List
   ) where
 
@@ -115,13 +115,16 @@ type family UncurryNP'Multiplicity f :: Multiplicity where
 -- | Uncurry a function to its NP form whose multiplicity of the last arrow is preserved.
 type UncurryNP f = NP (UncurryNP'Fst f) %(UncurryNP'Multiplicity f)-> UncurryNP'Snd f
 
-class UncurriableNP f (as :: [Type]) b (m :: Type -> Type) (p :: Multiplicity) where
-  uncurryNP :: forall f'.
-               ( f' ~ LiftFunction f m p
-               , as ~ UncurryNP'Fst f
-               , b  ~ UncurryNP'Snd f
-               )
-            => f' %p-> (m (NP as) -> m b)
+class UncurriableNP f (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) where
+  uncurriableNP :: forall f'.
+                   ( f' ~ LiftFunction f m1 p
+                   , xs ~ UncurryNP'Fst f
+                   , b  ~ UncurryNP'Snd f
+                   )
+                => f' %p-> (m2 (NP xs) %p-> m2 b)
 
 class ConstructibleNP x (xs :: [Type]) (m :: Type -> Type) (p :: Multiplicity) where
-  consNP :: m x %p-> m (NP xs) %p-> m (NP (x:xs))
+  consNP :: forall. m x %p-> m (NP xs) %p-> m (NP (x:xs))
+
+class NPCurrier as b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) where
+  curryNP :: forall. (m1 (NP as) %p-> m1 b) %p-> m2 b

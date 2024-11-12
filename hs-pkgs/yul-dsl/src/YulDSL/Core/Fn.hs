@@ -15,7 +15,7 @@ import           YulDSL.Core.YulCat
 -- | Yul functions are encoded in their categorical forms.
 data FnCat a b where
   -- | Create a yul function from its unique id and morphism from @a@ to @b@.
-  MkFn :: forall a b. YulO2 a b => { fnId :: String       -- ^ the unique id of the yul function
+  MkFn :: forall a b. YulO2 a b => { fnId  :: String       -- ^ the unique id of the yul function
                                    , fnCat :: YulCat a b  -- ^ the morphism of the yul function
                                    } -> FnCat a b
 
@@ -36,16 +36,24 @@ deriving instance Show AnyFn
 
 {- fn -}
 
+-- uncurry'v :: forall f as b f'.
+--              ( YulO2 (NP as) b
+--              , f' ~ LiftFunction f (YulCat (NP as)) Many
+--              , as ~ UncurryNP'Fst f, b ~ UncurryNP'Snd f
+--              , UncurriableNP f as b (YulCat (NP as)) (YulCat (NP as)) Many
+--              ) => f' -> YulCat (NP as) b
+-- uncurry'v f = uncurriableNP @f @as @b @(YulCat (NP as)) @(YulCat (NP as)) @Many f (YulId @(NP as))
+
 fn :: forall f as b f'.
       ( YulO2 (NP as) b
       , as ~ UncurryNP'Fst f
       , b  ~ UncurryNP'Snd f
       , f' ~ LiftFunction f (YulCat (NP as)) Many
-      , UncurriableNP f as b (YulCat (NP as)) Many
+      , UncurriableNP f as b (YulCat (NP as)) (YulCat (NP as)) Many
       )
    => String -> f' -> Fn f
-fn fid f' = let cat = uncurryNP @f f' (YulId @(NP as))
-            in MkFn fid cat
+fn fid f = let cat = uncurriableNP @f @as @b @(YulCat (NP as)) f (YulId @(NP as))
+           in MkFn fid cat
 
 {- callFn (!*) -}
 

@@ -214,50 +214,57 @@ digestYulCat = printf "%x" . digest_c8 . B.pack . show
 
 -- uncurryNP (x)
 instance forall as x.
-         ( -- * uncurryNP constraints
+         ( -- * uncurriableNP constraints
+
            -- 1) f' ~ LiftFunction f m p
-           YulCat (NP as) x ~ LiftFunction x (YulCat (NP as)) Many
+           YulCat (NP as) x  ~ LiftFunction x (YulCat (NP as)) Many
            -- 2) xs ~ UncurryNP'Fst f
          , '[] ~ UncurryNP'Fst x
            -- 3) b  ~ UncurryNP'Snd f
          , x ~ UncurryNP'Snd x
-         ) => UncurriableNP (x) '[] x (YulCat (NP as)) Many where
-  uncurryNP x _ = x
+
+           -- * local constraints
+         , YulO2 (NP as) x
+         ) => UncurriableNP (x) '[] x (YulCat (NP as)) (YulCat (NP as)) Many where
+  uncurriableNP x _ = x
 
 -- uncurry (x -> ...xs -> b)
 instance forall as x xs b g.
          ( -- * uncurryNP constraints
-           -- 1) f' ~ LiftFunction f m p
+
+           -- 1) f' ~ LiftFunction f m1 p
            (YulCat (NP as) x -> LiftFunction g (YulCat (NP as)) Many) ~
            (LiftFunction (x -> g) (YulCat (NP as)) Many)
-           -- 2) xs ~ UncurryNP'Fst f
+           -- 2) as ~ UncurryNP'Fst f
          , x:xs ~ UncurryNP'Fst (x -> g)
            -- 3) b  ~ UncurryNP'Snd f
          , b ~ UncurryNP'Snd (x -> g)
-           -- * local constraits
+
+           -- * local constraints
+
            -- 1) YulCat Objects
          , YulO3 (NP as) x (NP xs)
            -- 2) UncurriableNP into "g"
          , b ~ UncurryNP'Snd g
          , xs ~ UncurryNP'Fst g
-         , UncurriableNP g xs b (YulCat (NP as)) Many
-         ) => UncurriableNP (x -> g) (x:xs) b (YulCat (NP as)) Many where
-  uncurryNP f xxs = uncurryNP @g (f x) xs
+         , UncurriableNP g xs b (YulCat (NP as)) (YulCat (NP as)) Many
+         ) => UncurriableNP (x -> g) (x:xs) b (YulCat (NP as)) (YulCat (NP as)) Many where
+  uncurriableNP f xxs = uncurriableNP @g @xs @b @(YulCat (NP as)) @(YulCat (NP as)) @Many (f x) xs
     where xxs' = xxs >.> YulSplit
           x   = xxs' >.> YulExl
           xs  = xxs' >.> YulExr
 
--- buildNP (x -> (x))
+-- consNP (x -> (x))
 instance forall as x.
          ( YulO2 (NP as) x
          ) => ConstructibleNP x '[] (YulCat (NP as)) Many where
   consNP x _ = x >.> YulCoerce
 
--- buildNP (x -> xs -> (x, ...xs)
+-- consNP (x -> (...xs) -> (x, ...xs)
 instance forall as x x' xs'.
          ( YulO4 (NP as) x x' (NP xs')
          , ConstructibleNP x' xs' (YulCat (NP as)) Many
-         ) => ConstructibleNP x (x':xs') (YulCat (NP as))  Many where
+         ) => ConstructibleNP x (x':xs') (YulCat (NP as)) Many where
   consNP x xxs = YulFork x (consNP x' xs') >.> YulCoerce
     where xxs' = xxs >.> YulSplit
           x'  = xxs' >.> YulExl

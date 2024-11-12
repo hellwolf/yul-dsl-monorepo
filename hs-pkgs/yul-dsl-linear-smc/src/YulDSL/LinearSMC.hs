@@ -20,7 +20,6 @@ This module provides extra combinators to program 'YulDSL' in linear-types, in a
 module YulDSL.LinearSMC where
 
 -- base
-import           Data.Functor.Identity        (Identity)
 import qualified Prelude                      as BasePrelude
 -- linear-base
 import           Prelude.Linear
@@ -96,8 +95,13 @@ type BOOL'P  r = Yul'P r BOOL
 type U256'P  r = Yul'P r U256
 type I256'P  r = Yul'P r I256
 
-type YulCat'P r a b = Yul'P r a ⊸ Yul'P r b
-data YulCat'P' r a b = YulCat'P' (Yul'P r a ⊸ Yul'P r b)
+-- | Yul category port diagram as a data constructor, otherwise type synonym cannot be partial for @YulCat'P r a@.
+data YulCat'P r a b where
+  YulCat'P :: forall a b r. (Yul'P r a ⊸ Yul'P r b) ⊸ YulCat'P r a b
+
+-- | Unwrap YulCat'P linearly. NB!: due to lack of linear pattern matching in GHC.
+unYulCat'P :: forall a b r. YulCat'P r a b ⊸ (Yul'P r a ⊸ Yul'P r b)
+unYulCat'P (YulCat'P c) = c
 
 const'l :: forall a d r. YulO3 a d r
         => a -> (Yul'P r d ⊸ Yul'P r a)
@@ -168,83 +172,61 @@ infixr 1 <==, <==@
 
 {- Linear Function utilities -}
 
-class UncurriableFn'L f as xs b r where
-  uncurryFn'l :: forall f'.
-                 ( YulO4 (NP as) (NP xs) b r
-                 , f' ~ LiftFunction  f (P YulCat r) One
-                 , xs ~ UncurryNP'Fst f
-                 , b  ~ UncurryNP'Snd f
-                 )
-              => f'
-              ⊸ YulCat'P r (NP as) (NP xs)
-              -> YulCat'P r (NP as) b
-
 instance forall as x r.
-         ( UncurryNP'Snd x ~ x
-         , UncurryNP'Fst x ~ '[]
-         , Identity x ~ LiftFunction x Identity One
-         , UncurryNP'Snd (Identity x) ~ Identity x
-         ) => UncurriableFn'L x as '[] x r where
-  uncurryFn'l :: forall f'.
-                 ( YulO3 (NP as) x r
-                 , f' ~ LiftFunction x (P YulCat r) One
-                 )
-              => f'                          -- b
-              ⊸  YulCat'P r (NP as) (NP '[]) -- g
-              -> YulCat'P r (NP as) x
-  -- putting a lot of type annotations since it's getting hard for brains.
-  uncurryFn'l b g as = ignore (coerce'l (g as)) b'
-    -- NOTE: Sorry GHC, I cannot convince you that we have evidences from the instance constraints for:
-    -- Proof:
-    --    f' ~ LiftFunction x (P YulCat r) One
-    --       ~ P YulCat r (UncurryNP'Snd x)
-    --       ~ P YulCat r x
-    where b' = UnsafeLinear.coerce @_ @(Yul'P r x) (b :: f')
+         ( -- * UncurriableNP constraints
+
+           -- 1) f' ~ LiftFunction f m1 p
+           P YulCat r x ~ LiftFunction x (P YulCat r) One
+           -- 2) xs ~ UncurryNP'Fst f
+         , '[] ~ UncurryNP'Fst x
+           -- 3) b  ~ UncurryNP'Snd f
+
+           -- * local constraints
+         , YulO3 (NP as) x r
+         , x ~ UncurryNP'Snd x
+         ) => UncurriableNP (x) '[] x (P YulCat r) (YulCat'P r (NP as)) One where
+  uncurriableNP x (YulCat'P g) = YulCat'P (\as -> ignore (coerce'l (g as)) x)
 
 instance forall as x xs b g r.
-         ( YulO2 x (NP xs)
-         , UncurriableFn'L g as xs b r
-         , UncurryNP'Fst g ~ xs
-         , UncurryNP'Snd g ~ b
-         ) => UncurriableFn'L (x -> g) as (x:xs) b r where
-  uncurryFn'l :: forall f'.
-                 ( YulO4 (NP as) (NP (x:xs)) b r
-                 , f'     ~ LiftFunction  (x -> g) (P YulCat r) One
-                 , (x:xs) ~ UncurryNP'Fst (x -> g)
-                 , b      ~ UncurryNP'Snd (x -> g)
-                 )
-              => f'                             -- f
-              ⊸  YulCat'P r (NP as) (NP (x:xs)) -- g
-              -> YulCat'P r (NP as) b
-  uncurryFn'l f g as =
-    dup2'l as
-    & \(as', as'') -> split (coerce'l @_ @(x, (NP xs)) (g as'))
-    & \(x, xs) -> ignore (discard xs) (uncurryFn'l @g (f' x) g' as'')
+         ( -- * UncurriableNP constraints
+
+           -- 1) f' ~ LiftFunction f m1 p
+           (Yul'P r x ⊸ LiftFunction g (P YulCat r) One) ~
+           (LiftFunction (x -> g) (P YulCat r) One)
+           -- 2) xs ~ UncurryNP'Fst f
+         , xs ~ UncurryNP'Fst g
+           -- 3) b  ~ UncurryNP'Snd f
+         , b ~ UncurryNP'Snd g
+
+           -- * local constraints
+         , YulO5 (NP as) x (NP xs) b r
+         , UncurriableNP g xs b (P YulCat r) (YulCat'P r (NP as)) One
+         ) => UncurriableNP (x -> g) (x:xs) b (P YulCat r) (YulCat'P r (NP as)) One where
+  uncurriableNP f (YulCat'P g) = YulCat'P
+    (\ as ->
+        dup2'l as
+      & \(as1, as2) -> split (coerce'l @_ @(x, (NP xs)) (g as1))
+      & \(x, xs) -> unYulCat'P ( uncurriableNP @g @xs @b @(P YulCat r) @(YulCat'P r (NP as)) @One
+                                 (f x) (g' xs)
+                               ) as2
+    )
     where
-      -- NOTE: Sorry GHC, again, I can't convince you so I will coerce you.
-      -- Proof:
-      --   f' ~ LiftFunction  (x -> g) (P YulCat r) One
-      --      ~ Yul'P r x ⊸ LiftFunction g (P YulCat r) One
-      f' = UnsafeLinear.coerce @_ @(Yul'P r x ⊸ LiftFunction g (P YulCat r) One) (f :: f')
-      g' :: YulCat'P r (NP as) (NP xs)
-      g' as' = split (coerce'l @_ @(x, (NP xs)) (g as'))
-               & \(x, xs) -> ignore (discard x) xs
+      g' :: Yul'P r (NP xs) ⊸ YulCat'P r (NP as) (NP xs)
+      g' xs = YulCat'P (\as -> ignore (discard as) xs)
 
 curry'l :: forall f as b r f'.
         ( YulO3 (NP as) b r
         , as ~ UncurryNP'Fst f
         , b  ~ UncurryNP'Snd f
         , f' ~ LiftFunction f (P YulCat r) One
-        , UncurriableFn'L f as as b r
-        )
-        => f'
-        -> YulCat'P r (NP as) b
-curry'l f = uncurryFn'l @f f id
+        , UncurriableNP f as b (P YulCat r) (YulCat'P r (NP as)) One
+        ) => f' -> (Yul'P r (NP as) ⊸ Yul'P r b)
+curry'l f' = unYulCat'P (uncurriableNP @f @as @b @(P YulCat r) @(YulCat'P r (NP as)) @One f' (YulCat'P id))
 
 -- | Define a `YulCat` morphism from a linear port function.
 fn'l :: forall as b. YulO2 (NP as) b
      => String
-     -> (forall r. YulCat'P r (NP as) b)
+     -> (forall r. Yul'P r (NP as) ⊸ Yul'P r b)
      -> FnNP as b
 fn'l fid cat'l = MkFn fid $ decode cat'l
 

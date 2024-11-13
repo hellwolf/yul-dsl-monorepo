@@ -58,7 +58,7 @@ build-docs-and-display: build-docs
 	xdg-open $(DOCS_BUILDDIR)/build/*/*/yul-dsl-linear-smc-*/doc/html/yul-dsl-linear-smc/index.html
 
 clean:
-	rm -rf build
+	rm -rf build cache out dist-*
 
 test: test-yul-dsl test-yol-suite test-demo
 

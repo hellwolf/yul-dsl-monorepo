@@ -23,7 +23,8 @@ module Ethereum.ContractABI.CoreType.NP
   , CurryNP
   , UncurryNP'Fst, UncurryNP'Snd, UncurryNP'Multiplicity, UncurryNP
   , UncurriableNP (uncurriableNP)
-  , ConstructibleNP (consNP), NPCurrier (curryNP)
+  , CurryNP'Head, CurryNP'Tail
+  , ConstructibleNP (consNP), CurriableNP (curriableNP)
   , module Internal.Data.Type.List
   ) where
 
@@ -97,13 +98,13 @@ type family CurryNP np b where
 -- | Uncurry the arguments of a function to a list of types.
 type family UncurryNP'Fst f :: [Type] where
   UncurryNP'Fst (a1 %_-> a2 %_-> g) = a1 : UncurryNP'Fst (a2 -> g)
-  UncurryNP'Fst         (a1 %_-> b) = a1 : UncurryNP'Fst (b)
+  UncurryNP'Fst         (a1 %_-> g) = a1 : UncurryNP'Fst (g)
   UncurryNP'Fst                 (b) = '[]
 
 -- | Uncurry the result of a function.
-type family UncurryNP'Snd f :: Type where
+type family UncurryNP'Snd f  where
   UncurryNP'Snd (a1 %p-> a2 %_-> g) = UncurryNP'Snd (a2 %p-> g)
-  UncurryNP'Snd       (a1   %_-> b) = UncurryNP'Snd (b)
+  UncurryNP'Snd       (a1   %_-> g) = UncurryNP'Snd (g)
   UncurryNP'Snd                 (b) = b
 
 -- | Uncurry and extract the multiplicity of the last arrow.
@@ -116,15 +117,27 @@ type family UncurryNP'Multiplicity f :: Multiplicity where
 type UncurryNP f = NP (UncurryNP'Fst f) %(UncurryNP'Multiplicity f)-> UncurryNP'Snd f
 
 class UncurriableNP f (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) where
-  uncurriableNP :: forall f'.
-                   ( f' ~ LiftFunction f m1 p
-                   , xs ~ UncurryNP'Fst f
+  uncurriableNP :: forall.
+                   ( xs ~ UncurryNP'Fst f
                    , b  ~ UncurryNP'Snd f
-                   )
-                => f' %p-> (m2 (NP xs) %p-> m2 b)
+                   ) => LiftFunction f m1 p
+                   %p-> (m2 (NP xs) %p-> m2 b)
 
 class ConstructibleNP x (xs :: [Type]) (m :: Type -> Type) (p :: Multiplicity) where
   consNP :: forall. m x %p-> m (NP xs) %p-> m (NP (x:xs))
 
-class NPCurrier as b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) where
-  curryNP :: forall. (m1 (NP as) %p-> m1 b) %p-> m2 b
+type family CurryNP'Head f where
+  CurryNP'Head (a1 %_-> g) = a1
+  CurryNP'Head        (a1) = a1
+
+type family CurryNP'Tail f where
+  CurryNP'Tail (a1 %_-> a2 %p-> g) = a2 %p-> CurryNP'Tail g
+  CurryNP'Tail (        a1 %p-> g) = CurryNP'Tail g
+  CurryNP'Tail                 (b) = b
+
+class CurriableNP f xs b (m :: Type -> Type) (p :: Multiplicity) where
+  curriableNP :: forall.
+                 ( xs ~ UncurryNP'Fst f
+                 , b  ~ UncurryNP'Snd f
+                 ) => (m (NP xs) %p-> m b)
+                 %p-> LiftFunction f m p

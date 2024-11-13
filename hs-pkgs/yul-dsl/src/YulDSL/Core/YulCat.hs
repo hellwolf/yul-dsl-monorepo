@@ -265,10 +265,27 @@ instance forall as x x' xs'.
          ( YulO4 (NP as) x x' (NP xs')
          , ConstructibleNP x' xs' (YulCat (NP as)) Many
          ) => ConstructibleNP x (x':xs') (YulCat (NP as)) Many where
-  consNP x xxs = YulFork x (consNP x' xs') >.> YulCoerce
-    where xxs' = xxs >.> YulSplit
-          x'  = xxs' >.> YulExl
-          xs' = xxs' >.> YulExr
+  consNP x xxs = YulFork x xxs >.> YulCoerce
+
+instance forall b r.
+         ( YulO1 r
+         , '[] ~ UncurryNP'Fst b
+         , LiftFunction b (YulCat r) Many ~ YulCat r b
+         ) => CurriableNP (b) '[] b (YulCat r) Many where
+  curriableNP cb = cb (YulDis >.> YulCoerce)
+
+instance forall x xs g b r.
+         ( YulO4 x (NP xs) b r
+         , b ~ UncurryNP'Snd (x -> g)
+         , xs ~ UncurryNP'Fst g
+         , b ~ UncurryNP'Snd g
+         , LiftFunction (x -> g) (YulCat r) Many ~ (YulCat r x -> LiftFunction g (YulCat r) Many)
+         , CurriableNP g xs b (YulCat r) Many
+         ) => CurriableNP (x -> g) (x:xs) b (YulCat r) Many where
+  curriableNP cb = f
+    where
+      f :: YulCat r x -> LiftFunction g (YulCat r) Many
+      f x = curriableNP @g @xs @b @(YulCat r) (\xs -> cb (YulFork x xs >.> YulCoerce))
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Show Instance For Unique String Representation Of Cats

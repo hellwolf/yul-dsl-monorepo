@@ -22,7 +22,7 @@ data FnCat a b where
 instance YulO2 a b => Show (FnCat a b) where show (MkFn _ cat) = show cat
 
 -- | Yul functions that have their arguments in 'NP' forms.
-type FnNP as b = FnCat (NP as) b
+type FnNP xs b = FnCat (NP xs) b
 
 -- | Yul functions that denoted in currying function forms.
 --
@@ -44,15 +44,15 @@ deriving instance Show AnyFn
 --              ) => f' -> YulCat (NP as) b
 -- uncurry'v f = uncurriableNP @f @as @b @(YulCat (NP as)) @(YulCat (NP as)) @Many f (YulId @(NP as))
 
-fn :: forall f as b f'.
-      ( YulO2 (NP as) b
-      , as ~ UncurryNP'Fst f
+fn :: forall f xs b f'.
+      ( YulO2 (NP xs) b
+      , xs ~ UncurryNP'Fst f
       , b  ~ UncurryNP'Snd f
-      , f' ~ LiftFunction f (YulCat (NP as)) Many
-      , CurryingNP f as b (YulCat (NP as)) (YulCat (NP as)) Many
+      , f' ~ LiftFunction f (YulCat (NP xs)) Many
+      , UncurryingNP f xs b (YulCat (NP xs)) (YulCat (NP xs)) Many
       )
    => String -> f' -> Fn f
-fn fid f = let cat = uncurryingNP @f @as @b @(YulCat (NP as)) f (YulId @(NP as))
+fn fid f = let cat = uncurryingNP @f @xs @b @(YulCat (NP xs)) @(YulCat (NP xs)) f (YulId @(NP xs))
            in MkFn fid cat
 
 -- class CallableFn (m1 :: Type -> Type) (p :: Multiplicity) where

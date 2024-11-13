@@ -178,59 +178,60 @@ infixr 1 <==, <==@
 
 instance forall a x r.
          ( -- * uncurryingNP constraints
-
-           -- 1) f' ~ LiftFunction f m1 p
-           P YulCat r x ~ LiftFunction x (P YulCat r) One
-           -- 2) xs ~ UncurryNP'Fst f
-         , '[] ~ UncurryNP'Fst x
-           -- 3) b  ~ UncurryNP'Snd f
-         , x ~ UncurryNP'Snd x
-
-           -- * curryingNP constraints
-         , () ~ CurryNP'Head x
-         , P YulCat r x ~ LiftFunction (CurryNP'Tail x) (P YulCat r) One
-
+           UncurryNP'Fst x ~ '[]
+         , UncurryNP'Snd x ~ x
+         , LiftFunction x (P YulCat r) One ~ P YulCat r x
            -- * local constraints
          , YulO3 a x r
          , x ~ UncurryNP'Snd x
-         ) => CurryingNP (x) '[] x (P YulCat r) (YulCat'P r a) One where
+         ) => UncurryingNP (x) '[] x (P YulCat r) (YulCat'P r a) One where
   uncurryingNP x (MkYulCat'P g) = MkYulCat'P (\a -> ignore (coerce'l (g a)) x)
 
+instance forall x r.
+         (-- * curryingNP constraints
+           CurryingNP'Head x ~ ()
+         , LiftFunction (CurryingNP'Tail x) (P YulCat r) One ~ P YulCat r x
+           -- * local constraints
+         , YulO2 x r
+         , x ~ UncurryNP'Snd x
+         ) => CurryingNP (x) '[] x (P YulCat r) One where
   curryingNP cb u = cb (coerce'l u)
-
 
 instance forall a x xs b g r.
          ( -- * uncurryingNP constraints
-
-           -- 1) f' ~ LiftFunction f m1 p
-           (Yul'P r x ⊸ LiftFunction g (P YulCat r) One) ~
+           UncurryNP'Fst g ~ xs
+         , UncurryNP'Snd g ~ b
+         , (Yul'P r x ⊸ LiftFunction g (P YulCat r) One) ~
            (LiftFunction (x -> g) (P YulCat r) One)
-           -- 2) xs ~ UncurryNP'Fst f
-         , xs ~ UncurryNP'Fst g
-           -- 3) b  ~ UncurryNP'Snd f
-         , b ~ UncurryNP'Snd g
-
-           -- * curryingNP constraints
-         , x ~ CurryNP'Head (x -> g)
-         , LiftFunction (CurryNP'Tail (x -> g)) (P YulCat r) One ~
-           (P YulCat r (CurryNP'Head g) ⊸ LiftFunction (CurryNP'Tail g) (P YulCat r) One)
-
            -- * local constraints
          , YulO5 a x (NP xs) b r
-         , CurryingNP g xs b (P YulCat r) (YulCat'P r a) One
-         ) => CurryingNP (x -> g) (x:xs) b (P YulCat r) (YulCat'P r a) One where
+         , UncurryNP'Fst g ~ xs
+         , UncurryNP'Snd g ~ b
+         , UncurryingNP g xs b (P YulCat r) (YulCat'P r a) One
+         ) => UncurryingNP (x -> g) (x:xs) b (P YulCat r) (YulCat'P r a) One where
   uncurryingNP f (MkYulCat'P g) = MkYulCat'P
-    (\ xxs ->
-        dup2'l xxs
-      & \(xxs1, xxs2) -> split (coerce'l (g xxs1))
-      & \(x, xs) -> unYulCat'P ( uncurryingNP @g @xs @b @(P YulCat r) @(YulCat'P r a) @One
-                                 (f x) (g' xs)
-                               ) xxs2
+    (\ xxs -> dup2'l xxs &
+              \(xxs1, xxs2) -> split (coerce'l (g xxs1)) &
+              \(x, xs) -> unYulCat'P ( uncurryingNP @g @xs @b @(P YulCat r) @(YulCat'P r a) @One
+                                       (f x) (g' xs)
+                                     ) xxs2
     )
     where g' :: Yul'P r (NP xs) ⊸ YulCat'P r a (NP xs)
           g' xs = MkYulCat'P (\as -> ignore (discard as) xs)
 
-  curryingNP cb x = curryingNP @g @xs @b @(P YulCat r) @(YulCat'P r a) @One
+
+instance forall x xs b g r.
+         ( -- * curryingNP constraints
+           x ~ CurryingNP'Head (x -> g)
+         , LiftFunction (CurryingNP'Tail (x -> g)) (P YulCat r) One ~
+           (P YulCat r (CurryingNP'Head g) ⊸ LiftFunction (CurryingNP'Tail g) (P YulCat r) One)
+           -- * local constraints
+         , YulO4 x (NP xs) b r
+         , UncurryNP'Fst g ~ xs
+         , UncurryNP'Snd g ~ b
+         , CurryingNP g xs b (P YulCat r) One
+         ) => CurryingNP (x -> g) (x:xs) b (P YulCat r) One where
+  curryingNP cb x = curryingNP @g @xs @b @(P YulCat r) @One
                     (cb . cons'l x)
 
 curry'l :: forall f as b r f'.
@@ -238,7 +239,7 @@ curry'l :: forall f as b r f'.
         , as ~ UncurryNP'Fst f
         , b  ~ UncurryNP'Snd f
         , f' ~ LiftFunction f (P YulCat r) One
-        , CurryingNP f as b (P YulCat r) (YulCat'P r (NP as)) One
+        , UncurryingNP f as b (P YulCat r) (YulCat'P r (NP as)) One
         ) => f' -> (Yul'P r (NP as) ⊸ Yul'P r b)
 curry'l f' = unYulCat'P (uncurryingNP @f @as @b @(P YulCat r) @(YulCat'P r (NP as)) @One f' (MkYulCat'P id))
 

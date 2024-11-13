@@ -20,10 +20,10 @@ Ethereum contract ABI compatible tuples encoded as n-ary products (NP).
 module Ethereum.ContractABI.CoreType.NP
   ( NP (Nil, (:*)), showNP
   , LiftFunction, Multiplicity (Many, One)
-  , CurryNP
   , UncurryNP'Fst, UncurryNP'Snd, UncurryNP'Multiplicity, UncurryNP
-  , CurryNP'Head, CurryNP'Tail
-  , CurryingNP (curryingNP, uncurryingNP)
+  , CurryNP
+  , CurryingNP'Head, CurryingNP'Tail
+  , CurryingNP (curryingNP), UncurryingNP(uncurryingNP)
   , module Internal.Data.Type.List
   ) where
 
@@ -86,14 +86,6 @@ type family LiftFunction f (m :: Type -> Type) (p :: Multiplicity) where
   LiftFunction      (a -> b) m p = m a %p-> m b
   LiftFunction           (b) m _ = m b
 
--- | Convert a function in ts NP form @np -> b@ to a curried function with multiplicity arrows in @p@.
---
---   Note: To add multiplicity-polymorphic arrows or to decorate arguments with additional type function, use
---   'LiftFunction'.
-type family CurryNP np b where
-  CurryNP (NP (a:as)) b = a -> CurryNP (NP as) b
-  CurryNP (NP    '[]) b = b
-
 -- | Uncurry the arguments of a function to a list of types.
 type family UncurryNP'Fst f :: [Type] where
   UncurryNP'Fst (a1 %_-> a2 %_-> g) = a1 : UncurryNP'Fst (a2 -> g)
@@ -102,8 +94,8 @@ type family UncurryNP'Fst f :: [Type] where
 
 -- | Uncurry the result of a function.
 type family UncurryNP'Snd f  where
-  UncurryNP'Snd (a1 %p-> a2 %_-> g) = UncurryNP'Snd (a2 %p-> g)
-  UncurryNP'Snd       (a1   %_-> g) = UncurryNP'Snd (g)
+  UncurryNP'Snd (_ %_-> a2 %p-> g) = UncurryNP'Snd (a2 %p-> g)
+  UncurryNP'Snd         (_ %_-> g) = UncurryNP'Snd (g)
   UncurryNP'Snd                 (b) = b
 
 -- | Uncurry and extract the multiplicity of the last arrow.
@@ -115,30 +107,37 @@ type family UncurryNP'Multiplicity f :: Multiplicity where
 -- | Uncurry a function to its NP form whose multiplicity of the last arrow is preserved.
 type UncurryNP f = NP (UncurryNP'Fst f) %(UncurryNP'Multiplicity f)-> UncurryNP'Snd f
 
--- | Uncurry the head of arguments of an currying function.
-type family CurryNP'Head f where
-  CurryNP'Head (a1 %_-> a2 %_-> g) = a1
-  CurryNP'Head         (a1 %_-> g) = a1
-  CurryNP'Head                 (b) = ()
+-- | Convert a function in ts NP form @np -> b@ to a curried function with multiplicity arrows in @p@.
+--
+--   Note: To add multiplicity-polymorphic arrows or to decorate arguments with additional type function, use
+--   'LiftFunction'.
+type family CurryNP np b where
+  CurryNP (NP (a:as)) b = a -> CurryNP (NP as) b
+  CurryNP (NP    '[]) b = b
 
--- | Uncurry the tail of an currying function.
-type family CurryNP'Tail f where
-  CurryNP'Tail (a1 %_-> a2 %p-> g) = a2 %p-> CurryNP'Tail g
-  CurryNP'Tail (        a1 %p-> g) = CurryNP'Tail g
-  CurryNP'Tail                 (b) = b
+-- | The type of the head of arguments of an currying function.
+type family CurryingNP'Head f where
+  CurryingNP'Head (a1 %_-> a2 %_-> g) = a1
+  CurryingNP'Head         (a1 %_-> g) = a1
+  CurryingNP'Head                 (b) = ()
 
-class CurryingNP f (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) where
+-- | The type of the tail of an currying function.
+type family CurryingNP'Tail f where
+  CurryingNP'Tail (a1 %_-> a2 %p-> g) = a2 %p-> CurryingNP'Tail g
+  CurryingNP'Tail (        a1 %p-> g) = CurryingNP'Tail g
+  CurryingNP'Tail                 (b) = b
+
+class UncurryingNP f (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) where
   uncurryingNP :: forall.
                   ( xs ~ UncurryNP'Fst f
                   , b  ~ UncurryNP'Snd f
-                  ) =>
-                  LiftFunction f m1 p
-                  %p-> m2 (NP xs)
-                  %p-> m2 b
+                  ) => LiftFunction f m1 p
+                  %p-> (m2 (NP xs) %p-> m2 b)
 
+class CurryingNP f (xs :: [Type]) b (m :: Type -> Type) (p :: Multiplicity) where
   curryingNP :: forall.
                 ( xs ~ UncurryNP'Fst f
                 , b  ~ UncurryNP'Snd f
-                ) => (m1 (NP xs) %p-> m1 b)
-                %p-> m1 (CurryNP'Head f)
-                %p-> (LiftFunction (CurryNP'Tail f) m1 p)
+                ) => (m (NP xs) %p-> m b)
+                %p-> m (CurryingNP'Head f)
+                %p-> (LiftFunction (CurryingNP'Tail f) m p)

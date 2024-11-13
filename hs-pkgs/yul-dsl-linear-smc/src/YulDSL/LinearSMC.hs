@@ -97,11 +97,11 @@ type I256'P  r = Yul'P r I256
 
 -- | Yul category port diagram as a data constructor, otherwise type synonym cannot be partial for @YulCat'P r a@.
 data YulCat'P r a b where
-  YulCat'P :: forall a b r. (Yul'P r a ⊸ Yul'P r b) ⊸ YulCat'P r a b
+  MkYulCat'P :: forall a b r. (Yul'P r a ⊸ Yul'P r b) ⊸ YulCat'P r a b
 
 -- | Unwrap YulCat'P linearly. NB!: due to lack of linear pattern matching in GHC.
 unYulCat'P :: forall a b r. YulCat'P r a b ⊸ (Yul'P r a ⊸ Yul'P r b)
-unYulCat'P (YulCat'P c) = c
+unYulCat'P (MkYulCat'P c) = c
 
 const'l :: forall a d r. YulO3 a d r
         => a -> (Yul'P r d ⊸ Yul'P r a)
@@ -114,6 +114,10 @@ coerce'l = encode YulCoerce
 dup2'l :: forall a r. YulO2 a r
        => Yul'P r a ⊸ (Yul'P r a, Yul'P r a)
 dup2'l = split . copy
+
+cons'l :: forall x xs r. YulO3 x (NP xs) r
+         => Yul'P r x ⊸ Yul'P r (NP xs) ⊸ Yul'P r (NP (x:xs))
+cons'l x xs = coerce'l (merge (x, xs))
 
 {- YulNum utilities -}
 
@@ -172,23 +176,31 @@ infixr 1 <==, <==@
 
 {- Linear Function utilities -}
 
-instance forall as x r.
-         ( -- * UncurriableNP constraints
+instance forall a x r.
+         ( -- * uncurryingNP constraints
 
            -- 1) f' ~ LiftFunction f m1 p
            P YulCat r x ~ LiftFunction x (P YulCat r) One
            -- 2) xs ~ UncurryNP'Fst f
          , '[] ~ UncurryNP'Fst x
            -- 3) b  ~ UncurryNP'Snd f
+         , x ~ UncurryNP'Snd x
+
+           -- * curryingNP constraints
+         , () ~ CurryNP'Head x
+         , P YulCat r x ~ LiftFunction (CurryNP'Tail x) (P YulCat r) One
 
            -- * local constraints
-         , YulO3 (NP as) x r
+         , YulO3 a x r
          , x ~ UncurryNP'Snd x
-         ) => UncurriableNP (x) '[] x (P YulCat r) (YulCat'P r (NP as)) One where
-  uncurriableNP x (YulCat'P g) = YulCat'P (\as -> ignore (coerce'l (g as)) x)
+         ) => CurryingNP (x) '[] x (P YulCat r) (YulCat'P r a) One where
+  uncurryingNP x (MkYulCat'P g) = MkYulCat'P (\a -> ignore (coerce'l (g a)) x)
 
-instance forall as x xs b g r.
-         ( -- * UncurriableNP constraints
+  curryingNP cb u = cb (coerce'l u)
+
+
+instance forall a x xs b g r.
+         ( -- * uncurryingNP constraints
 
            -- 1) f' ~ LiftFunction f m1 p
            (Yul'P r x ⊸ LiftFunction g (P YulCat r) One) ~
@@ -198,30 +210,37 @@ instance forall as x xs b g r.
            -- 3) b  ~ UncurryNP'Snd f
          , b ~ UncurryNP'Snd g
 
+           -- * curryingNP constraints
+         , x ~ CurryNP'Head (x -> g)
+         , LiftFunction (CurryNP'Tail (x -> g)) (P YulCat r) One ~
+           (P YulCat r (CurryNP'Head g) ⊸ LiftFunction (CurryNP'Tail g) (P YulCat r) One)
+
            -- * local constraints
-         , YulO5 (NP as) x (NP xs) b r
-         , UncurriableNP g xs b (P YulCat r) (YulCat'P r (NP as)) One
-         ) => UncurriableNP (x -> g) (x:xs) b (P YulCat r) (YulCat'P r (NP as)) One where
-  uncurriableNP f (YulCat'P g) = YulCat'P
-    (\ as ->
-        dup2'l as
-      & \(as1, as2) -> split (coerce'l @_ @(x, (NP xs)) (g as1))
-      & \(x, xs) -> unYulCat'P ( uncurriableNP @g @xs @b @(P YulCat r) @(YulCat'P r (NP as)) @One
+         , YulO5 a x (NP xs) b r
+         , CurryingNP g xs b (P YulCat r) (YulCat'P r a) One
+         ) => CurryingNP (x -> g) (x:xs) b (P YulCat r) (YulCat'P r a) One where
+  uncurryingNP f (MkYulCat'P g) = MkYulCat'P
+    (\ xxs ->
+        dup2'l xxs
+      & \(xxs1, xxs2) -> split (coerce'l (g xxs1))
+      & \(x, xs) -> unYulCat'P ( uncurryingNP @g @xs @b @(P YulCat r) @(YulCat'P r a) @One
                                  (f x) (g' xs)
-                               ) as2
+                               ) xxs2
     )
-    where
-      g' :: Yul'P r (NP xs) ⊸ YulCat'P r (NP as) (NP xs)
-      g' xs = YulCat'P (\as -> ignore (discard as) xs)
+    where g' :: Yul'P r (NP xs) ⊸ YulCat'P r a (NP xs)
+          g' xs = MkYulCat'P (\as -> ignore (discard as) xs)
+
+  curryingNP cb x = curryingNP @g @xs @b @(P YulCat r) @(YulCat'P r a) @One
+                    (cb . cons'l x)
 
 curry'l :: forall f as b r f'.
         ( YulO3 (NP as) b r
         , as ~ UncurryNP'Fst f
         , b  ~ UncurryNP'Snd f
         , f' ~ LiftFunction f (P YulCat r) One
-        , UncurriableNP f as b (P YulCat r) (YulCat'P r (NP as)) One
+        , CurryingNP f as b (P YulCat r) (YulCat'P r (NP as)) One
         ) => f' -> (Yul'P r (NP as) ⊸ Yul'P r b)
-curry'l f' = unYulCat'P (uncurriableNP @f @as @b @(P YulCat r) @(YulCat'P r (NP as)) @One f' (YulCat'P id))
+curry'l f' = unYulCat'P (uncurryingNP @f @as @b @(P YulCat r) @(YulCat'P r (NP as)) @One f' (MkYulCat'P id))
 
 -- | Define a `YulCat` morphism from a linear port function.
 fn'l :: forall as b. YulO2 (NP as) b

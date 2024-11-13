@@ -212,80 +212,60 @@ digestYulCat = printf "%x" . digest_c8 . B.pack . show
 -- NP Function Currying/Uncurrying Instances
 ------------------------------------------------------------------------------------------------------------------------
 
--- uncurryNP (x)
-instance forall as x.
-         ( -- * uncurriableNP constraints
+-- (x)
+instance forall x r.
+         ( -- * uncurryingNP constraints
 
            -- 1) f' ~ LiftFunction f m p
-           YulCat (NP as) x  ~ LiftFunction x (YulCat (NP as)) Many
+           YulCat r x  ~ LiftFunction x (YulCat r) Many
            -- 2) xs ~ UncurryNP'Fst f
          , '[] ~ UncurryNP'Fst x
            -- 3) b  ~ UncurryNP'Snd f
          , x ~ UncurryNP'Snd x
 
-           -- * local constraints
-         , YulO2 (NP as) x
-         ) => UncurriableNP (x) '[] x (YulCat (NP as)) (YulCat (NP as)) Many where
-  uncurriableNP x _ = x
+           -- * curryingNP constraints
+         , () ~ CurryNP'Head x
+         , YulCat r x ~ LiftFunction (CurryNP'Tail x) (YulCat r) Many
 
--- uncurry (x -> ...xs -> b)
-instance forall as x xs b g.
-         ( -- * uncurryNP constraints
+           -- * local constraints
+         , YulO2 x r
+         ) => CurryingNP (x) '[] x (YulCat r) (YulCat r) Many where
+  uncurryingNP x _ = x
+
+  curryingNP cb u = cb (u >.> YulCoerce)
+
+-- (x -> ...xs -> b)
+instance forall x xs b g r.
+         ( -- * uncurryingNP constraints
 
            -- 1) f' ~ LiftFunction f m1 p
-           (YulCat (NP as) x -> LiftFunction g (YulCat (NP as)) Many) ~
-           (LiftFunction (x -> g) (YulCat (NP as)) Many)
+           (YulCat r x -> LiftFunction g (YulCat r) Many) ~
+           (LiftFunction (x -> g) (YulCat r) Many)
            -- 2) as ~ UncurryNP'Fst f
          , x:xs ~ UncurryNP'Fst (x -> g)
            -- 3) b  ~ UncurryNP'Snd f
          , b ~ UncurryNP'Snd (x -> g)
 
+           -- * uncurryingNP constraints
+         , x ~ CurryNP'Head (x -> g)
+         , LiftFunction (CurryNP'Tail (x -> g)) (YulCat r) Many ~
+           (YulCat r (CurryNP'Head g) -> LiftFunction (CurryNP'Tail g) (YulCat r) Many)
+
            -- * local constraints
 
            -- 1) YulCat Objects
-         , YulO3 (NP as) x (NP xs)
+         , YulO3 x (NP xs) r
            -- 2) UncurriableNP into "g"
          , b ~ UncurryNP'Snd g
          , xs ~ UncurryNP'Fst g
-         , UncurriableNP g xs b (YulCat (NP as)) (YulCat (NP as)) Many
-         ) => UncurriableNP (x -> g) (x:xs) b (YulCat (NP as)) (YulCat (NP as)) Many where
-  uncurriableNP f xxs = uncurriableNP @g @xs @b @(YulCat (NP as)) @(YulCat (NP as)) @Many (f x) xs
+         , CurryingNP g xs b (YulCat r) (YulCat r) Many
+         ) => CurryingNP (x -> g) (x:xs) b (YulCat r) (YulCat r) Many where
+  uncurryingNP f xxs = uncurryingNP @g @xs @b @(YulCat r) @(YulCat r) @Many (f x) xs
     where xxs' = xxs >.> YulSplit
           x   = xxs' >.> YulExl
           xs  = xxs' >.> YulExr
 
--- consNP (x -> (x))
-instance forall as x.
-         ( YulO2 (NP as) x
-         ) => ConstructibleNP x '[] (YulCat (NP as)) Many where
-  consNP x _ = x >.> YulCoerce
-
--- consNP (x -> (...xs) -> (x, ...xs)
-instance forall as x x' xs'.
-         ( YulO4 (NP as) x x' (NP xs')
-         , ConstructibleNP x' xs' (YulCat (NP as)) Many
-         ) => ConstructibleNP x (x':xs') (YulCat (NP as)) Many where
-  consNP x xxs = YulFork x xxs >.> YulCoerce
-
-instance forall b r.
-         ( YulO1 r
-         , '[] ~ UncurryNP'Fst b
-         , LiftFunction b (YulCat r) Many ~ YulCat r b
-         ) => CurriableNP (b) '[] b (YulCat r) Many where
-  curriableNP cb = cb (YulDis >.> YulCoerce)
-
-instance forall x xs g b r.
-         ( YulO4 x (NP xs) b r
-         , b ~ UncurryNP'Snd (x -> g)
-         , xs ~ UncurryNP'Fst g
-         , b ~ UncurryNP'Snd g
-         , LiftFunction (x -> g) (YulCat r) Many ~ (YulCat r x -> LiftFunction g (YulCat r) Many)
-         , CurriableNP g xs b (YulCat r) Many
-         ) => CurriableNP (x -> g) (x:xs) b (YulCat r) Many where
-  curriableNP cb = f
-    where
-      f :: YulCat r x -> LiftFunction g (YulCat r) Many
-      f x = curriableNP @g @xs @b @(YulCat r) (\xs -> cb (YulFork x xs >.> YulCoerce))
+  curryingNP cb x = curryingNP @g @xs @b @(YulCat r) @(YulCat r) (\xs -> cb (YulFork x xs >.> YulCoerce))
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Show Instance For Unique String Representation Of Cats

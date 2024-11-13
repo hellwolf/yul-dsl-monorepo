@@ -49,11 +49,14 @@ fn :: forall f as b f'.
       , as ~ UncurryNP'Fst f
       , b  ~ UncurryNP'Snd f
       , f' ~ LiftFunction f (YulCat (NP as)) Many
-      , UncurriableNP f as b (YulCat (NP as)) (YulCat (NP as)) Many
+      , CurryingNP f as b (YulCat (NP as)) (YulCat (NP as)) Many
       )
    => String -> f' -> Fn f
-fn fid f = let cat = uncurriableNP @f @as @b @(YulCat (NP as)) f (YulId @(NP as))
+fn fid f = let cat = uncurryingNP @f @as @b @(YulCat (NP as)) f (YulId @(NP as))
            in MkFn fid cat
+
+-- class CallableFn (m1 :: Type -> Type) (p :: Multiplicity) where
+--  callFn :: forall as b. FnNP as b %p-> m2 b
 
 {- callFn (!*) -}
 

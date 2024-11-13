@@ -22,9 +22,8 @@ module Ethereum.ContractABI.CoreType.NP
   , LiftFunction, Multiplicity (Many, One)
   , CurryNP
   , UncurryNP'Fst, UncurryNP'Snd, UncurryNP'Multiplicity, UncurryNP
-  , UncurriableNP (uncurriableNP)
   , CurryNP'Head, CurryNP'Tail
-  , ConstructibleNP (consNP), CurriableNP (curriableNP)
+  , CurryingNP (curryingNP, uncurryingNP)
   , module Internal.Data.Type.List
   ) where
 
@@ -116,28 +115,30 @@ type family UncurryNP'Multiplicity f :: Multiplicity where
 -- | Uncurry a function to its NP form whose multiplicity of the last arrow is preserved.
 type UncurryNP f = NP (UncurryNP'Fst f) %(UncurryNP'Multiplicity f)-> UncurryNP'Snd f
 
-class UncurriableNP f (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) where
-  uncurriableNP :: forall.
-                   ( xs ~ UncurryNP'Fst f
-                   , b  ~ UncurryNP'Snd f
-                   ) => LiftFunction f m1 p
-                   %p-> (m2 (NP xs) %p-> m2 b)
-
-class ConstructibleNP x (xs :: [Type]) (m :: Type -> Type) (p :: Multiplicity) where
-  consNP :: forall. m x %p-> m (NP xs) %p-> m (NP (x:xs))
-
+-- | Uncurry the head of arguments of an currying function.
 type family CurryNP'Head f where
-  CurryNP'Head (a1 %_-> g) = a1
-  CurryNP'Head        (a1) = a1
+  CurryNP'Head (a1 %_-> a2 %_-> g) = a1
+  CurryNP'Head         (a1 %_-> g) = a1
+  CurryNP'Head                 (b) = ()
 
+-- | Uncurry the tail of an currying function.
 type family CurryNP'Tail f where
   CurryNP'Tail (a1 %_-> a2 %p-> g) = a2 %p-> CurryNP'Tail g
   CurryNP'Tail (        a1 %p-> g) = CurryNP'Tail g
   CurryNP'Tail                 (b) = b
 
-class CurriableNP f xs b (m :: Type -> Type) (p :: Multiplicity) where
-  curriableNP :: forall.
-                 ( xs ~ UncurryNP'Fst f
-                 , b  ~ UncurryNP'Snd f
-                 ) => (m (NP xs) %p-> m b)
-                 %p-> LiftFunction f m p
+class CurryingNP f (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) where
+  uncurryingNP :: forall.
+                  ( xs ~ UncurryNP'Fst f
+                  , b  ~ UncurryNP'Snd f
+                  ) =>
+                  LiftFunction f m1 p
+                  %p-> m2 (NP xs)
+                  %p-> m2 b
+
+  curryingNP :: forall.
+                ( xs ~ UncurryNP'Fst f
+                , b  ~ UncurryNP'Snd f
+                ) => (m1 (NP xs) %p-> m1 b)
+                %p-> m1 (CurryNP'Head f)
+                %p-> (LiftFunction (CurryNP'Tail f) m1 p)

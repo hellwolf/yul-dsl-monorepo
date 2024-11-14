@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE LinearTypes         #-}
 
 module YulDSL.Core.Fn
   ( FnCat (MkFn), FnNP, Fn, fnId, fnCat, AnyFn (MkAnyFn)
@@ -36,6 +37,17 @@ deriving instance Show AnyFn
 
 {- fn -}
 
+fn :: forall f xs b f'.
+      ( YulO2 (NP xs) b
+      , UncurryNP'Fst f ~ xs
+      , UncurryNP'Snd f ~ b
+      , LiftFunction f (YulCat (NP xs)) Many ~ f'
+      , UncurryingNP f xs b (YulCat (NP xs)) (YulCat (NP xs)) Many
+      )
+   => String -> f' -> Fn f
+fn fid f = let cat = uncurryingNP @f @xs @b @(YulCat (NP xs)) @(YulCat (NP xs)) f (YulId @(NP xs))
+           in MkFn fid cat
+
 -- uncurry'v :: forall f as b f'.
 --              ( YulO2 (NP as) b
 --              , f' ~ LiftFunction f (YulCat (NP as)) Many
@@ -44,16 +56,20 @@ deriving instance Show AnyFn
 --              ) => f' -> YulCat (NP as) b
 -- uncurry'v f = uncurriableNP @f @as @b @(YulCat (NP as)) @(YulCat (NP as)) @Many f (YulId @(NP as))
 
-fn :: forall f xs b f'.
-      ( YulO2 (NP xs) b
-      , xs ~ UncurryNP'Fst f
-      , b  ~ UncurryNP'Snd f
-      , f' ~ LiftFunction f (YulCat (NP xs)) Many
-      , UncurryingNP f xs b (YulCat (NP xs)) (YulCat (NP xs)) Many
-      )
-   => String -> f' -> Fn f
-fn fid f = let cat = uncurryingNP @f @xs @b @(YulCat (NP xs)) @(YulCat (NP xs)) f (YulId @(NP xs))
-           in MkFn fid cat
+-- class FnLike (k :: * -> * -> *) (p :: Multiplicity) where
+--   fn' :: forall f xs b.
+--          ( YulO2 (NP xs) b
+--          , UncurryNP'Fst f ~ xs
+--          , UncurryNP'Snd f ~ b
+--          )
+--       => String
+--       -> (forall r. LiftFunction f (k r) p -> YulCat (NP xs) b)
+--       -> (forall r. LiftFunction f (k r) p)
+--       -> Fn f
+--   fn' fid g f = MkFn fid (g f)
+
+-- instance FnLike YulCat Many where
+--  fn' = _
 
 -- class CallableFn (m1 :: Type -> Type) (p :: Multiplicity) where
 --  callFn :: forall as b. FnNP as b %p-> m2 b

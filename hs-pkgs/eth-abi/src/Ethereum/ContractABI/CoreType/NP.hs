@@ -82,25 +82,21 @@ instance Show x => Show (NP (x : xs)) where
 -- | Lift a new currying function type from the simple function signature @f@ with a type function @m@ for each of its
 --   arguments with multiplicity arrows in @p@.
 type family LiftFunction f (m :: Type -> Type) (p :: Multiplicity) where
-  LiftFunction (a -> b -> c) m p = m a %p-> LiftFunction (b -> c) m p
-  LiftFunction      (a -> b) m p = m a %p-> m b
-  LiftFunction           (b) m _ = m b
+  LiftFunction  (a1 -> g) m p = m a1 %p-> LiftFunction g m p
+  LiftFunction        (b) m _ = m b
 
 -- | Uncurry the arguments of a function to a list of types.
 type family UncurryNP'Fst f :: [Type] where
-  UncurryNP'Fst (a1 %_-> a2 %_-> g) = a1 : UncurryNP'Fst (a2 -> g)
-  UncurryNP'Fst         (a1 %_-> g) = a1 : UncurryNP'Fst (g)
-  UncurryNP'Fst                 (b) = '[]
+  UncurryNP'Fst (a1 %_-> g) = a1 : UncurryNP'Fst (g)
+  UncurryNP'Fst         (b) = '[]
 
 -- | Uncurry the result of a function.
 type family UncurryNP'Snd f  where
-  UncurryNP'Snd (_ %_-> a2 %p-> g) = UncurryNP'Snd (a2 %p-> g)
-  UncurryNP'Snd         (_ %_-> g) = UncurryNP'Snd (g)
-  UncurryNP'Snd                 (b) = b
+  UncurryNP'Snd (_ %_-> g) = UncurryNP'Snd (g)
+  UncurryNP'Snd        (b) = b
 
 -- | Uncurry and extract the multiplicity of the last arrow.
 type family UncurryNP'Multiplicity f :: Multiplicity where
-  UncurryNP'Multiplicity (a1 %_-> a2 %p-> g) = UncurryNP'Multiplicity (a2 %p-> g)
   UncurryNP'Multiplicity         (a1 %p-> b) = p
   UncurryNP'Multiplicity                 (b) = Many
 
@@ -117,15 +113,14 @@ type family CurryNP np b where
 
 -- | The type of the head of arguments of an currying function.
 type family CurryingNP'Head f where
-  CurryingNP'Head (a1 %_-> a2 %_-> g) = a1
-  CurryingNP'Head         (a1 %_-> g) = a1
-  CurryingNP'Head                 (b) = ()
+  CurryingNP'Head (a1 %_-> g) = a1
+  CurryingNP'Head         (b) = ()
 
 -- | The type of the tail of an currying function.
 type family CurryingNP'Tail f where
-  CurryingNP'Tail (a1 %_-> a2 %p-> g) = a2 %p-> CurryingNP'Tail g
-  CurryingNP'Tail (        a1 %p-> g) = CurryingNP'Tail g
-  CurryingNP'Tail                 (b) = b
+--  CurryingNP'Tail (a1 %_-> a2 %p-> g) = a2 %p-> CurryingNP'Tail g
+  CurryingNP'Tail (a1 %p-> g) = CurryingNP'Tail g
+  CurryingNP'Tail         (b) = b
 
 class UncurryingNP f (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) where
   uncurryingNP :: forall.

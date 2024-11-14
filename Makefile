@@ -80,6 +80,6 @@ test-demo-yul:
 	cd examples/demo && forge test -vvv
 
 dev:
-	nodemon -w hs-pkgs -w yol-demo -e "hs sol cabal" -x "make $(DEV_TARGETS) || exit 1"
+	nodemon -w hs-pkgs -w yol-demo -w examples -e "hs sol cabal" -x "make $(DEV_TARGETS) || exit 1"
 
 .PHONY: all gen-* build-* lint clean test test-* dev

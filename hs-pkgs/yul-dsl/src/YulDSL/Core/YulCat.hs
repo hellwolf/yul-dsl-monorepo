@@ -223,15 +223,6 @@ instance forall x a.
          ) => UncurryingNP (x) '[] x (YulCat a) (YulCat a) Many where
   uncurryingNP x _ = x
 
-instance forall x a.
-         (  -- * curryingNP constraints
-           CurryingNP'Head x ~ ()
-         , LiftFunction (CurryingNP'Tail x) (YulCat a) Many ~ YulCat a x
-           -- * local constraints
-         , YulO2 x a
-         ) => CurryingNP (x) '[] x (YulCat a) Many where
-  curryingNP cb u = cb (u >.> YulCoerce)
-
 -- (x -> ...xs -> b)
 instance forall x xs b g a.
          ( -- * uncurryingNP constraints
@@ -249,6 +240,15 @@ instance forall x xs b g a.
     where xxs' = xxs >.> YulSplit
           x   = xxs' >.> YulExl
           xs  = xxs' >.> YulExr
+
+instance forall x a.
+         (  -- * curryingNP constraints
+           CurryingNP'Head x ~ ()
+         , LiftFunction (CurryingNP'Tail x) (YulCat a) Many ~ YulCat a x
+           -- * local constraints
+         , YulO2 x a
+         ) => CurryingNP (x) '[] x (YulCat a) Many where
+  curryingNP cb u = cb (u >.> YulCoerce)
 
 instance forall x xs b g a.
          ( -- * curryingNP constraints

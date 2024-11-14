@@ -6,17 +6,18 @@ module Basic where
 -- Trivial Diagrams
 ------------------------------------------------------------------------------------------------------------------------
 
-simple_id = MkFn "simple_id" $ YulId @U256
+simple_id = MkFnCat "simple_id" $ YulId @U256
 
-simple_coerce = MkFn "simple_coerce" $ YulCoerce @U256 @U256
+simple_coerce = MkFnCat "simple_coerce" $ YulCoerce @U256 @U256
 
-const_42 = MkFn "const_42" $ decode (const'l (fromInteger 42)) :: Fn (U256)
+const_42 :: Fn (U256)
+const_42 = MkFn (MkFnCat "const_42" $ decode (const'l (fromInteger 42)))
 
 -- nop :: Fn () ()
 -- nop = fn'l "nop" $ curry'l @(()) \(u) -> u
 
 disFn :: ABITypeable a => Fn (a -> ())
-disFn = MkFn "disFn" YulDis
+disFn = MkFn (MkFnCat "disFn" YulDis)
 
 -- mkConst :: forall a b. YulO2 a b => b -> Fn (a -> b)
 -- mkConst b = fn'l "mkConst" $ curry'l @(a -> b) (\a -> const'l b a)
@@ -32,33 +33,38 @@ foo1 = fn'l "foo1"
 --
 --   Note: you can create any number of "unit" signals by adding '()' to the input list.
 foo2 :: Fn (U256 -> U256 -> U256)
-foo2 = fn'l "foo2"$ curry'l @(U256 -> U256 -> U256)
-  \x1 x2 -> dup2'l x2 &
-  \(x2, x2') -> x1 + (x2 + x2')
+foo2 = fn'l "foo2"
+  ( curry'l @(U256 -> U256 -> U256)
+    \x1 x2 -> dup2'l x2 &
+    \(x2, x2') -> x1 + (x2 + x2')
+  )
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
 foo3 :: Fn (U256 -> U256 -> () -> (BOOL, U256))
-foo3 = fn'l "foo3" $ curry'l @(U256 -> U256 -> () -> (BOOL, U256))
-  \x1 x2 u -> dup2'l (x1 + x2) &
-  \(r, r') -> ignore (toAddr 0xdeadbeef <==@ r) (merge (const'l true u, r'))
+foo3 = fn'l "foo3"
+  ( curry'l @(U256 -> U256 -> () -> (BOOL, U256))
+    \x1 x2 u -> dup2'l (x1 + x2) &
+    \(r, r') -> ignore (toAddr 0xdeadbeef <==@ r) (merge (const'l true u, r'))
+  )
 
 -- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
 rangeSum'l :: Fn (U256 -> U256 -> U256 -> U256)
-rangeSum'l = fn'l "rangeSumLFn" $ curry'l @(U256 -> U256 -> U256 -> U256)
-  \from step until -> mkUnit from &
-  \(from, u) -> dup2'l from &
-  \(from, from') -> dup2'l step &
-  \(step, step') -> dup2'l until &
-  \(until, until') -> dup2'l (from + step) &
-  \(j, j') -> from' + if j <=? until then ap'lfn rangeSum'l (j' :* step' :* until') else const'l 0 u
+rangeSum'l = fn'l "rangeSumLFn"
+  ( curry'l @(U256 -> U256 -> U256 -> U256)
+    \from step until -> mkUnit from &
+    \(from, u) -> dup2'l from &
+    \(from, from') -> dup2'l step &
+    \(step, step') -> dup2'l until &
+    \(until, until') -> dup2'l (from + step) &
+    \(j, j') -> from' + if j <=? until then call'l rangeSum'l j' step' until' else const'l 0 u
+  )
 
 -- | "rangeSum" implemented in a value function.
--- rangeSumVFn :: Fn (U256 :* U256 :* U256) U256
 rangeSum'v = go
   where
     go = fn @(U256 -> U256 -> U256 -> U256) "rangeSumVFn" \from step until ->
       let j = from + step
-      in from + if j <=? until then ap'vfn go (j :* step :* until) else YulEmbed 0
+      in from + if j <=? until then call go j step until else YulEmbed 0
 
 -- idVar :: Fn U256 U256
 -- idVar = lfn "idVar" \a -> a' + a'

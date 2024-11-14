@@ -26,6 +26,9 @@ foo3 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8) "id"
 foo4 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8) "id"
        (\a b c d -> a + b + c + d)
 
+call2 = fn @(Maybe U8 -> Maybe U8) "id"
+  (\a -> call @_ @[Maybe U8, Maybe U8] @(Maybe U8) foo2 a a)
+
 test_simple_fn = True
 
 tests = describe "YulDSL.Core.Fn" $ do

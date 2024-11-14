@@ -244,11 +244,15 @@ curry'l :: forall f as b r f'.
 curry'l f' = unYulCat'P (uncurryingNP @f @as @b @(P YulCat r) @(YulCat'P r (NP as)) @One f' (MkYulCat'P id))
 
 -- | Define a `YulCat` morphism from a linear port function.
-fn'l :: forall as b. YulO2 (NP as) b
+fn'l :: forall as b.
+        ( YulO2 (NP as) b
+        , UncurryNP'Fst (CurryNP (NP as) b) ~ as
+        , UncurryNP'Snd (CurryNP (NP as) b) ~ b
+        )
      => String
      -> (forall r. Yul'P r (NP as) ⊸ Yul'P r b)
-     -> FnNP as b
-fn'l fid cat'l = MkFn fid $ decode cat'l
+     -> Fn (CurryNP (NP as) b)
+fn'l fid cat'l = MkFn (MkFnCat fid (decode cat'l))
 
 -- class BuildableNP'P r x xs where
 --   buildNP'p :: P YulCat r x ⊸  P YulCat r (NP xs) ⊸  P YulCat r (NP (x:xs))

@@ -124,15 +124,15 @@ type family CurryingNP'Tail f where
 
 class UncurryingNP f (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) where
   uncurryingNP :: forall.
-                  ( xs ~ UncurryNP'Fst f
-                  , b  ~ UncurryNP'Snd f
-                  ) => LiftFunction f m1 p
-                  %p-> (m2 (NP xs) %p-> m2 b)
+                  ( UncurryNP'Fst f ~ xs
+                  , UncurryNP'Snd f ~ b
+                  ) => LiftFunction f m1 p    -- ^ from @LiftFunction (         f) m1 p@
+                  %p-> (m2 (NP xs) %p-> m2 b) -- ^ to   @LiftFunction (NP xs -> b) m2 p@
 
 class CurryingNP f (xs :: [Type]) b (m :: Type -> Type) (p :: Multiplicity) where
   curryingNP :: forall.
-                ( xs ~ UncurryNP'Fst f
-                , b  ~ UncurryNP'Snd f
+                ( UncurryNP'Fst f ~ xs
+                , UncurryNP'Snd f ~ b
                 ) => (m (NP xs) %p-> m b)
                 %p-> m (CurryingNP'Head f)
                 %p-> (LiftFunction (CurryingNP'Tail f) m p)

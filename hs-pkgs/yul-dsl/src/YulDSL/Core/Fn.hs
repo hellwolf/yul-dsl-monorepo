@@ -1,9 +1,10 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE LinearTypes         #-}
+-- {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE LinearTypes  #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module YulDSL.Core.Fn
-  ( FnCat (MkFn), FnNP, Fn, fnId, fnCat, AnyFn (MkAnyFn)
-  , fn
+  ( FnCat (MkFnCat), FnNP, Fn (MkFn, unFn), fnId, fnCat, AnyFn (MkAnyFn)
+  , fn, call
   ) where
 
 import           Ethereum.ContractABI
@@ -11,16 +12,16 @@ import           Ethereum.ContractABI
 import           YulDSL.Core.YulCat
 
 
-{- Fn and Its Aliases -}
+{- * Fn and Its Aliases -}
 
 -- | Yul functions are encoded in their categorical forms.
 data FnCat a b where
   -- | Create a yul function from its unique id and morphism from @a@ to @b@.
-  MkFn :: forall a b. YulO2 a b => { fnId  :: String       -- ^ the unique id of the yul function
-                                   , fnCat :: YulCat a b  -- ^ the morphism of the yul function
-                                   } -> FnCat a b
+  MkFnCat :: forall a b. YulO2 a b => { fnId  :: String       -- ^ the unique id of the yul function
+                                      , fnCat :: YulCat a b  -- ^ the morphism of the yul function
+                                      } -> FnCat a b
 
-instance YulO2 a b => Show (FnCat a b) where show (MkFn _ cat) = show cat
+instance YulO2 a b => Show (FnCat a b) where show (MkFnCat _ cat) = show cat
 
 -- | Yul functions that have their arguments in 'NP' forms.
 type FnNP xs b = FnCat (NP xs) b
@@ -28,14 +29,14 @@ type FnNP xs b = FnCat (NP xs) b
 -- | Yul functions that denoted in currying function forms.
 --
 --   Note: Fn (a1 -> a2 -> ...aN -> b) ~ FnNP (NP [a1,a2...aN]) b
-type Fn f = FnNP (UncurryNP'Fst f) (UncurryNP'Snd f)
+newtype Fn f = MkFn { unFn :: FnNP (UncurryNP'Fst f) (UncurryNP'Snd f) }
 
 -- | Existential type for any @FnCat a b@.
 data AnyFn = forall a b. YulO2 a b => MkAnyFn (FnCat a b)
 
 deriving instance Show AnyFn
 
-{- fn -}
+{-* fn -}
 
 fn :: forall f xs b f'.
       ( YulO2 (NP xs) b
@@ -46,35 +47,22 @@ fn :: forall f xs b f'.
       )
    => String -> f' -> Fn f
 fn fid f = let cat = uncurryingNP @f @xs @b @(YulCat (NP xs)) @(YulCat (NP xs)) f (YulId @(NP xs))
-           in MkFn fid cat
+           in MkFn (MkFnCat fid cat)
 
--- uncurry'v :: forall f as b f'.
---              ( YulO2 (NP as) b
---              , f' ~ LiftFunction f (YulCat (NP as)) Many
---              , as ~ UncurryNP'Fst f, b ~ UncurryNP'Snd f
---              , UncurriableNP f as b (YulCat (NP as)) (YulCat (NP as)) Many
---              ) => f' -> YulCat (NP as) b
--- uncurry'v f = uncurriableNP @f @as @b @(YulCat (NP as)) @(YulCat (NP as)) @Many f (YulId @(NP as))
+{-* callFn (!*) -}
 
--- class FnLike (k :: * -> * -> *) (p :: Multiplicity) where
---   fn' :: forall f xs b.
---          ( YulO2 (NP xs) b
---          , UncurryNP'Fst f ~ xs
---          , UncurryNP'Snd f ~ b
---          )
---       => String
---       -> (forall r. LiftFunction f (k r) p -> YulCat (NP xs) b)
---       -> (forall r. LiftFunction f (k r) p)
---       -> Fn f
---   fn' fid g f = MkFn fid (g f)
-
--- instance FnLike YulCat Many where
---  fn' = _
-
--- class CallableFn (m1 :: Type -> Type) (p :: Multiplicity) where
---  callFn :: forall as b. FnNP as b %p-> m2 b
-
-{- callFn (!*) -}
+call :: forall f xs b.
+        ( YulO2 (NP xs) b
+        , UncurryNP'Fst f ~ xs
+        , UncurryNP'Snd f ~ b
+        , LiftFunction f (YulCat (NP xs)) Many ~
+          (YulCat (NP xs) (CurryingNP'Head f) -> (LiftFunction (CurryingNP'Tail f) (YulCat (NP xs)) Many))
+        , CurryingNP f xs b (YulCat (NP xs)) Many
+        )
+     => Fn f
+     -> (YulCat (NP xs) (CurryingNP'Head f) -> (LiftFunction (CurryingNP'Tail f) (YulCat (NP xs)) Many))
+     -- -> LiftFunction f (YulCat (NP xs)) Many
+call (MkFn f) = curryingNP @f @xs @b @(YulCat (NP xs)) @Many (\np -> np >.> YulJump (fnId f) (fnCat f))
 
 -- callFn :: forall as b.
 --   (

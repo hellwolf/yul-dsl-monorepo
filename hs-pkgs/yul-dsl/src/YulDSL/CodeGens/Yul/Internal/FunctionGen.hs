@@ -161,7 +161,7 @@ compile_one_any_fn ind (MkAnyFn f)= compile_one_fn ind f
 -- | Compile dependencies with a function id filter @fidFilter@.
 compile_deps :: HasCallStack => Indenter -> (String -> Bool) -> CGState [Code]
 compile_deps ind fidFilter = do
-  deps <- fmap (\(i, c) -> case c of (MkAnyYulCat cat) -> MkAnyFn (MkFn i cat))
+  deps <- fmap (\(i, c) -> case c of (MkAnyYulCat cat) -> MkAnyFn (MkFnCat i cat))
           . filter (\(i, _) -> fidFilter i)
           . M'.toList
           . dependant_cats

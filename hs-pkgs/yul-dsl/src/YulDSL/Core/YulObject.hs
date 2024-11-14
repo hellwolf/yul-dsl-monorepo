@@ -3,7 +3,7 @@ module YulDSL.Core.YulObject where
 import           Data.List                                  (intercalate)
 -- eth-abi
 import           Ethereum.ContractABI.ABITypeable           (abiTypeCanonName)
-import           Ethereum.ContractABI.CoreType.NP           (NP)
+import           Ethereum.ContractABI.CoreType.NP
 -- import Ethereum.ContractABI.CoreType.NP
 import           Ethereum.ContractABI.ExtendedType.SELECTOR (SELECTOR, mkTypedSelector)
 --
@@ -18,14 +18,26 @@ data ScopedFn where
   ExternalFn :: forall as b. YulO2 (NP as) b => FuncEffect -> SELECTOR -> FnNP as b -> ScopedFn
   LibraryFn  :: forall as b. YulO2 (NP as) b => FnNP as b -> ScopedFn
 
-externalFn :: forall as b. YulO2 (NP as) b => FnNP as b -> ScopedFn
-externalFn f = ExternalFn FuncTx (mkTypedSelector @(NP as) (fnId f)) f
+externalFn :: forall f as b.
+              ( YulO2 (NP as) b
+              , UncurryNP'Fst f ~ as
+              , UncurryNP'Snd f ~ b
+              ) => Fn f -> ScopedFn
+externalFn (MkFn f) = ExternalFn FuncTx (mkTypedSelector @(NP as) (fnId f)) f
 
-staticFn :: forall as b. YulO2 (NP as) b => FnNP as b -> ScopedFn
-staticFn f = ExternalFn FuncStatic (mkTypedSelector @(NP as) (fnId f)) f
+staticFn :: forall f as b.
+            ( YulO2 (NP as) b
+            , UncurryNP'Fst f ~ as
+            , UncurryNP'Snd f ~ b
+            ) => Fn f -> ScopedFn
+staticFn (MkFn f) = ExternalFn FuncStatic (mkTypedSelector @(NP as) (fnId f)) f
 
-libraryFn :: forall as b. YulO2 (NP as) b => FnNP as b -> ScopedFn
-libraryFn = LibraryFn
+libraryFn :: forall f as b.
+             ( YulO2 (NP as) b
+             , UncurryNP'Fst f ~ as
+             , UncurryNP'Snd f ~ b
+             ) => Fn f -> ScopedFn
+libraryFn (MkFn f) = LibraryFn f
 
 show_fn_spec :: forall as b. YulO2 (NP as) b => FnNP as b -> String
 show_fn_spec f = "fn " <> fnId f <> "(" <> abiTypeCanonName @(NP as) <> ") -> " <> abiTypeCanonName @b

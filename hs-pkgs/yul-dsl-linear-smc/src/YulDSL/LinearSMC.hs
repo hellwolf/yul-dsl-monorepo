@@ -232,18 +232,24 @@ fn'l :: forall as b.
         , UncurryNP'Snd (CurryNP (NP as) b) ~ b
         )
      => String
-     -> (forall r. Yul'P r (NP as) ⊸ Yul'P r b)
+     -> (forall r. YulO1 r => Yul'P r (NP as) ⊸ Yul'P r b)
      -> Fn (CurryNP (NP as) b)
 fn'l fid cat'l = MkFn (MkFnCat fid (decode cat'l))
 
-call'l :: forall f xs b f' r.
-        ( YulO3 (NP xs) b r
-        , UncurryNP'Fst f ~ xs
+call'l :: forall f x xs b f' g' r.
+        ( YulO4 x (NP xs) b r
+        , CurryNP (NP (x:xs)) b ~ f
+        , UncurryNP'Fst f ~ (x:xs)
         , UncurryNP'Snd f ~ b
-        , CurryNP (NP xs) b ~ f
         , LiftFunction f (P YulCat r) One ~ f'
+        , CurryingNP'Head f' ~ Yul'P r x
+        , CurryingNP'Tail f' ~ LiftFunction (CurryNP (NP xs) b) (P YulCat r) One
+        , CurryingNP'Tail f' ~ g'
         , CurryingNP xs b (P YulCat r) (YulCat'P r ()) One
         )
-     => Fn f -> Yul'P r () ⊸ f'
-call'l (MkFn f) u = curryingNP @xs @b @(P YulCat r) @(YulCat'P r ()) @One
-                    ((\(MkYulCat'P fxs) -> encode (YulJump (fnId f) (fnCat f)) (fxs u)))
+     => Fn f -> (Yul'P r x ⊸ g')
+call'l (MkFn f) x = curryingNP @xs @b @(P YulCat r) @(YulCat'P r ()) @One
+                    (\(MkYulCat'P fxs) -> g (fxs (discard x'')))
+  where %1 !(x', x'') = dup2'l x
+        g :: Yul'P r (NP xs) ⊸ Yul'P r b
+        g xs = encode (YulJump (fnId f) (fnCat f)) (cons'l x' xs)

@@ -1,6 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE LinearTypes         #-}
-{-# LANGUAGE TypeFamilies        #-}
 
 module YulDSL.Core.Fn
   ( FnCat (MkFnCat), FnNP, Fn (MkFn, unFn), fnId, fnCat, AnyFn (MkAnyFn)

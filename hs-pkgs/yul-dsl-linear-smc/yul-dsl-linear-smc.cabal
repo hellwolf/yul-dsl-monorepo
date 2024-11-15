@@ -26,18 +26,28 @@ common basic-options
     ghc-options:          -Wall
                           -Wunused-packages
     default-extensions:   UnicodeSyntax
-
-common yolc-deps
-  build-depends:    base >= 4.20.0.0 && < 666,
-                    linear-base >= 0.3.1,
-                    linear-smc >= 2.2.3,
-                    eth-abi,
-                    yul-dsl
+                          BlockArguments
+    build-depends:        base >= 4.20.0.0 && < 666,
+                          linear-base >= 0.3.1,
+                          linear-smc >= 2.2.3,
+                          eth-abi,
+                          yul-dsl
 
 library
-  import:           basic-options, yolc-deps
+  import:           basic-options
   hs-source-dirs:   src
   build-depends:    constraints >= 0.13
   exposed-modules:  YulDSL.LinearSMC.Categories
                     YulDSL.LinearSMC
                     Prelude.YulDSL.LinearSMC
+
+Test-Suite test-yul-dsl-linear-smc
+  import:           basic-options
+  ghc-options:      -Wno-missing-signatures
+  type:             exitcode-stdio-1.0
+  build-depends:    QuickCheck >=2.13,
+                    hspec >=2.11,
+                    yul-dsl-linear-smc
+  hs-source-dirs:   test
+  other-modules:    FnL_prop
+  main-is:          Main.hs

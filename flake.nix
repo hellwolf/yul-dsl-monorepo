@@ -24,8 +24,8 @@
           nodePackages.nodemon
           # haskell tooling
           cabal-install
-          hlint
           haskell.compiler.ghc910
+          haskell.packages.ghc98.hlint_3_8
           haskell.packages.ghc910.haskell-language-server
         ];
         inherit shellHook;

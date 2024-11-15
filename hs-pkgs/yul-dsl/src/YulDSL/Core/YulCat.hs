@@ -208,30 +208,20 @@ digestYulCat = printf "%x" . digest_c8 . B.pack . show
         go_digest_c8 (b, bs') = c8 (0 :: Integer) (B.unpack b) `xorInteger`
                                 if B.length bs' == 0 then 0 else digest_c8 bs'
 
-------------------------------------------------------------------------------------------------------------------------
--- NP Function Currying/Uncurrying Instances
-------------------------------------------------------------------------------------------------------------------------
+{- * NP Helpers -}
+
+{- ** UncurryingNP instances -}
 
 -- (x)
 instance forall x a.
-         ( -- * uncurryingNP constraints
-           UncurryNP'Fst x ~ '[]
-         , UncurryNP'Snd x ~ x
-         , LiftFunction x (YulCat a) Many ~ YulCat a x
-           -- * local constraints
+         ( LiftFunction x (YulCat a) Many ~ YulCat a x
          , YulO2 x a
          ) => UncurryingNP (x) '[] x (YulCat a) (YulCat a) Many where
   uncurryingNP x _ = x
 
 -- (x -> ...xs -> b)
 instance forall x xs b g a.
-         ( -- * uncurryingNP constraints
-           UncurryNP'Fst (x -> g) ~ x:xs
-         , UncurryNP'Snd (x -> g) ~ b
-         , LiftFunction (x -> g) (YulCat a) Many ~
-           (YulCat a x -> LiftFunction g (YulCat a) Many)
-           -- * local constraints
-         , YulO5 x (NP xs) b (NP (x:xs)) a
+         ( YulO5 x (NP xs) b (NP (x:xs)) a
          , UncurryNP'Fst g ~ xs
          , UncurryNP'Snd g ~ b
          , UncurryingNP g xs b (YulCat a) (YulCat a) Many
@@ -241,27 +231,20 @@ instance forall x xs b g a.
           x   = xxs' >.> YulExl
           xs  = xxs' >.> YulExr
 
-instance forall x a.
-         (  -- * curryingNP constraints
-           CurryingNP'Head x ~ ()
-         , LiftFunction (CurryingNP'Tail x) (YulCat a) Many ~ YulCat a x
-           -- * local constraints
-         , YulO2 x a
-         ) => CurryingNP (x) '[] x (YulCat a) Many where
-  curryingNP cb u = cb (u >.> YulCoerce)
+{- ** CurryingNP instances -}
 
-instance forall x xs b g a.
-         ( -- * curryingNP constraints
-           CurryingNP'Head (x -> g) ~ x
-         , LiftFunction (CurryingNP'Tail (x -> g)) (YulCat a) Many ~
-           (YulCat a (CurryingNP'Head g) -> LiftFunction (CurryingNP'Tail g) (YulCat a) Many)
-           -- * local constraints
-         , YulO5 x (NP xs) b (NP (x:xs)) a
-         , UncurryNP'Fst g ~ xs
-         , UncurryNP'Snd g ~ b
-         , CurryingNP g xs b (YulCat a) Many
-         ) => CurryingNP (x -> g) (x:xs) b (YulCat a) Many where
-  curryingNP cb x = curryingNP @g @xs @b @(YulCat a) (\xs -> cb (YulFork x xs >.> YulCoerce))
+instance forall b a.
+         ( YulO2 b a
+         , LiftFunction b (YulCat a) Many ~ YulCat a b
+         ) => CurryingNP '[] b (YulCat a) (YulCat a) Many where
+  curryingNP cb = cb (YulDis >.> YulCoerce)
+
+instance forall x xs b a.
+         ( YulO5 x (NP xs) b (NP (x:xs)) a
+         , CurryingNP xs b (YulCat a) (YulCat a) Many
+         ) => CurryingNP (x:xs) b (YulCat a) (YulCat a) Many where
+  curryingNP cb x = curryingNP @xs @b @(YulCat a) @(YulCat a)
+                    (\xs -> cb (YulFork x xs >.> YulCoerce))
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Show Instance For Unique String Representation Of Cats

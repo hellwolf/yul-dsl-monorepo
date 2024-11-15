@@ -50,13 +50,13 @@ foo3 = fn'l "foo3"
 -- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
 rangeSum'l :: Fn (U256 -> U256 -> U256 -> U256)
 rangeSum'l = fn'l "rangeSumLFn"
-  ( curry'l @(U256 -> U256 -> U256 -> U256)
-    \from step until -> mkUnit from &
-    \(from, u) -> dup2'l from &
+  ( curry'l @(U256 -> U256 -> U256 -> () -> U256)
+    \from step until u -> dup2'l u &
+    \(u, u') -> dup2'l from &
     \(from, from') -> dup2'l step &
     \(step, step') -> dup2'l until &
     \(until, until') -> dup2'l (from + step) &
-    \(j, j') -> from' + if j <=? until then call'l rangeSum'l j' step' until' else const'l 0 u
+    \(j, j') -> from' + if j <=? until then call'l rangeSum'l u j' step' until' else const'l 0 u'
   )
 
 -- | "rangeSum" implemented in a value function.

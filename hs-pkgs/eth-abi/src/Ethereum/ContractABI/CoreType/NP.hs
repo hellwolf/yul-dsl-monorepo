@@ -1,6 +1,7 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE LinearTypes         #-}
-{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE AllowAmbiguousTypes    #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE LinearTypes            #-}
+{-# LANGUAGE TypeFamilies           #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
@@ -122,17 +123,19 @@ type family CurryingNP'Tail f where
   CurryingNP'Tail (a1 %p-> g) = CurryingNP'Tail g
   CurryingNP'Tail         (b) = b
 
-class UncurryingNP f (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) where
-  uncurryingNP :: forall.
+class UncurryingNP f (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) |
+  m2 -> m1 p where
+  uncurryingNP :: forall f'.
                   ( UncurryNP'Fst f ~ xs
                   , UncurryNP'Snd f ~ b
-                  ) => LiftFunction f m1 p    -- ^ from @LiftFunction (         f) m1 p@
+                  , LiftFunction f m1 p ~ f'
+                  ) => f'                     -- ^ from @LiftFunction (         f) m1 p@
                   %p-> (m2 (NP xs) %p-> m2 b) -- ^ to   @LiftFunction (NP xs -> b) m2 p@
 
-class CurryingNP f (xs :: [Type]) b (m :: Type -> Type) (p :: Multiplicity) where
-  curryingNP :: forall.
-                ( UncurryNP'Fst f ~ xs
-                , UncurryNP'Snd f ~ b
-                ) => (m (NP xs) %p-> m b)
-                %p-> m (CurryingNP'Head f)
-                %p-> (LiftFunction (CurryingNP'Tail f) m p)
+class CurryingNP (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) |
+  m2 -> m1 p where
+  curryingNP :: forall f f'.
+                ( CurryNP (NP xs) b ~ f
+                , LiftFunction f m1 p ~ f'
+                ) => (m2 (NP xs) %p-> m1 b) -- ^ from @m2 (NP xs) %p-> m1 b@
+                %p-> f'                     -- ^ to   @LiftFunction f m1 p@

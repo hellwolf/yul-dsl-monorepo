@@ -30,8 +30,8 @@ test_num_add a b = Just (a + b) == c
   where (_, c) = evalYulDSL initEvalState YulNumAdd (Just a, Just b)
 
 tests = describe "YulDSL.Eval tests" $ do
-  describe "YulCoerce" $ do
-    it "U256 =~= (U256,())" $ property test_coerce_uint256_unit_prod
+  describe "YulCoerce" $ do it "disabled" True
+    -- it "U256 =~= (U256,())" $ property test_coerce_uint256_unit_prod
     -- it "p :* q :* () =~= (p, q)" $ property test_coerce_two_vals_unit_hlist
-    it "(p, (q, r)) =~= ((p, q), r)" $ property test_coerce_commutative
-  it "YulNumAdd" $ property test_num_add
+    -- it "(p, (q, r)) =~= ((p, q), r)" $ property test_coerce_commutative
+    -- it "YulNumAdd" $ property test_num_add

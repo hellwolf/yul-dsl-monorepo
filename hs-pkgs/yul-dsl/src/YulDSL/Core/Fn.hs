@@ -1,12 +1,14 @@
--- {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE LinearTypes  #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE LinearTypes         #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 module YulDSL.Core.Fn
   ( FnCat (MkFnCat), FnNP, Fn (MkFn, unFn), fnId, fnCat, AnyFn (MkAnyFn)
-  , fn, call
+  , fn
+  , call
   ) where
 
+-- eth-abi
 import           Ethereum.ContractABI
 --
 import           YulDSL.Core.YulCat
@@ -49,28 +51,16 @@ fn :: forall f xs b f'.
 fn fid f = let cat = uncurryingNP @f @xs @b @(YulCat (NP xs)) @(YulCat (NP xs)) f (YulId @(NP xs))
            in MkFn (MkFnCat fid cat)
 
-{-* callFn (!*) -}
+{-* callFn -}
 
-call :: forall f xs b.
-        ( YulO2 (NP xs) b
+call :: forall f xs b f' a.
+        ( YulO3 (NP xs) b a
         , UncurryNP'Fst f ~ xs
         , UncurryNP'Snd f ~ b
-        , LiftFunction f (YulCat (NP xs)) Many ~
-          (YulCat (NP xs) (CurryingNP'Head f) -> (LiftFunction (CurryingNP'Tail f) (YulCat (NP xs)) Many))
-        , CurryingNP f xs b (YulCat (NP xs)) Many
+        , CurryNP (NP xs) b ~ f
+        , LiftFunction f (YulCat a) Many ~ f'
+        , CurryingNP xs b (YulCat a) (YulCat a) Many
         )
-     => Fn f
-     -> (YulCat (NP xs) (CurryingNP'Head f) -> (LiftFunction (CurryingNP'Tail f) (YulCat (NP xs)) Many))
-     -- -> LiftFunction f (YulCat (NP xs)) Many
-call (MkFn f) = curryingNP @f @xs @b @(YulCat (NP xs)) @Many (\np -> np >.> YulJump (fnId f) (fnCat f))
-
--- callFn :: forall as b.
---   (
---   )
---   => FnNP as b -> (YulCat (NP as)) b
--- callFn = _
-
--- ap'vfn :: forall a b r. (YulCatReducible a, YulO3 a b r)
---       => Fn a b -> AtomizeNP (YulCat r a) -> YulCat r b
-
--- ap'vfn fn a = YulJump (fnId fn) (fnCat fn) `YulComp` yul_cat_merge @a a
+     => Fn f -> f'
+call (MkFn f) = curryingNP @xs @b @(YulCat a) @(YulCat a) @Many
+                (\xs -> xs >.> YulJump (fnId f) (fnCat f))

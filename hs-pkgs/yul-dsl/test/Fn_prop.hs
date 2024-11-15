@@ -11,11 +11,10 @@ import           YulDSL.Core
 foo0 :: Fn (Maybe U8)
 foo0 = fn @(Maybe U8) "id" (YulEmbed (Just 42))
 
--- foo1 :: Fn (Maybe U8 -> Maybe U8)
+foo1 :: Fn (Maybe U8 -> Maybe U8)
 foo1 = fn @(Maybe U8 -> Maybe U8) "id"
        (\a -> a + a)
 
--- {-# ANN foo2 "HLint: ignore Avoid lambda" #-}
 foo2 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8)
        "id"
        (\a b -> a + b)
@@ -26,8 +25,20 @@ foo3 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8) "id"
 foo4 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8) "id"
        (\a b c d -> a + b + c + d)
 
+call0 = fn @(Maybe U8) "id"
+  (call foo0)
+
+call1 = fn @(Maybe U8 -> Maybe U8) "id"
+  (\a -> call foo1 a)
+
 call2 = fn @(Maybe U8 -> Maybe U8) "id"
-  (\a -> call @_ @[Maybe U8, Maybe U8] @(Maybe U8) foo2 a a)
+  (\a -> call foo2 a a)
+
+call3 = fn @(Maybe U8 -> Maybe U8) "id"
+  (\a -> call foo3 a a a)
+
+call4 = fn @(Maybe U8 -> Maybe U8) "id"
+  (\a -> call foo4 a a a a)
 
 test_simple_fn = True
 

@@ -7,7 +7,6 @@ LINEAR_SMC_VERSION = 2.2.3
 LINEAR_SMC_PATH_FILE = 3rd-parties/linear-smc-$(LINEAR_SMC_VERSION).patch
 
 # Output directories
-TEST_BUILDDIR ?= build/dist-test
 TEST_COVERAGE_BUILDDIR ?= build/dist-coverage
 DOCS_BUILDDIR ?= build/dist-docs
 
@@ -23,13 +22,13 @@ TEST_OPTIONS ?= \
 
 # Cabal flavors
 CABAL ?= cabal
-CABAL_BUILD    = $(CABAL) --builddir=$(TEST_BUILDDIR)
-CABAL_TEST     = $(CABAL) --builddir=$(TEST_BUILDDIR)
+CABAL_BUILD    = $(CABAL)
+CABAL_TEST     = $(CABAL)
 CABAL_COVERAGE = $(CABAL) --builddir=$(TEST_COVERAGE_BUILDDIR)
 CABAL_DOCS     = $(CABAL) --builddir=$(DOCS_BUILDDIR)
 
 # Misc
-DEV_TARGETS = build-all-modules test-yul-dsl test-yol-suite
+DEV_TARGETS = test-all-modules build-all-modules test-yol-suite
 
 ########################################################################################################################
 # TARGETS
@@ -60,7 +59,12 @@ build-docs-and-display: build-docs
 clean:
 	rm -rf build cache out dist-*
 
-test: test-yul-dsl test-yol-suite test-demo
+test: test-all-modules test-yol-suite test-demo
+
+test-all-modules: test-eth-abi test-yul-dsl
+
+test-eth-abi:
+	$(CABAL_TEST) test eth-abi $(TEST_OPTIONS)
 
 test-yul-dsl:
 	$(CABAL_TEST) test yul-dsl $(TEST_OPTIONS)

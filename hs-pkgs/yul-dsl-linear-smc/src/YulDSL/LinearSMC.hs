@@ -236,15 +236,11 @@ fn'l :: forall as b.
      -> Fn (CurryNP (NP as) b)
 fn'l fid cat'l = MkFn (MkFnCat fid (decode cat'l))
 
-call'l :: forall f x xs b f' g' r.
+call'l :: forall f x xs b g' r.
         ( YulO4 x (NP xs) b r
-        , CurryNP (NP (x:xs)) b ~ f
         , UncurryNP'Fst f ~ (x:xs)
         , UncurryNP'Snd f ~ b
-        , LiftFunction f (P YulCat r) One ~ f'
-        , CurryingNP'Head f' ~ Yul'P r x
-        , CurryingNP'Tail f' ~ LiftFunction (CurryNP (NP xs) b) (P YulCat r) One
-        , CurryingNP'Tail f' ~ g'
+        , LiftFunction (CurryNP (NP xs) b) (P YulCat r) One ~ g'
         , CurryingNP xs b (P YulCat r) (YulCat'P r ()) One
         )
      => Fn f -> (Yul'P r x ⊸ g')

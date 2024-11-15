@@ -40,7 +40,6 @@ library
                     yul-dsl
   exposed-modules:  Control.Category.Constrained.YulDSL.LinearSMC
                     Control.Category.Linear.Extra
-                    Data.Num.YulDSL
                     Data.Num.YulDSL.Linear
                     Ethereum.ContractsABI.YulDSL.Linear
                     Prelude.YulDSL
@@ -54,4 +53,5 @@ Test-Suite test-yul-dsl-linear-smc
                     yul-dsl-linear-smc
   hs-source-dirs:   test
   other-modules:    FnL_prop
+                    Num_prop
   main-is:          Main.hs

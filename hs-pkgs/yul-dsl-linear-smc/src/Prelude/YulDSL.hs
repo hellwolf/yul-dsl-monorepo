@@ -31,6 +31,5 @@ import           Control.Category.Linear
 import           YulDSL.Core
 --
 import           Control.Category.Linear.Extra
-import           Data.Num.YulDSL                     ()
 import           Data.Num.YulDSL.Linear              ()
 import           Ethereum.ContractsABI.YulDSL.Linear

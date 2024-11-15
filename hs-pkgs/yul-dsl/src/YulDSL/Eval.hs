@@ -14,6 +14,7 @@ This module provides a function 'evalYulDSL' simulating the evaluation of the 'Y
 module YulDSL.Eval where
 
 -- base
+import           Data.Maybe           (fromJust)
 -- containers
 import qualified Data.Map             as M
 -- eth-abi
@@ -44,6 +45,6 @@ evalYulDSL s  YulDup           a  = (s, (a, a))
 evalYulDSL s (YulEmbed b)      _  = (s, b)
 evalYulDSL s  YulNumNeg       a   = (s, negate a)
 evalYulDSL s  YulNumAdd    (a, b) = (s, a + b)
-evalYulDSL s  YulSGet          r  = (s, fromWord =<< M.lookup r (store_map s))
+evalYulDSL s  YulSGet          r  = (s, fromJust (fromWord =<< M.lookup r (store_map s)))
 evalYulDSL s  YulSPut      (r, a) = (s', ()) where s' = s { store_map = M.insert r (toWord a) (store_map s) }
 evalYulDSL _ _ _ = error "evalYulDSL"

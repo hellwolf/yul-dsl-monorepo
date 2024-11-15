@@ -6,7 +6,7 @@ import qualified Data.Text.Lazy.IO as TIO
 import System.Exit (exitSuccess, exitFailure)
 import System.IO (stderr)
 
-import YulDSL.Core (YulO2, Fn, YulObject (..))
+import YulDSL.Core (YulO2, FnCat, YulObject (..))
 --
 -- import qualified YulDSL.CodeGens.PlantUMLGen as PlantUMLCodeGen
 import qualified YulDSL.CodeGens.YulGen   as YulCodeGen
@@ -19,7 +19,7 @@ default (String)
 type Result = Either T.Text T.Text
 
 data Compiler = MkCompiler
-  { fnMode      :: forall a b. YulO2 a b => Fn a b ->  IO Result
+  { fnMode      :: forall a b. YulO2 a b => FnCat a b ->  IO Result
   , objectMode  :: YulObject -> IO Result
   , projectMode :: YOLCBuilder.Manifest -> IO Result
   }

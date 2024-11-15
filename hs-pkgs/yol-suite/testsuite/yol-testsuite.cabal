@@ -9,6 +9,7 @@ common yol-module-options
     default-language:     GHC2024
     ghc-options:          -Wall
                           -Wno-name-shadowing
+                          -Wno-missing-signatures
     default-extensions:   LinearTypes
                           BlockArguments
                           OverloadedStrings

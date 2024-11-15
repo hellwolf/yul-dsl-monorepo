@@ -141,7 +141,7 @@ call'l (MkFn f) x' = dup2'l x' &
 {- * storage utilities -}
 
 sget :: forall v r. (YulObj r, YulVal v)
-     => Yul'P r ADDR ⊸ Yul'P r (Maybe v)
+     => Yul'P r ADDR ⊸ Yul'P r v -- FIXME use Maybe type
 sget = encode YulSGet
 
 sput :: forall v r. (YulObj r, YulVal v)

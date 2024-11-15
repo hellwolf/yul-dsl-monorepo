@@ -81,9 +81,11 @@ instance YulVal ADDR
 instance (KnownBool s, KnownNat n) => YulVal (INTx s n)
 
 -- | Number-type objects in the category.
-class (YulVal a, Num (Maybe a)) => YulNum a
+class (Num a, ABITypeable a) => YulNum a
 
 instance (KnownBool s, KnownNat n) => YulNum (INTx s n)
+
+instance (KnownBool s, KnownNat n) => YulNum (Maybe (INTx s n))
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Granular Permission Tag
@@ -161,21 +163,21 @@ data YulCat a b where
 
   -- YulVal Primitives
   --
-  -- * Maybe Type
-  YulToJust   :: forall a. YulNum a => YulCat (Maybe a) a
-  YulFromJust :: forall a. YulNum a => YulCat (Maybe a) a
   -- * Boolean Operations
   YulNot :: YulCat BOOL BOOL
   YulAnd :: YulCat (BOOL, BOOL) BOOL
   YulOr  :: YulCat (BOOL, BOOL) BOOL
   -- * Num Types
-  YulNumAdd :: forall a. YulNum a => YulCat (Maybe a, Maybe a) (Maybe a)
-  YulNumMul :: forall a. YulNum a => YulCat (Maybe a, Maybe a) (Maybe a)
-  YulNumAbs :: forall a. YulNum a => YulCat (Maybe a) (Maybe a)
-  YulNumSig :: forall a. YulNum a => YulCat (Maybe a) (Maybe a)
-  YulNumNeg :: forall a. YulNum a => YulCat (Maybe a) (Maybe a)
+  YulNumAdd :: forall a. YulNum a => YulCat (a, a) a
+  YulNumMul :: forall a. YulNum a => YulCat (a, a) a
+  YulNumAbs :: forall a. YulNum a => YulCat a a
+  YulNumSig :: forall a. YulNum a => YulCat a a
+  YulNumNeg :: forall a. YulNum a => YulCat a a
   -- * Number comparison with a three-way boolean-switches (LT, EQ, GT).
   YulNumCmp :: forall a. YulNum a => (BOOL, BOOL, BOOL) -> YulCat (a, a) BOOL
+  -- * Maybe Type
+  YulToJust   :: forall a. YulNum a => YulCat a (Maybe a)
+  YulFromJust :: forall a. YulNum a => YulCat (Maybe a) a
 
   -- * Contract ABI Serialization
   -- YulAbiEnc :: YulObj a => YulCat a BYTES
@@ -183,7 +185,7 @@ data YulCat a b where
 
   -- Storage Primitives
   --
-  YulSGet :: forall a. YulVal a => YulCat ADDR (Maybe a)
+  YulSGet :: forall a. YulVal a => YulCat ADDR a
   YulSPut :: forall a. YulVal a => YulCat (ADDR, a) ()
 
 -- | Existential wrapper of the 'YulCat'.
@@ -293,7 +295,7 @@ instance Show (YulCat a b) where
 -- Useful Type Classes For Custom Prelude
 ------------------------------------------------------------------------------------------------------------------------
 
-instance (YulObj r, YulNum a) => Num (YulCat r (Maybe a)) where
+instance (YulObj r, YulNum a) => Num (YulCat r a) where
   a + b = YulNumAdd <.< YulProd a b <.< YulDup
   a * b = YulNumMul <.< YulProd a b <.< YulDup
   abs = YulComp YulNumAbs

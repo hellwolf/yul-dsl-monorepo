@@ -13,6 +13,8 @@ module Ethereum.ContractABI.ABITypeCoercible
   ) where
 
 import           Ethereum.ContractABI.ABITypeable
+import           Ethereum.ContractABI.CoreType.ADDR
+import           Ethereum.ContractABI.CoreType.INTx
 import           Ethereum.ContractABI.CoreType.NP
 
 
@@ -36,3 +38,7 @@ instance forall x. ABITypeCoercible x (NP '[x])
 instance forall x. ABITypeCoercible (NP '[x]) x
 instance forall x xs. ABITypeCoercible (x, NP xs) (NP (x:xs))
 instance forall x xs. ABITypeCoercible (NP (x:xs)) (x, NP xs)
+
+-- other cases
+instance ABITypeCoercible U256 ADDR
+instance ABITypeCoercible ADDR U256

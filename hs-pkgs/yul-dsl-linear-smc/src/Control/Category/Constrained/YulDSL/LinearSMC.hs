@@ -1,5 +1,4 @@
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
@@ -15,7 +14,7 @@ Categories required for being a symmetric monoidal category.
 
 -}
 
-module YulDSL.LinearSMC.Categories () where
+module Control.Category.Constrained.YulDSL.LinearSMC () where
 
 -- base
 -- constraints

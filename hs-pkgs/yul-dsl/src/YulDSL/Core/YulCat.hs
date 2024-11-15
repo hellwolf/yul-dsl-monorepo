@@ -161,6 +161,9 @@ data YulCat a b where
 
   -- YulVal Primitives
   --
+  -- * Maybe Type
+  YulToJust   :: forall a. YulNum a => YulCat (Maybe a) a
+  YulFromJust :: forall a. YulNum a => YulCat (Maybe a) a
   -- * Boolean Operations
   YulNot :: YulCat BOOL BOOL
   YulAnd :: YulCat (BOOL, BOOL) BOOL
@@ -274,6 +277,8 @@ instance Show (YulCat a b) where
   show (YulNot)            = "not"
   show (YulAnd)            = "and"
   show (YulOr)             = "or"
+  show (YulToJust)         = "tjst" <> abi_type_name @a
+  show (YulFromJust)       = "fjst" <> abi_type_name @a
   show (YulNumAdd)         = "add" <> abi_type_name @a
   show (YulNumMul)         = "mul" <> abi_type_name @a
   show (YulNumSig)         = "sig" <> abi_type_name @a

@@ -3,12 +3,15 @@ module FnL_prop where
 -- hspec
 import           Test.Hspec
 --
-import           Prelude                  ()
-import           Prelude.YulDSL.LinearSMC
+import           Prelude        ()
+import           Prelude.YulDSL
+
+foo0 = fn'l "foo0"
+  ( curry'l @(() -> Maybe U256) (const'l 42)
+  )
 
 foo1 = fn'l "foo1"
-  ( curry'l @(Maybe U256 -> Maybe U256)
-    \x -> x
+  ( curry'l @(Maybe U256 -> Maybe U256) id
   )
 
 foo2 = fn'l "foo2"
@@ -24,6 +27,11 @@ foo3 = fn'l "foo3"
 foo4 = fn'l "foo4"
   ( curry'l @(Maybe U256 -> Maybe U256 -> Maybe U256 -> Maybe U256 -> Maybe U256)
     \x1 x2 x3 x4 -> x1 + x2 + x3 + x4
+  )
+
+call0 = fn'l "call0"
+  ( curry'l @(() -> Maybe U256)
+    \u -> call'l foo0 u
   )
 
 call1 = fn'l "call1"
@@ -46,6 +54,6 @@ call4 = fn'l "call4"
     \x1 x2 x3 x4 -> call'l foo4 x1 x2 x3 x4
   )
 
-tests = describe "YulDSL.LinearSMC" $ do
+tests = describe "Ethereum.ContractsABI.YulDSL.Linear" $ do
   describe "fn'l: linear function builder" $ do
     it "simple fn definitions" True

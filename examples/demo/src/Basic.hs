@@ -23,7 +23,6 @@ disFn = MkFn (MkFnCat "disFn" YulDis)
 -- mkConst b = fn'l "mkConst" $ curry'l @(a -> b) (\a -> const'l b a)
 
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
-foo1 :: Fn (U256 -> U256)
 foo1 = fn'l "foo1"
   (curry'l @(U256 -> U256) \x ->
       dup2'l x & \(x, x') -> x + x'
@@ -32,7 +31,6 @@ foo1 = fn'l "foo1"
 -- | A function takes two uints and store their sum at a fixed storage location then returns true.
 --
 --   Note: you can create any number of "unit" signals by adding '()' to the input list.
-foo2 :: Fn (U256 -> U256 -> U256)
 foo2 = fn'l "foo2"
   ( curry'l @(U256 -> U256 -> U256)
     \x1 x2 -> dup2'l x2 &
@@ -40,11 +38,10 @@ foo2 = fn'l "foo2"
   )
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
-foo3 :: Fn (U256 -> U256 -> () -> (BOOL, U256))
 foo3 = fn'l "foo3"
   ( curry'l @(U256 -> U256 -> () -> (BOOL, U256))
     \x1 x2 u -> dup2'l (x1 + x2) &
-    \(r, r') -> ignore (toAddr 0xdeadbeef <==@ r) (merge (const'l true u, r'))
+    \(r, r') -> ignore (constAddr 0xdeadbeef <==@ r) (merge (const'l true u, r'))
   )
 
 -- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.

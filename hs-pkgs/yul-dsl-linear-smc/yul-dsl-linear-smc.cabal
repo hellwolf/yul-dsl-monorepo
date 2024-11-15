@@ -25,28 +25,32 @@ common basic-options
     default-language:     GHC2024
     ghc-options:          -Wall
                           -Wunused-packages
-    default-extensions:   UnicodeSyntax
+    default-extensions:   LinearTypes
+                          UnicodeSyntax
                           BlockArguments
-    build-depends:        base >= 4.20.0.0 && < 666,
-                          linear-base >= 0.3.1,
-                          linear-smc >= 2.2.3,
-                          eth-abi,
-                          yul-dsl
+    build-depends:        base >= 4.20.0.0 && < 666
 
 library
   import:           basic-options
   hs-source-dirs:   src
-  build-depends:    constraints >= 0.13
-  exposed-modules:  YulDSL.LinearSMC.Categories
-                    YulDSL.LinearSMC
-                    Prelude.YulDSL.LinearSMC
+  build-depends:    constraints >= 0.13,
+                    linear-base >= 0.3.1,
+                    linear-smc >= 2.2.3,
+                    eth-abi,
+                    yul-dsl
+  exposed-modules:  Control.Category.Constrained.YulDSL.LinearSMC
+                    Control.Category.Linear.Extra
+                    Data.Num.YulDSL
+                    Data.Num.YulDSL.Linear
+                    Ethereum.ContractsABI.YulDSL.Linear
+                    Prelude.YulDSL
 
 Test-Suite test-yul-dsl-linear-smc
   import:           basic-options
   ghc-options:      -Wno-missing-signatures
   type:             exitcode-stdio-1.0
-  build-depends:    QuickCheck >=2.13,
-                    hspec >=2.11,
+  build-depends:    hspec >=2.11,
+                    -- QuickCheck >=2.13,
                     yul-dsl-linear-smc
   hs-source-dirs:   test
   other-modules:    FnL_prop

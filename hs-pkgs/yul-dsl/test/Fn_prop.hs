@@ -8,36 +8,36 @@ import           Ethereum.ContractABI
 import           YulDSL.Core
 
 
-foo0 :: Fn (Maybe U8)
-foo0 = fn @(Maybe U8) "id" (YulEmbed (Just 42))
+foo0 :: Fn (U8)
+foo0 = fn @(U8) "id" (YulEmbed 42)
 
-foo1 :: Fn (Maybe U8 -> Maybe U8)
-foo1 = fn @(Maybe U8 -> Maybe U8) "id"
+foo1 :: Fn (U8 -> U8)
+foo1 = fn @(U8 -> U8) "id"
        (\a -> a + a)
 
-foo2 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8)
+foo2 = fn @(U8 -> U8 -> U8)
        "id"
        (\a b -> a + b)
 
-foo3 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8) "id"
+foo3 = fn @(U8 -> U8 -> U8 -> U8) "id"
        (\a b c -> a + b + c)
 
-foo4 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8) "id"
+foo4 = fn @(U8 -> U8 -> U8 -> U8 -> U8) "id"
        (\a b c d -> a + b + c + d)
 
-call0 = fn @(Maybe U8) "id"
+call0 = fn @(U8) "id"
   (call foo0)
 
-call1 = fn @(Maybe U8 -> Maybe U8) "id"
+call1 = fn @(U8 -> U8) "id"
   (\a -> call foo1 a)
 
-call2 = fn @(Maybe U8 -> Maybe U8) "id"
+call2 = fn @(U8 -> U8) "id"
   (\a -> call foo2 a a)
 
-call3 = fn @(Maybe U8 -> Maybe U8) "id"
+call3 = fn @(U8 -> U8) "id"
   (\a -> call foo3 a a a)
 
-call4 = fn @(Maybe U8 -> Maybe U8) "id"
+call4 = fn @(U8 -> U8) "id"
   (\a -> call foo4 a a a a)
 
 test_simple_fn = True

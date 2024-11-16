@@ -44,8 +44,6 @@ data ABICoreType where
   BYTES'  :: ABICoreType
   -- ^ Arrays of values of the same ABI core type
   ARRAY'  :: ABICoreType -> ABICoreType
-  -- ^ Optional values
-  MAYBE'  :: ABICoreType -> ABICoreType
 
 instance Eq ABICoreType where
   BOOL' == BOOL'               = True
@@ -54,7 +52,6 @@ instance Eq ABICoreType where
   (BYTESn' n) == (BYTESn' n')  = fromSNat n == fromSNat n'
   BYTES' == BYTES'             = True
   (ARRAY' a) == (ARRAY' b)     = a == b
-  (MAYBE' a) == (MAYBE' b)     = a == b
   _ == _                       = False
 
 abiCoreTypeCanonName :: ABICoreType -> String
@@ -64,7 +61,6 @@ abiCoreTypeCanonName ADDR'       = "address"
 abiCoreTypeCanonName (BYTESn' n) = "bytes" ++ show (natVal n)
 abiCoreTypeCanonName BYTES'      = "bytes"
 abiCoreTypeCanonName (ARRAY' a)  = abiCoreTypeCanonName a ++ "[]"
-abiCoreTypeCanonName (MAYBE' a)  = "bool," ++ abiCoreTypeCanonName a
 
 abiCoreTypeCompactName :: ABICoreType -> String
 abiCoreTypeCompactName BOOL'       = "b"
@@ -73,7 +69,6 @@ abiCoreTypeCompactName ADDR'       = "a"
 abiCoreTypeCompactName (BYTESn' n) = "B" ++ show (natVal n)
 abiCoreTypeCompactName BYTES'      = "Bs"
 abiCoreTypeCompactName (ARRAY' a)  = "A" ++ abiCoreTypeCompactName a
-abiCoreTypeCompactName (MAYBE' a)  = "M" ++ abiCoreTypeCompactName a
 
 -- | Raw storage value for ABI value types.
 newtype WORD = WORD Integer deriving newtype (Eq, Ord)

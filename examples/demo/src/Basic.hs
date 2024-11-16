@@ -45,7 +45,7 @@ foo3 = fn'l "foo3"
   )
 
 -- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
-rangeSum'l = fn'l "rangeSumLFn"
+rangeSum'l = fn'l "rangeSumL"
   ( curry'l @(U256 -> U256 -> U256 -> U256)
     \from step until -> mkUnit from &
     \(from, u) -> dup2'l from &
@@ -57,10 +57,16 @@ rangeSum'l = fn'l "rangeSumLFn"
                         else const'l 0 u
   )
 
--- | "rangeSum" implemented in a value function.
-rangeSum'v = go
+-- | "rangeSum" implemented in a value function
+rangeSum'v1 = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV1"
+  \from step until ->
+    let j = from + step
+    in from + if j <=? until then call rangeSum'v1 j step until else YulEmbed 0
+
+-- | "rangeSum" implemented in a value function, and a locally scoped function
+rangeSum'v2 = go
   where
-    go = fn @(U256 -> U256 -> U256 -> U256) "rangeSumVFn" \from step until ->
+    go = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV2" \from step until ->
       let j = from + step
       in from + if j <=? until then call go j step until else YulEmbed 0
 
@@ -98,7 +104,8 @@ object = mkYulObject "Basic" ctor
          , externalFn foo2
            -- staticFn   foo3 -- FIXME this should not be possible with permission tag
          , staticFn rangeSum'l
-         , staticFn rangeSum'v
+         , staticFn rangeSum'v1
+         , staticFn rangeSum'v2
          -- , externalFn rangeSumVFn
          ]
          where ctor = YulId -- empty constructor

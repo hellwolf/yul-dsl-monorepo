@@ -63,11 +63,6 @@ instance Show AnyABITypeable where
 -- | Existential type of all abi types that derive from the same core type @c@.
 data AnyABITypeDerivedOf c = forall a. (ABITypeable a, c ~ ABITypeDerivedOf a) => MkAnyABIDerivedType a
 
--- | Maybe types of any abi type is also an abi type.
-instance ABITypeable a => ABITypeable (Maybe a) where
-  type instance ABITypeDerivedOf (Maybe a) = Maybe a
-  abiTypeInfo = fmap MAYBE' (abiTypeInfo @a)
-
 -- | Canonical name of the type that is used for computing the function selector.
 abiTypeCanonName :: forall a. ABITypeable a => String
 abiTypeCanonName = intercalate "," (fmap abiCoreTypeCanonName (abiTypeInfo @a))
@@ -75,3 +70,9 @@ abiTypeCanonName = intercalate "," (fmap abiCoreTypeCanonName (abiTypeInfo @a))
 -- | A 'abiTypeCanonName' variant that is compact to saving characters.
 abiTypeCompactName :: forall a. ABITypeable a => String
 abiTypeCompactName = intercalate "" (fmap abiCoreTypeCompactName (abiTypeInfo @a))
+
+
+-- | Maybe types of any abi type is also an abi type.
+-- instance ABITypeable a => ABITypeable (Maybe a) where
+--   type instance ABITypeDerivedOf (Maybe a) = Maybe a
+--   abiTypeInfo = fmap MAYBE' (abiTypeInfo @a)

@@ -38,6 +38,24 @@ deriving instance Show AnyFn
 
 {-* fn -}
 
+curry'c :: forall f xs b f'.
+           ( YulO2 (NP xs) b
+           , UncurryNP'Fst f ~ xs
+           , UncurryNP'Snd f ~ b
+           , LiftFunction f (YulCat (NP xs)) Many ~ f'
+           , UncurryingNP f xs b (YulCat (NP xs)) (YulCat (NP xs)) Many
+           )
+        => f' -> YulCat (NP xs) b
+curry'c f = uncurryingNP @f @xs @b @(YulCat (NP xs)) @(YulCat (NP xs)) f (YulId @(NP xs))
+
+fn'c :: forall f xs b.
+        ( YulO2 (NP xs) b
+        , UncurryNP'Fst f ~ xs
+        , UncurryNP'Snd f ~ b
+        )
+     => String -> YulCat (NP xs) b -> Fn f
+fn'c fid cat = MkFn (MkFnCat fid cat)
+
 fn :: forall f xs b f'.
       ( YulO2 (NP xs) b
       , UncurryNP'Fst f ~ xs
@@ -46,8 +64,10 @@ fn :: forall f xs b f'.
       , UncurryingNP f xs b (YulCat (NP xs)) (YulCat (NP xs)) Many
       )
    => String -> f' -> Fn f
-fn fid f = let cat = uncurryingNP @f @xs @b @(YulCat (NP xs)) @(YulCat (NP xs)) f (YulId @(NP xs))
-           in MkFn (MkFnCat fid cat)
+fn fid f = fn'c fid (curry'c @f f)
+
+-- fn fid f = let cat = uncurryingNP @f @xs @b @(YulCat (NP xs)) @(YulCat (NP xs)) f (YulId @(NP xs))
+--            in MkFn (MkFnCat fid cat)
 
 {-* callFn -}
 

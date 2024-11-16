@@ -85,8 +85,6 @@ class (Num a, ABITypeable a) => YulNum a
 
 instance (KnownBool s, KnownNat n) => YulNum (INTx s n)
 
-instance (KnownBool s, KnownNat n) => YulNum (Maybe (INTx s n))
-
 ------------------------------------------------------------------------------------------------------------------------
 -- Granular Permission Tag
 ------------------------------------------------------------------------------------------------------------------------
@@ -158,8 +156,6 @@ data YulCat a b where
   YulITE   :: forall a    . YulO1 a => YulCat (BOOL, (a, a)) a
   -- | Mapping over a list.
   -- YulMap   :: forall a b  . YulO2 a b   => YulCat a b %1 -> YulCat [a] [b]
-  -- | Folding over a list from the left.
-  -- YulFoldl :: forall a b  . YulO2 a b   => YulCat (b, a) b %1 -> YulCat [a] b
 
   -- YulVal Primitives
   --
@@ -175,9 +171,6 @@ data YulCat a b where
   YulNumNeg :: forall a. YulNum a => YulCat a a
   -- * Number comparison with a three-way boolean-switches (LT, EQ, GT).
   YulNumCmp :: forall a. YulNum a => (BOOL, BOOL, BOOL) -> YulCat (a, a) BOOL
-  -- * Maybe Type
-  YulToJust   :: forall a. YulNum a => YulCat a (Maybe a)
-  YulFromJust :: forall a. YulNum a => YulCat (Maybe a) a
 
   -- * Contract ABI Serialization
   -- YulAbiEnc :: YulObj a => YulCat a BYTES
@@ -279,8 +272,6 @@ instance Show (YulCat a b) where
   show (YulNot)            = "not"
   show (YulAnd)            = "and"
   show (YulOr)             = "or"
-  show (YulToJust)         = "tjst" <> abi_type_name @a
-  show (YulFromJust)       = "fjst" <> abi_type_name @a
   show (YulNumAdd)         = "add" <> abi_type_name @a
   show (YulNumMul)         = "mul" <> abi_type_name @a
   show (YulNumSig)         = "sig" <> abi_type_name @a

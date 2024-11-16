@@ -60,35 +60,49 @@ Ethereum.ContractABI.Types
 > These include [Ethereum contract ABI specification](https://docs.soliditylang.org/en/latest/abi-spec.html)
 > implemented in as *core types*, their *type extensions*, including *dependently typed extensions*.
 
-| ABIType Instances   | [ABICoreType]         | Name                         | Examples                    |
-|---------------------|-----------------------|------------------------------|-----------------------------|
-| *(core types)*      |                       |                              |                             |
-| BOOL                | [BOOL']               | Boolean                      | true, false                 |
-| INTx s n            | [INTx' s n]           | Fixed-precision integers     | -1, 0, 42, 0xffff           |
-| ADDR                | [ADDR'                | Ethereum addresses           | #0xABC5...290a              |
-| BYTESn n            | [BYTESn' n]           | Fixed-size byte arrays       | TODO                        |
-| BYTES               | [BYTES']              | Packed byte arrays           | TODO                        |
-| ARRAY a             | [ARRAY' a]            | Arrays                       | TODO                        |
-| NP xs               | xs'                   | N-ary products               | INT 1 :* true :* 0xdeadbeef |
-| *(extended types)*  |                       |                              |                             |
-| U32, ..., U256      | [INTx' False n]       | Aliases of unsigned integers | (see INTx)                  |
-| I32, ..., I256      | [INTx' True n]        | Aliases of signed integers   | (see INTx)                  |
-| B1, B2, .. B32      | [BYTESn n]            | Aliases of byte arrays       | (see BYTESn)                |
-| SELECTOR            | [U32']                | Function selector            |                             |
-| REF a w             | [B32']                | Memory or storage references | TODO                        |
-| (a, b)              | [a', b']              | Tuples                       | (a, b)                      |
-| TUPLEn n            | [a1', a2' .. an']     | Tuples of N-elements         | (), a, (a, b, c)            |
-| STRUCT lens_xs      | xs'                   | Struct with lenses           | TODO                        |
-| STRING              | [BYTES']              | UTF-8 strings                | TODO                        |
-| MAP a b             | [B32']                | Hash tables, aka. maps       | TODO                        |
-| [REF a]             | [ARRAY' a, U256']     | Lazy-list of array iterators | TODO                        |
-| FUNC c sel          | [BYTES'20, SELECTOR'] | Contract function pointer    | TODO                        |
-| *(dependent types)* |                       |                              |                             |
-| BOOL'd v            | [BOOL']               | Dependent booleans           | TODO                        |
-| INTx'd s n v        | [INTx' s n]           | Dependent integers           | TODO                        |
-| BYTES'd l           | [BYTES']              | Length-indexed byte arrays   | TODO                        |
-| ARRAY'd a l         | [ARRAY' a]            | Length-indexed arrays        | TODO                        |
-| STRING'd v          | [BYTES']              | Dependent strings            | TODO                        |
+| ABIType Instances   | [ABICoreType]     | Name                         | Examples             |
+|---------------------|-------------------|------------------------------|----------------------|
+| *(core types)*      |                   |                              |                      |
+| NP xs               | xs'               | N-ary products               | INT 1 :* true :* Nil |
+| BOOL                | [BOOL']           | Boolean                      | true, false          |
+| INTx s n            | [INTx' s n]       | Fixed-precision integers     | -1, 0, 42, 0xffff    |
+| ADDR                | [ADDR'            | Ethereum addresses           | #0xABC5...290a       |
+| BYTES               | [BYTES']          | Packed byte arrays           | TODO                 |
+| ARRAY a             | [ARRAY' a]        | Arrays                       | TODO                 |
+| *(extended types)*  |                   |                              |                      |
+| U32, ..., U256      | [INTx' False n]   | Aliases of unsigned integers | (see INTx)           |
+| I32, ..., I256      | [INTx' True n]    | Aliases of signed integers   | (see INTx)           |
+| B1, B2, .. B32      | [BYTESn n]        | Aliases of byte arrays       | (see BYTESn)         |
+| REF a w             | [B32']            | Memory or storage references | TODO                 |
+| MAYBE a             | [MAYBE' a]        | Maybe a value                | TODO                 |
+| FUNC c sel          | [U192']           | Contract function pointer    | TODO                 |
+| (a, b)              | [a', b']          | Tuples                       | (a, b)               |
+| TUPLEn n            | [a1', a2' .. an'] | Tuples of N-elements         | (), a, (a, b, c)     |
+| STRUCT lens_xs      | xs'               | Struct with lenses           | TODO                 |
+| STRING              | [BYTES']          | UTF-8 strings                | TODO                 |
+| MAP a b             | [B32']            | Hash tables, aka. maps       | TODO                 |
+| *(dependent types)* |                   |                              |                      |
+| BOOL'd v            | [BOOL']           | Dependent booleans           | TODO                 |
+| INTx'd s n v        | [INTx' s n]       | Dependent integers           | TODO                 |
+| BYTES'd l           | [BYTES']          | Length-indexed byte arrays   | TODO                 |
+| ARRAY'd a l         | [ARRAY' a]        | Length-indexed arrays        | TODO                 |
+| STRING'd v          | [BYTES']          | Dependent strings            | TODO                 |
+
+
+TODOs:
+
+- CoreTypes:
+  - ADDR constant through overloaded label with checksum support.
+  - BYTESn
+  - BYTES
+  - ARRAY
+- ExtendedTypes:
+  - REF
+  - FUNC
+  - Maybe
+  - STRING
+  - Tuple, TUPLEn
+  - STRUCT
 
 YulDSL
 ------
@@ -105,27 +119,25 @@ YulDSL
 
 TODOs:
 
-- Safety Features:
-  - [ ] :M: `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
-- SMC Primitives:
-  - [x] Category: `YulId; YulComp, ∘`;
-  - [x] Monoidal: `YulProd, ×; YulSwap, σ`;
-  - [x] Catesian: `YulFork, ▵; YulExl, π₁; YulExr, π₂; YulDis, ε; YulDup, δ;`
-- Control Flow Primitives:
-  - [x] `YulEmbed`, embedding constant.
-  - [x] :M: `YulITE`, if-then-else.
-  - [x] :M: `YulJump`, internal function calls.
-  - [ ] :M: `YulCall`, external function calls.
-  - [ ] :M: `YulMap, YulFoldl`, control structure for lists.
+- Safety:
+  - [ ] `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
+- Value primitives:
+  - [ ] `YulAbi{Enc,Dec}`, contracts ABI serialization.
+  - [ ] `YulFromJust, YulFromMaybe, YulIsJust`, maybe value support.
+  - [ ] `YulCast`, casting values between types.
+- Control flow primitives:
+  - [ ] `YulMap`, tight loop over an array.
+  - [ ] `YulLen`, array length.
+  - [ ] `YulPat`, pattern matching.
+- Effects:
+  - [ ] `YulSet, YulSPut`, storage operations.
+  - [ ] `YulCall`, external function calls.
 - Utilities:
   - [x] `(>.>)` and `(<.<)` operators for the directional morphisms.
   - [x] MPOrd class
   - [x] IfThenElse class
   - [x] Num instance
   - [-] Show instance
-- Storage Primitives:
-  - [ ] :M: `YulView`, for indexed or named position.
-  - [ ] :M: `YulGet, YulPut` using `REF`, and remove `YulSet, YulSPut`.
 
 ## Fn
 
@@ -133,16 +145,22 @@ TODOs:
 >
 > Function object for a YulCat.
 
+```haskell
+-- define a pure value function
+foo3 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8) "id"
+       (\a b c -> a + b + c)
+
+-- call other pure value function
+call3 = fn @(Maybe U8 -> Maybe U8) "id"
+  (\a -> call foo3 a a a)
+```
+
 ## YulObject
 
 > [!NOTE]
 >
 > Yul object builder. Yul object specification can be found from [solidity
 > documentation](https://docs.soliditylang.org/en/latest/yul.html#specification-of-yul-object).
-
-TODOs:
-
-- [ ] :S: Module documentation.
 
 ## Eval
 
@@ -162,11 +180,13 @@ TODOs:
 
 TODOs:
 
+- Function Gen:
+  - [ ] Change the logic to delay code gen until inner layer requires it.
 - CodeGen core:
-  - [ ] :S: Fn autoId (instead of using yulCatDigest.)
+  - [ ] Fn autoId (instead of using yulCatDigest.)
 - Object builder:
-  - [ ] 🚧 :XL: dispatcher builder with full dispatcher calldata codec support.
-  - [ ] :M: constructor support.
+  - [ ] dispatcher builder with full dispatcher calldata codec support.
+  - [ ] constructor support.
 
 ## CodeGens.Diagrams
 
@@ -179,19 +199,7 @@ YulDSL Linear-SMC Frontend
 
 TODOs:
 
-- Multi-style functions:
-  - [x] :S: composition of all styles using `(>.>)`.
-  - [x] :S: `IfThenElse` typeclass, rebindable if-then-else syntax.
-- YulCat combinators:
-  - [x] :S: `Num, MPOrd` instances for `YulNum`.
-  - [x] :S: `IfThenElse` instance.
-  - [x] :M: `vfn, ap'vfn`, value function declaration and application.
-- Yul Port combinators:
-  - [x] :S: `Num, MPOrd` instances for `YulNum`.
-  - [x] :S: `IfThenElse` instance.
-  - [x] :M: `lfn, ap'lfn`, linearly-typed function declaration and application.
-- Prelude:
-  - [ ] :L: Curation.
+- Prelude curation.
 
 YOL Suite
 ---------
@@ -209,29 +217,29 @@ TODOs:
 - Project Builder
   - Manifest Builder:
     - [x] Single-file output mode.
-    - [ ] :M: Better error messages.
+    - [ ] Interface file generation.
+    - [ ] Better error messages.
   - Deployment types:
-    - [x] :S: Singleton contract.
-    - [ ] :S: Factory contract.
-    - [ ] :S: Shared library.
+    - [x] Singleton contract.
+    - [ ] Factory contract.
+    - [ ] Shared library.
   - Upgradability patterns:
-    - [ ] :S: Grandfatherly upgradable.
-    - [ ] :S: Full upgradable.
-    - [ ] :S: Simple library template.
+    - [ ] Grandfatherly upgradable.
+    - [ ] Full upgradable.
+    - [ ] Simple library template.
   - Contract verification support:
-    - [ ] :M: Stunt contract generator.
-      - 🔴 Blocked by `mkTypedSelector` support.
-    - [ ] :M: Multi-files output mode
+    - [ ] Stunt contract generator.
+    - [ ] Multi-files output mode
 - CLI: `yolc [options] yol_module_spec...`
   - Build Pipeline:
-    - [ ] :?: Better YOLSuite build sharing.
+    - [ ] Better YOLSuite build sharing.
   - Output modes:
     - [x] Show output mode.
     - [x] Yul output mode.
-    - [ ] :M: Haskell diagrams output mode.
+    - [ ] Haskell diagrams output mode.
   - Compiler Modes:
-    - [x] `symbol :: Fn a b`, fnMode
-    - [x] `object :: YulObject`, objectMode
+    - [x] `symbol   :: FnCat a b`, fnMode
+    - [x] `object   :: YulObject`, objectMode
     - [x] `manifest :: Manifest`, projectMode
 
 ## attila: who wields the foundry, forges his path
@@ -247,7 +255,6 @@ TODOs:
 
 > [!NOTE]
 > This should be the counter part of the "cast" from foundry.
-
 
 ## Software Distribution
 

@@ -8,8 +8,9 @@ import { BasicProgram } from "yol-build/Contracts.sol";
 interface IBasicProgram {
   function foo1(uint256 x) external pure returns (uint256);
   function foo2(uint256 x1, uint256 x2) external pure returns (uint256);
-  function rangeSumLFn(uint256 from, uint256 step, uint256 until) external pure returns (uint256 sum);
-  function rangeSumVFn(uint256 from, uint256 step, uint256 until) external pure returns (uint256 sum);
+  function rangeSumL(uint256 from, uint256 step, uint256 until) external pure returns (uint256 sum);
+  function rangeSumV1(uint256 from, uint256 step, uint256 until) external pure returns (uint256 sum);
+  function rangeSumV2(uint256 from, uint256 step, uint256 until) external pure returns (uint256 sum);
 }
 
 contract BasicProgramTest is Test {
@@ -30,15 +31,18 @@ contract BasicProgramTest is Test {
     assertEq(result, uint256(x1) + uint256(x2) * 2);
   }
 
-  function testRangeSumLFn() external {
-    uint256 result = _p.rangeSumLFn(0, 1, 10);
+  function testRangeSumFnL() external {
+    uint256 result = _p.rangeSumL(0, 1, 10);
     console.log("result", result);
     assertEq(result, 55);
   }
 
-  function testRangeSumVFn() external {
-    uint256 result = _p.rangeSumVFn(0, 1, 10);
-    console.log("result", result);
-    assertEq(result, 55);
+  function testRangeSumFnV() external {
+    uint256 result1 = _p.rangeSumV1(0, 1, 10);
+    uint256 result2 = _p.rangeSumV1(0, 1, 10);
+    console.log("result1", result1);
+    console.log("result2", result2);
+    assertEq(result1, 55);
+    assertEq(result2, 55);
   }
 }

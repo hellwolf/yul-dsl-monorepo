@@ -14,7 +14,7 @@ import qualified Data.Text.Lazy                              as T
 import           YulDSL.Core
 --
 import           Data.List                                   (nub)
-import           YulDSL.CodeGens.Yul.Internal.ABICodec
+import           YulDSL.CodeGens.Yul.Internal.ABICodecGen
 import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
 import           YulDSL.CodeGens.Yul.Internal.CodeGen
 import           YulDSL.CodeGens.Yul.Internal.FunctionGen

@@ -69,6 +69,7 @@ Ethereum.ContractABI.Types
 | ADDR                | [ADDR'            | Ethereum addresses           | #0xABC5...290a       |
 | BYTES               | [BYTES']          | Packed byte arrays           | TODO                 |
 | ARRAY a             | [ARRAY' a]        | Arrays                       | TODO                 |
+| FIXx s m n          | [FIX m n]         | Fixed-point decimal numbers  | TODO                 |
 | *(extended types)*  |                   |                              |                      |
 | U32, ..., U256      | [INTx' False n]   | Aliases of unsigned integers | (see INTx)           |
 | I32, ..., I256      | [INTx' True n]    | Aliases of signed integers   | (see INTx)           |

@@ -1,6 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE OverloadedStrings   #-}
-module YulDSL.CodeGens.Yul.Internal.ABICodec where
+module YulDSL.CodeGens.Yul.Internal.ABICodecGen
+  ( ABICodec (..)
+  , abi_encoder_name
+  , abi_decoder_name
+  , abi_codec_deps
+  , abi_codec_code )where
 
 -- text
 import qualified Data.Text.Lazy                              as T
@@ -21,14 +26,14 @@ instance Show ABICodec where
 instance Eq ABICodec where
   a == b = show a == show b
 
-abi_codec_name :: ABICodec -> Code
-abi_codec_name c = T.pack (show c)
+abi_codec_name_base :: ABICodec -> Code
+abi_codec_name_base c = T.pack (show c)
 
 abi_encoder_name :: ABICodec -> Code
-abi_encoder_name c = "__abienc" <> T.pack (show c)
+abi_encoder_name c = "__abienc" <> abi_codec_name_base c
 
 abi_decoder_name :: ABICodec -> Code
-abi_decoder_name c = "__abidec" <> T.pack (show c)
+abi_decoder_name c = "__abidec" <> abi_codec_name_base c
 
 abi_codec_deps :: ABICodec -> [ABICodec]
 abi_codec_deps c@(ABICodecDispatcher @a) = fmap ABICodecStack (abiTypeInfo @a) <> [c]

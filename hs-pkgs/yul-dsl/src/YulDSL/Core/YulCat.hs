@@ -40,7 +40,7 @@ The classification objects in the YulCat symmetrical monoidal category:
 
 module YulDSL.Core.YulCat
   ( YulObj (yul_prod_objs), YulO1, YulO2, YulO3, YulO4, YulO5
-  , YulVal, YulNum
+  , YulNum
   , YulCat (..), AnyYulCat (..), (>.>), (<.<)
   , MPOrd (..), IfThenElse (..)
   , digestYulCat,
@@ -84,14 +84,7 @@ type YulO3 a b c = (YulObj a, YulObj b, YulObj c)
 type YulO4 a b c d = (YulObj a, YulObj b, YulObj c, YulObj d)
 type YulO5 a b c d e = (YulObj a, YulObj b, YulObj c, YulObj d, YulObj e)
 
-{- ** Value types -}
-
--- | Value-type objects in the category.
-class (YulObj a, ABIWordValue a) => YulVal a
-
-instance YulVal BOOL
-instance YulVal ADDR
-instance (KnownBool s, KnownNat n) => YulVal (INTx s n)
+{- ** Number types -}
 
 -- | Number-type objects in the category.
 class (Num a, YulObj a) => YulNum a
@@ -160,8 +153,8 @@ data YulCat a b where
 
   -- Storage Primitives
   --
-  YulSGet :: forall a. YulVal a => YulCat ADDR a
-  YulSPut :: forall a. YulVal a => YulCat (ADDR, a) ()
+  YulSGet :: forall a. (YulO1 a, ABIWordValue a) => YulCat ADDR a
+  YulSPut :: forall a. (YulO1 a, ABIWordValue a) => YulCat (ADDR, a) ()
 
 -- | Existential wrapper of the 'YulCat'.
 data AnyYulCat = forall a b. YulO2 a b => MkAnyYulCat (YulCat a b)

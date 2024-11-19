@@ -93,7 +93,7 @@ Ethereum.ContractABI.Types
 TODOs:
 
 - CoreTypes:
-  - ADDR constant through overloaded label with checksum support.
+  - ADDR feature: constant through overloaded label with checksum support.
   - BYTESn
   - BYTES
   - ARRAY
@@ -124,8 +124,7 @@ TODOs:
   - [ ] `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
 - Value primitives:
   - [ ] `YulAbi{Enc,Dec}`, contracts ABI serialization.
-  - [ ] `YulFromJust, YulFromMaybe, YulIsJust`, maybe value support.
-  - [ ] `YulCast`, casting values between types.
+  - [ ] `YulCast`, casting values between value types.
 - Control flow primitives:
   - [ ] `YulMap`, tight loop over an array.
   - [ ] `YulLen`, array length.

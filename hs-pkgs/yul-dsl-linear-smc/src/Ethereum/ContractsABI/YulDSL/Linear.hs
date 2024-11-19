@@ -140,21 +140,22 @@ call'l (MkFn f) x' = dup2'l x' &
 
 {- * storage utilities -}
 
-sget :: forall v r. (YulObj r, YulVal v)
+sget :: forall v r. (YulO2 v r, ABIWordValue v)
      => Yul'P r ADDR ⊸ Yul'P r v -- FIXME use Maybe type
 sget = encode YulSGet
 
-sput :: forall v r. (YulObj r, YulVal v)
+sput :: forall v r. (YulO2 v r, ABIWordValue v)
      => Yul'P r ADDR ⊸ Yul'P r v ⊸ Yul'P r ()
 sput toP valP = encode YulSPut (merge (toP, valP))
-(<==) :: forall v r. (YulObj r, YulVal v)
+(<==) :: forall v r. (YulO2 v r, ABIWordValue v)
       => Yul'P r ADDR ⊸ Yul'P r v ⊸ Yul'P r ()
 (<==) = sput
 
-sputAt :: forall v r. (YulObj r, YulVal v)
+sputAt :: forall v r. (YulO2 v r, ABIWordValue v)
        => ADDR -> Yul'P r v ⊸ Yul'P r ()
 sputAt to v = mkUnit v & \(v', u) -> const'l to u & \a -> sput a v'
-(<==@) :: forall v r. (YulObj r, YulVal v)
+(<==@) :: forall v r. (YulO2 v r, ABIWordValue v)
       => ADDR -> Yul'P r v ⊸ Yul'P r ()
 (<==@) = sputAt
+
 infixr 1 <==, <==@

@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE OverloadedStrings   #-}
 module YulDSL.CodeGens.Yul.Internal.ABICodecGen
-  ( ABICodec (..)
+  ( ABICodecGen (..)
   , abi_encoder_name
   , abi_decoder_name
   , abi_codec_deps
@@ -15,31 +15,31 @@ import           YulDSL.CodeGens.Yul.Internal.CodeGen
 import           YulDSL.Core
 
 
-data ABICodec where
-  ABICodecDispatcher :: forall a. ABITypeable a => ABICodec
-  ABICodecStack :: ABICoreType -> ABICodec
+data ABICodecGen where
+  ABICodecDispatcher :: forall a. ABITypeable a => ABICodecGen
+  ABICodecStack :: ABICoreType -> ABICodecGen
 
-instance Show ABICodec where
+instance Show ABICodecGen where
   show (ABICodecDispatcher @a) = "_dispatcher_" <> abiTypeCompactName @a
   show (ABICodecStack a)       = "_stack_" <> abiCoreTypeCompactName a
 
-instance Eq ABICodec where
+instance Eq ABICodecGen where
   a == b = show a == show b
 
-abi_codec_name_base :: ABICodec -> Code
+abi_codec_name_base :: ABICodecGen -> Code
 abi_codec_name_base c = T.pack (show c)
 
-abi_encoder_name :: ABICodec -> Code
+abi_encoder_name :: ABICodecGen -> Code
 abi_encoder_name c = "__abienc" <> abi_codec_name_base c
 
-abi_decoder_name :: ABICodec -> Code
+abi_decoder_name :: ABICodecGen -> Code
 abi_decoder_name c = "__abidec" <> abi_codec_name_base c
 
-abi_codec_deps :: ABICodec -> [ABICodec]
+abi_codec_deps :: ABICodecGen -> [ABICodecGen]
 abi_codec_deps c@(ABICodecDispatcher @a) = fmap ABICodecStack (abiTypeInfo @a) <> [c]
 abi_codec_deps c@(ABICodecStack _)       = [c]
 
-abi_codec_code :: ABICodec -> Indenter -> T.Text
+abi_codec_code :: ABICodecGen -> Indenter -> T.Text
 abi_codec_code c@(ABICodecDispatcher @a) ind =
   if not (null vars) then
     ind ("// ABICodecDispatcher " <> T.pack (show c)) <>

@@ -1,9 +1,9 @@
-{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Ethereum.ContractABI.ExtendedType.TUPLEn where
 
-import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
+-- import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
 import           Ethereum.ContractABI.CoreType.NP (NP (..))
 
 {- AUTO GENERATED TupleN for N = [3..64]
@@ -37,13 +37,13 @@ type family NPToTupleN (np) where
   NPToTupleN (NP '[a1,a2,a3]) = (a1,a2,a3)
   NPToTupleN (NP '[a1,a2,a3,a4]) = (a1,a2,a3,a4)
 
-instance (ABITypeable a1,ABITypeable a2,ABITypeable a3) =>
- ABITypeable (a1,a2,a3) where
-  type instance ABITypeDerivedOf (a1,a2,a3) = NP '[a1,a2,a3]
-  abiToCoreType(a1,a2,a3)=a1:*a2:*a3:*Nil
-  abiFromCoreType(a1:*a2:*a3:*Nil)=(a1,a2,a3)
-instance (ABITypeable a1,ABITypeable a2,ABITypeable a3,ABITypeable a4) =>
- ABITypeable (a1,a2,a3,a4) where
-  type instance ABITypeDerivedOf (a1,a2,a3,a4) = NP '[a1,a2,a3,a4]
-  abiToCoreType(a1,a2,a3,a4)=a1:*a2:*a3:*a4:*Nil
-  abiFromCoreType(a1:*a2:*a3:*a4:*Nil)=(a1,a2,a3,a4)
+-- instance (ABITypeable a1,ABITypeable a2,ABITypeable a3) =>
+--  ABITypeable (a1,a2,a3) where
+--   type instance ABITypeDerivedOf (a1,a2,a3) = NP '[a1,a2,a3]
+--   abiToCoreType(a1,a2,a3)=a1:*a2:*a3:*Nil
+--   abiFromCoreType(a1:*a2:*a3:*Nil)=(a1,a2,a3)
+-- instance (ABITypeable a1,ABITypeable a2,ABITypeable a3,ABITypeable a4) =>
+--  ABITypeable (a1,a2,a3,a4) where
+--   type instance ABITypeDerivedOf (a1,a2,a3,a4) = NP '[a1,a2,a3,a4]
+--   abiToCoreType(a1,a2,a3,a4)=a1:*a2:*a3:*a4:*Nil
+--   abiFromCoreType(a1:*a2:*a3:*a4:*Nil)=(a1,a2,a3,a4)

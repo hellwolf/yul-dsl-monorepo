@@ -22,9 +22,10 @@ module Ethereum.ContractABI.CoreType.ADDR
   ) where
 
 -- base
-import GHC.TypeLits
--- import Data.Type.Bool ( type (&&) )
-import Numeric (showHex)
+import GHC.TypeLits ( type (^), type (-), fromSNat, type (<=) )
+import Numeric      (showHex)
+-- cereal
+import qualified Data.Serialize as S
 --
 import Ethereum.ContractABI.ABITypeable
 import Ethereum.ContractABI.ABICoreType
@@ -48,13 +49,17 @@ constAddr a = ADDR (fromSNat (natSing @a))
 toAddr :: Integer -> Maybe ADDR
 toAddr a = if a >= 0 && a <= (fromSNat (natSing @MAX_ADDR)) then Just (ADDR a) else Nothing
 
+instance Bounded ADDR where
+  minBound = zeroAddress
+  maxBound = maxAddr
+
 instance ABITypeable ADDR where
   type instance ABITypeDerivedOf ADDR = ADDR
   abiTypeInfo = [ADDR']
 
-instance Bounded ADDR where
-  minBound = zeroAddress
-  maxBound = maxAddr
+instance ABITypeCodec ADDR where
+  abiEncoder (ADDR x) = S.put x
+  abiDecoder = fmap ADDR S.get
 
 instance ABIWordValue ADDR where
   fromWord = toAddr . wordVal

@@ -16,7 +16,7 @@ const_42 = MkFn (MkFnCat "const_42" $ decode (const'l (fromInteger 42)))
 -- nop :: Fn () ()
 -- nop = fn'l "nop" $ curry'l @(()) \(u) -> u
 
-disFn :: ABITypeable a => Fn (a -> ())
+disFn :: YulObj a => Fn (a -> ())
 disFn = MkFn (MkFnCat "disFn" YulDis)
 
 -- mkConst :: forall a b. YulO2 a b => b -> Fn (a -> b)

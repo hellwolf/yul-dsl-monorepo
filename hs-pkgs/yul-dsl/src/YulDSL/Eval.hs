@@ -7,7 +7,7 @@ Stability   : experimental
 
 = Description
 
-This module provides a function 'evalYulDSL' simulating the evaluation of the 'YulDSL'.
+This module provides a function 'evalYulCat' simulating the evaluation of the 'YulDSL'.
 
 -}
 
@@ -20,7 +20,7 @@ import qualified Data.Map             as M
 -- eth-abi
 import           Ethereum.ContractABI
 --
-import           YulDSL.Core.YulCat   (YulCat (..))
+import           YulDSL.Core.YulCat
 
 
 {-# ANN EvalState "HLint: ignore Use newtype instead of data" #-}
@@ -32,19 +32,22 @@ initEvalState :: EvalState
 initEvalState = EvalState { store_map = M.empty
                           }
 
-evalYulDSL :: EvalState -> YulCat a b -> a -> (EvalState, b)
-evalYulDSL s YulId             a  = (s, a)
--- evalYulDSL s YulCoerce         a  = (s, fromJust . abi_decode . abi_encode $ a)
-evalYulDSL s (YulComp n m)     a  = (s'', c) where (s' , b) = evalYulDSL s  m a
-                                                   (s'', c) = evalYulDSL s' n b
-evalYulDSL s (YulProd m n) (a, b) = (s'', (c, d)) where (s',  c) = evalYulDSL s  m a
-                                                        (s'', d) = evalYulDSL s' n b
-evalYulDSL s  YulSwap      (a, b) = (s, (b, a))
-evalYulDSL s  YulDis           _  = (s, ())
-evalYulDSL s  YulDup           a  = (s, (a, a))
-evalYulDSL s (YulEmbed b)      _  = (s, b)
-evalYulDSL s  YulNumNeg       a   = (s, negate a)
-evalYulDSL s  YulNumAdd    (a, b) = (s, a + b)
-evalYulDSL s  YulSGet          r  = (s, fromJust (fromWord =<< M.lookup r (store_map s)))
-evalYulDSL s  YulSPut      (r, a) = (s', ()) where s' = s { store_map = M.insert r (toWord a) (store_map s) }
-evalYulDSL _ _ _ = error "evalYulDSL"
+evalYulCat' :: YulO2 a b => EvalState -> YulCat a b -> a -> (EvalState, b)
+evalYulCat' s YulId             a  = (s, a)
+evalYulCat' s YulCoerce         a  = (s, fromJust . abiDecode . abiEncode $ a)
+evalYulCat' s (YulComp n m)     a  = (s'', c) where (s' , b) = evalYulCat' s  m a
+                                                    (s'', c) = evalYulCat' s' n b
+evalYulCat' s (YulProd m n) (a, b) = (s'', (c, d)) where (s',  c) = evalYulCat' s  m a
+                                                         (s'', d) = evalYulCat' s' n b
+evalYulCat' s  YulSwap      (a, b) = (s, (b, a))
+evalYulCat' s  YulDis           _  = (s, ())
+evalYulCat' s  YulDup           a  = (s, (a, a))
+evalYulCat' s (YulEmbed b)      _  = (s, b)
+evalYulCat' s  YulNumNeg       a   = (s, negate a)
+evalYulCat' s  YulNumAdd    (a, b) = (s, a + b)
+evalYulCat' s  YulSGet          r  = (s, fromJust (fromWord =<< M.lookup r (store_map s)))
+evalYulCat' s  YulSPut      (r, a) = (s', ()) where s' = s { store_map = M.insert r (toWord a) (store_map s) }
+evalYulCat' _ _ _ = error "evalYulCat"
+
+evalYulCat :: YulO2 a b => YulCat a b -> a -> b
+evalYulCat s c = snd (evalYulCat' initEvalState s c)

@@ -35,11 +35,12 @@ import           Data.Bits                        (shift)
 import           Data.Coerce                      (coerce)
 import           Data.Maybe                       (fromJust)
 import           Data.Proxy                       (Proxy (Proxy))
-import           GHC.TypeNats                     (KnownNat (..), Nat, natVal)
+-- cereal
+import qualified Data.Serialize                   as S
 -- eth-abi
-import           Ethereum.ContractABI.ABICoreType (ABICoreType (INTx'), ABIWordValue (..), word, wordVal)
-import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
-import           Internal.Data.Type.Bool          (KnownBool (..), SBool (SBool))
+import           Ethereum.ContractABI.ABICoreType
+import           Ethereum.ContractABI.ABITypeable
+import           Internal.Data.Type.Bool
 
 
 -- | ABI integer value types, where @s@ is for signess and @n@ is the multiple of 8 bits
@@ -56,12 +57,17 @@ intxSign = toBool (SBool @s)
 intxNBits :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, KnownNat n) => Int
 intxNBits = fromEnum (8 * natVal (Proxy @n))
 
+{- * Type class instances -}
+
 instance forall s n. (KnownBool s, KnownNat n) => ABITypeable (INTx s n) where
   type instance ABITypeDerivedOf (INTx s n) = INTx s n
-
   abiTypeInfo = [INTx' (SBool @s) (natSing @n)]
 
-{-  Num hierarchy classes for (Maybe INTx s n) -}
+instance forall s n. (KnownBool s, KnownNat n) => ABITypeCodec (INTx s n) where
+  abiEncoder (INT x) = S.put x
+  abiDecoder = fmap INT S.get
+
+{- **  Num hierarchy classes for (Maybe INTx s n) -}
 
 instance (KnownBool s, KnownNat n) => Bounded (Maybe (INTx s n)) where
   minBound = Just . INT $
@@ -108,7 +114,7 @@ instance (KnownBool s, KnownNat n) => Integral (Maybe (INTx s n)) where
   quotRem (Just (INT a)) (Just (INT b)) = let (c, d) = quotRem a b in (Just (INT c), Just (INT d))
   quotRem _              _              = (Nothing, Nothing)
 
-{-  Num hierarchy classes for (INTx s n) -}
+{-  ** Num hierarchy classes for (INTx s n) -}
 
 instance (KnownBool s, KnownNat n) => Bounded (INTx s n) where
   minBound = fromJust minBound
@@ -129,7 +135,7 @@ instance (KnownBool s, KnownNat n) => Integral (INTx s n) where
   toInteger = toInteger . Just
   quotRem a b = let (a', b') = quotRem (Just a) (Just b) in (fromJust a', fromJust b')
 
-{-  ABICoreType -}
+{- ** ABIWordValue instances -}
 
 instance (KnownBool s, KnownNat n) => ABIWordValue (INTx s n) where
   fromWord w = let maxVal = coerce (maxBound @(INTx s n))
@@ -150,10 +156,12 @@ instance (KnownBool s, KnownNat n) => ABIWordValue (INTx s n) where
                         else word (a + 1 `shift` intxNBits @(INTx s n))
                    else word a
 
+{- ** Show instances -}
+
 instance (KnownBool s, KnownNat n) => Show (INTx s n) where
   show (INT a) = show a
 
-{- Assorted Fixed-Precision Integer Aliases -}
+{- * Assorted Fixed-Precision Integer Aliases -}
 
 -- Note: Code generation command
 -- sh$ for i in `seq 1 32`;do echo "type U$((i*8)) = INTx False $i;type I$((i*8)) = INTx True $i";done

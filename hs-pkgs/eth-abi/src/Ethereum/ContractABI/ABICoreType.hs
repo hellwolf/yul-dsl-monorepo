@@ -15,20 +15,25 @@ contract ABI types to support the entire contract ABI specification.
 -}
 module Ethereum.ContractABI.ABICoreType
   ( ABICoreType (..)
-  , KnownNat, natVal -- for working with INTx
+  , KnownNat (natSing), Nat, natVal -- for working with INTx
   , abiCoreTypeCanonName, abiCoreTypeCompactName
-  , WORD, word, wordVal, defWord, maxWord, ABIWordValue (..)
+  , WORD, word, wordVal, defWord, maxWord, ABIWordValue (toWord, fromWord)
+  , ABITypeCodec (abiEncoder, abiDecoder)
   ) where
 
 -- base
 import           Control.Exception       (assert)
 import           Data.Char               (toUpper)
 import           Data.Coerce             (coerce)
-import           GHC.TypeLits            (KnownNat, SNat, fromSNat, natVal)
+import           GHC.TypeLits            (KnownNat (natSing), Nat, SNat, fromSNat, natVal)
 import           Numeric                 (showHex)
+-- cereal
+import qualified Data.Serialize          as S
 --
 import           Internal.Data.Type.Bool (KnownBool, SBool, toBool)
 
+
+{- * ABICoreType and its utilities -}
 
 -- | Contract ABI core types.
 data ABICoreType where
@@ -46,14 +51,21 @@ data ABICoreType where
   ARRAY'  :: ABICoreType -> ABICoreType
 
 instance Eq ABICoreType where
-  BOOL' == BOOL'               = True
+  BOOL'       == BOOL'         = True
   (INTx' s n) == (INTx' s' n') = toBool s == toBool s' && fromSNat n == fromSNat n'
-  ADDR' == ADDR'               = True
+  ADDR'       == ADDR'         = True
   (BYTESn' n) == (BYTESn' n')  = fromSNat n == fromSNat n'
-  BYTES' == BYTES'             = True
-  (ARRAY' a) == (ARRAY' b)     = a == b
-  _ == _                       = False
+  BYTES'      == BYTES'        = True
+  (ARRAY' a)  == (ARRAY' b)    = a == b
+  -- not using _ == _ in order to let GHC do exhaustive checks on cases above
+  BOOL'       == _             = False
+  (INTx' _ _) == _             = False
+  ADDR'       == _             = False
+  (BYTESn' _) == _             = False
+  BYTES'      == _             = False
+  (ARRAY' _)  == _             = False
 
+-- | Canonical names for the core types used for computing the function selectors.
 abiCoreTypeCanonName :: ABICoreType -> String
 abiCoreTypeCanonName BOOL'       = "bool"
 abiCoreTypeCanonName (INTx' s n) = if toBool s then "int" else "uint" <> show (natVal n * 8)
@@ -62,6 +74,7 @@ abiCoreTypeCanonName (BYTESn' n) = "bytes" ++ show (natVal n)
 abiCoreTypeCanonName BYTES'      = "bytes"
 abiCoreTypeCanonName (ARRAY' a)  = abiCoreTypeCanonName a ++ "[]"
 
+-- | Compact but unambiguous names for the core types..
 abiCoreTypeCompactName :: ABICoreType -> String
 abiCoreTypeCompactName BOOL'       = "b"
 abiCoreTypeCompactName (INTx' s n) = if toBool s then "i" else "u" <> show (natVal n)
@@ -69,6 +82,8 @@ abiCoreTypeCompactName ADDR'       = "a"
 abiCoreTypeCompactName (BYTESn' n) = "B" ++ show (natVal n)
 abiCoreTypeCompactName BYTES'      = "Bs"
 abiCoreTypeCompactName (ARRAY' a)  = "A" ++ abiCoreTypeCompactName a
+
+{- * EVM word representations  -}
 
 -- | Raw storage value for ABI value types.
 newtype WORD = WORD Integer deriving newtype (Eq, Ord)
@@ -96,3 +111,8 @@ class Bounded a => ABIWordValue a where
   fromWord :: WORD -> Maybe a
   -- | Convert from a ABI typed value to a storage value.
   toWord   :: a -> WORD
+
+-- | ABI type bytstream codec
+class ABITypeCodec a where
+  abiDecoder :: S.Get a
+  abiEncoder :: S.Putter a

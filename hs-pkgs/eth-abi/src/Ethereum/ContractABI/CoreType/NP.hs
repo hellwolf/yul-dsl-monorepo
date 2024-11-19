@@ -19,7 +19,7 @@ Ethereum contract ABI compatible tuples encoded as n-ary products (NP).
 
 -}
 module Ethereum.ContractABI.CoreType.NP
-  ( NP (Nil, (:*)), showNP
+  ( NP (Nil, (:*))
   , LiftFunction, Multiplicity (Many, One)
   , UncurryNP'Fst, UncurryNP'Snd, UncurryNP'Multiplicity, UncurryNP
   , CurryNP
@@ -29,37 +29,59 @@ module Ethereum.ContractABI.CoreType.NP
   ) where
 
 -- base
-import           Data.Kind                        (Type)
+import           Data.Kind                        (Constraint, Type)
 import           Data.List                        (intercalate)
 import           GHC.Base                         (Multiplicity (..))
--- constraints
-import           Data.Constraint                  (Dict (Dict))
+-- cereal
+import qualified Data.Serialize                   as S
 --
-import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
 import           Internal.Data.Type.List
+--
+import           Ethereum.ContractABI.ABICoreType
+import           Ethereum.ContractABI.ABITypeable
 
+
+{- * NP -}
 
 -- | N-ary product with simplified than its homonym in the sop package.
 data NP :: [Type] -> Type where
   Nil  :: NP '[]
-  (:*) :: ABITypeable x => x -> NP xs -> NP (x : xs)
+  (:*) :: x -> NP xs -> NP (x : xs)
 infixr 5 :*
 
 -- | Existential wrapper of any 'NP' values.
-data AnyNP = forall as. MkAnyNP (NP as)
+data AnyNP (c :: Type -> Constraint) where
+  MkAnyEmptyNP    :: forall c. AnyNP c
+  MkAnyNonEmptyNP :: forall c x xs. (c x, c (NP xs)) => NP (x:xs) -> AnyNP c
 
--- | Show a NP as a list of strings.
-showNP :: AnyNP -> [String]
-showNP (MkAnyNP (Nil))     = []
-showNP (MkAnyNP (a :* as)) = [show a] <> showNP (MkAnyNP as)
+{- * Type class instances -}
+
+{- ** ABITypeable instances: NP xs -}
 
 instance ABITypeable (NP '[]) where
   type instance ABITypeDerivedOf (NP '[]) = NP '[]
   abiTypeInfo = []
 
-instance (ABITypeable x, ABITypeable (NP xs)) => ABITypeable (NP (x : xs)) where
+instance ( ABITypeable x, ABITypeable (NP xs)
+         ) => ABITypeable (NP (x : xs)) where
   type instance ABITypeDerivedOf (NP (x : xs)) = NP (x : xs)
   abiTypeInfo = abiTypeInfo @x <> abiTypeInfo @(NP xs)
+
+instance ABITypeCodec (NP '[]) where
+  abiEncoder Nil = S.put ()
+  abiDecoder = S.get @() >> pure Nil
+
+instance ( ABITypeable x, ABITypeCodec x, ABITypeCodec (NP xs)
+         ) => ABITypeCodec (NP (x : xs)) where
+  abiEncoder (x :* xs) = do
+    abiEncoder x
+    abiEncoder xs
+  abiDecoder = do
+    x <- abiDecoder
+    xs <- abiDecoder
+    pure (x :* xs)
+
+{- ** ABITypeable instances: (), (a, b) -}
 
 -- | ABI typeable unit.
 instance ABITypeable () where
@@ -70,15 +92,39 @@ instance ABITypeable () where
 -- | ABI typeable tuple.
 instance (ABITypeable a1, ABITypeable a2) => ABITypeable (a1, a2) where
   type instance ABITypeDerivedOf (a1, a2) = NP '[a1, a2]
-  abiProdObjs = Dict
   abiToCoreType (a1, a2) = a1 :* a2 :* Nil
   abiFromCoreType (a1 :* a2 :* Nil) = (a1, a2)
+
+instance ABITypeCodec () where
+  abiEncoder = S.put
+  abiDecoder = S.get
+
+instance ( ABITypeable a1, ABITypeable a2
+         , ABITypeCodec a1, ABITypeCodec a2
+         ) => ABITypeCodec (a1, a2) where
+  abiEncoder (x1, x2) = do
+    abiEncoder x1
+    abiEncoder x2
+  abiDecoder = do
+    x1 <- abiDecoder
+    x2 <- abiDecoder
+    pure (x1, x2)
+
+{- ** Show instances -}
 
 instance Show (NP '[]) where
   show _ = "()"
 
-instance Show x => Show (NP (x : xs)) where
-  show as = "(" ++ intercalate "," (showNP (MkAnyNP as)) ++ ")"
+instance (Show x, Show (NP xs)) => Show (NP (x : xs)) where
+  show xs = "(" ++ intercalate "," (show_any_np (MkAnyNonEmptyNP xs)) ++ ")"
+
+-- | Show a NP as a list of strings.
+show_any_np :: AnyNP Show -> [String]
+show_any_np MkAnyEmptyNP                 = []
+show_any_np (MkAnyNonEmptyNP (x :* Nil)) = [show x]
+show_any_np (MkAnyNonEmptyNP (x :* xs))  = [show x] <> show_any_np (MkAnyNonEmptyNP (xs :* Nil))
+
+{- ** Type level functions for NP -}
 
 -- | Lift a new currying function type from the simple function signature @f@ with a type function @m@ for each of its
 --   arguments with multiplicity arrows in @p@.

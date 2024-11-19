@@ -21,22 +21,24 @@ module Ethereum.ContractABI.ABITypeable
  , AnyABITypeable (MkAnyABITypeable)
  , AnyABITypeDerivedOf (MkAnyABIDerivedType)
  , abiTypeCanonName, abiTypeCompactName
+ , abiEncode, abiDecode
  ) where
 
-import           Data.Constraint                  (Dict)
+-- base
+import           Data.Kind                        (Constraint, Type)
 import           Data.List                        (intercalate)
+-- bytestring
+import qualified Data.ByteString                  as B
+-- cereal
+import qualified Data.Serialize                   as S
 --
-import           Ethereum.ContractABI.ABICoreType (ABICoreType (..), abiCoreTypeCanonName, abiCoreTypeCompactName)
+import           Ethereum.ContractABI.ABICoreType
 
 
 -- | Type information for all core and derived contract ABI types.
-class Show a => ABITypeable a where
+class ABITypeable a where
   -- | Convert @a@ to the ABI core type it derives from.
   type ABITypeDerivedOf a
-
-  -- | Possible breakdown of the product object type.
-  abiProdObjs :: forall b c. a ~ (b, c) => Dict (ABITypeable b, ABITypeable c)
-  abiProdObjs = error "abi_prod_objs should only be implemented by the product of ABIType"
 
   -- | Returns a list of core types represented by this type.
   --
@@ -55,9 +57,9 @@ class Show a => ABITypeable a where
   abiFromCoreType = id
 
 -- | Existential type of all abi types.
-data AnyABITypeable = forall a. ABITypeable a => MkAnyABITypeable a
+data AnyABITypeable (c :: Type -> Constraint) = forall a. c a => MkAnyABITypeable a
 
-instance Show AnyABITypeable where
+instance Show (AnyABITypeable Show) where
   show (MkAnyABITypeable a) = show a
 
 -- | Existential type of all abi types that derive from the same core type @c@.
@@ -71,8 +73,10 @@ abiTypeCanonName = intercalate "," (fmap abiCoreTypeCanonName (abiTypeInfo @a))
 abiTypeCompactName :: forall a. ABITypeable a => String
 abiTypeCompactName = intercalate "" (fmap abiCoreTypeCompactName (abiTypeInfo @a))
 
+abiEncode :: forall a. (ABITypeable a, ABITypeCodec a)
+          => a -> B.ByteString
+abiEncode = S.runPut . abiEncoder
 
--- | Maybe types of any abi type is also an abi type.
--- instance ABITypeable a => ABITypeable (Maybe a) where
---   type instance ABITypeDerivedOf (Maybe a) = Maybe a
---   abiTypeInfo = fmap MAYBE' (abiTypeInfo @a)
+abiDecode :: forall a. (ABITypeable a, ABITypeCodec a)
+          => B.ByteString -> Maybe a
+abiDecode = either (const Nothing) Just . S.runGet abiDecoder

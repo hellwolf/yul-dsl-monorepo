@@ -26,6 +26,7 @@
           cabal-install
           haskell.compiler.ghc910
           haskell.packages.ghc98.hlint_3_8
+          haskell.packages.ghc98.stylish-haskell # it doesn't work with 9.10
           haskell.packages.ghc910.haskell-language-server
         ];
         inherit shellHook;

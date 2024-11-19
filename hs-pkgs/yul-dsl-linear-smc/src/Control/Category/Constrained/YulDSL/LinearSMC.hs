@@ -22,13 +22,12 @@ import           Data.Constraint              (Dict (Dict))
 -- linear-smc
 import           Control.Category.Constrained (Cartesian (..), Category (..), Monoidal (..), ProdObj (..))
 --
-import           Ethereum.ContractABI         (ABITypeable (abiProdObjs))
-import           YulDSL.Core.YulCat           (YulCat (..), YulObj)
+import           YulDSL.Core.YulCat           (YulCat (..), YulObj (yul_prod_objs))
 
 -- | Instance for linear-smc 'ProdObj' for the objects in the category.
 instance ProdObj YulObj where
   prodobj = Dict
-  objprod = abiProdObjs
+  objprod = yul_prod_objs
   objunit = Dict
 
 instance Category YulCat where

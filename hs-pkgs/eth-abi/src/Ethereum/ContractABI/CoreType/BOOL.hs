@@ -19,9 +19,13 @@ module Ethereum.ContractABI.CoreType.BOOL
   , BOOL (BOOL), true, false
   ) where
 
-import           Ethereum.ContractABI.ABICoreType (ABICoreType (BOOL'), ABIWordValue (..), word, wordVal)
-import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
+-- cereal
+import qualified Data.Serialize                   as S
+--
 import           Internal.Data.Type.Bool
+--
+import           Ethereum.ContractABI.ABICoreType
+import           Ethereum.ContractABI.ABITypeable
 
 
 -- | ABI boolean value type.
@@ -38,6 +42,10 @@ false = BOOL False
 instance ABITypeable BOOL where
   type instance ABITypeDerivedOf BOOL = BOOL
   abiTypeInfo = [BOOL']
+
+instance ABITypeCodec BOOL where
+  abiEncoder (BOOL x) = S.put x
+  abiDecoder = fmap BOOL S.get
 
 instance Bounded BOOL where
   minBound = false

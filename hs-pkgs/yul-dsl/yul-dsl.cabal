@@ -44,6 +44,7 @@ library
                     YulDSL.CodeGens.Yul.Internal.FunctionGen
                     YulDSL.CodeGens.Yul.Internal.ObjectGen
   build-depends:    eth-abi ^>= 0.1.0.0,
+                    constraints >= 0.14,
                     bytestring >= 0.11,
                     text >= 2.0.1,
                     containers >= 0.6.7,

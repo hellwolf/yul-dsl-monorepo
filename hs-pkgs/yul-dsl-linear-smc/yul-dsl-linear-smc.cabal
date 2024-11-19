@@ -36,7 +36,6 @@ library
   build-depends:    constraints >= 0.13,
                     linear-base >= 0.3.1,
                     linear-smc >= 2.2.3,
-                    eth-abi,
                     yul-dsl
   exposed-modules:  Control.Category.Constrained.YulDSL.LinearSMC
                     Control.Category.Linear.Extra

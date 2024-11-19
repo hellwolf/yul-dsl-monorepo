@@ -39,7 +39,7 @@ The classification objects in the YulCat symmetrical monoidal category:
 -}
 
 module YulDSL.Core.YulCat
-  ( YulObj, YulO1, YulO2, YulO3, YulO4, YulO5
+  ( YulObj (yul_prod_objs), YulO1, YulO2, YulO3, YulO4, YulO5
   , YulVal, YulNum
   , YulCat (..), AnyYulCat (..), (>.>), (<.<)
   , MPOrd (..), IfThenElse (..)
@@ -48,30 +48,43 @@ module YulDSL.Core.YulCat
 
 -- base
 import           Data.Char             (ord)
-import           Data.Kind             (Constraint, Type)
 import           GHC.Integer           (xorInteger)
 import           Text.Printf           (printf)
+-- constraints
+import           Data.Constraint       (Dict (Dict))
 -- bytestring
 import qualified Data.ByteString.Char8 as B
 -- eth-abi
 import           Ethereum.ContractABI
 
 
-------------------------------------------------------------------------------------------------------------------------
--- Yul Types Hierarchy
-------------------------------------------------------------------------------------------------------------------------
+{- * Objects in the yul category -}
 
--- | All objects in the 'YulCat' category is simply a 'ABIType'.
-type YulObj :: Type -> Constraint
-type YulObj = ABITypeable
+-- | All objects in the yul category is simply a 'YulObj'.
+class (ABITypeable a, ABITypeCodec a, Show a) => YulObj a where
+  -- | Possible breakdown of the product object type.
+  yul_prod_objs :: forall b c. a ~ (b, c) => Dict (YulObj b, YulObj c)
+  yul_prod_objs = error "yul_prod_objs should only be implemented by the product of YulObj"
 
--- Convenient aliases for declaring YulObj constraints.
+{- ** Enumerate the objects for both core and extended ABI types -}
+
+instance YulObj ADDR
+instance YulObj BOOL
+instance (KnownBool s, KnownNat n) => YulObj (INTx s n)
+instance YulObj (NP '[])
+instance (YulObj x, YulObj (NP xs)) => YulObj (NP (x:xs))
+instance YulObj ()
+instance (YulObj a1, YulObj a2) => YulObj (a1, a2) where yul_prod_objs = Dict
+
+{- ** Convenient aliases for declaring yul objects -}
 
 type YulO1 a = YulObj a
 type YulO2 a b = (YulObj a, YulObj b)
 type YulO3 a b c = (YulObj a, YulObj b, YulObj c)
 type YulO4 a b c d = (YulObj a, YulObj b, YulObj c, YulObj d)
 type YulO5 a b c d e = (YulObj a, YulObj b, YulObj c, YulObj d, YulObj e)
+
+{- ** Value types -}
 
 -- | Value-type objects in the category.
 class (YulObj a, ABIWordValue a) => YulVal a
@@ -81,43 +94,12 @@ instance YulVal ADDR
 instance (KnownBool s, KnownNat n) => YulVal (INTx s n)
 
 -- | Number-type objects in the category.
-class (Num a, ABITypeable a) => YulNum a
+class (Num a, YulObj a) => YulNum a
 
+-- | Integer types.
 instance (KnownBool s, KnownNat n) => YulNum (INTx s n)
 
-------------------------------------------------------------------------------------------------------------------------
--- Granular Permission Tag
-------------------------------------------------------------------------------------------------------------------------
-
--- TODO: YulCat Permissions
-
--- data YulStoragePerm = YulStorageRO | YulStorageWO | YulStorageRW | YulStorageNoAccess
--- data YulCallPerm = YulAllowAnyCall | YulAllowStaticCall | YulNoCallAllowed
---
--- data FnPerm = FnPerm YulStoragePerm YulCallPerm
---
--- type FullFn :: FnPerm
--- type FullFn = 'FnPerm 'YulStorageRW 'YulAllowAnyCall
--- type FullFn = FnPerm YulStorageRW YulAllowAnyCall
--- type PureFn = FnPerm YulStorageNoAccess YulNoCallAllowed
--- type ViewFn = FnPerm YulStorageRO YulAllowStaticCall
-
--- class YulStorageReadAllowed a
--- class YulStorageWriteAllowed a
--- class YulTransactionCallAllowed a
--- class YulStaticCallAllowed a
---
--- instance YulStorageReadAllowed '(YulStorageRO, a)
--- instance YulStorageReadAllowed '(YulStorageRW, a)
--- instance YulStorageWriteAllowed '(YulStorageWO, a)
--- instance YulStorageWriteAllowed '(YulStorageRW, a)
--- instance YulTransactionCallAllowed '(a, YulAllowAnyCall)
--- instance YulStaticCallAllowed '(a, YulAllowAnyCall)
--- instance YulStaticCallAllowed '(a, YulAllowStaticCall)
-
-------------------------------------------------------------------------------------------------------------------------
--- The Cat
-------------------------------------------------------------------------------------------------------------------------
+{- * The Cat -}
 
 -- | A GADT-style DSL of Yul that constructs morphisms between objects (YulObj) of the "Yul Category".
 --
@@ -286,7 +268,7 @@ instance Show (YulCat a b) where
 -- Useful Type Classes For Custom Prelude
 ------------------------------------------------------------------------------------------------------------------------
 
-instance (YulObj r, YulNum a) => Num (YulCat r a) where
+instance (YulO2 a r, YulNum a) => Num (YulCat r a) where
   a + b = YulNumAdd <.< YulProd a b <.< YulDup
   a * b = YulNumMul <.< YulProd a b <.< YulDup
   abs = YulComp YulNumAbs
@@ -304,7 +286,7 @@ class MPOrd a b | a -> b where
   (/=?) :: forall w. a %w -> a %w -> b
   infixr 4 <?, <=?, >?, >=?, ==?, /=?
 
-instance (YulObj r, YulNum a) => MPOrd (YulCat r a) (YulCat r BOOL) where
+instance (YulO2 a r, YulNum a) => MPOrd (YulCat r a) (YulCat r BOOL) where
   a  <? b = YulNumCmp (true , false, false) <.< YulProd a b <.< YulDup
   a <=? b = YulNumCmp (true , true , false) <.< YulProd a b <.< YulDup
   a  >? b = YulNumCmp (false, false, true ) <.< YulProd a b <.< YulDup

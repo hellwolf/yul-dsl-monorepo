@@ -26,10 +26,11 @@ library
   hs-source-dirs:   src
   exposed-modules:  Ethereum.ContractABI.ABICoreType
                     Ethereum.ContractABI.ABITypeable
-                    Ethereum.ContractABI.CoreType.BOOL
-                    Ethereum.ContractABI.CoreType.INTx
-                    Ethereum.ContractABI.CoreType.ADDR
                     Ethereum.ContractABI.CoreType.NP
+                    Ethereum.ContractABI.CoreType.BOOL
+                    Ethereum.ContractABI.CoreType.ADDR
+                    Ethereum.ContractABI.CoreType.INTx
+                    Ethereum.ContractABI.CoreType.BYTESn
                     Ethereum.ContractABI.ABITypeCoercible
                     Ethereum.ContractABI.ExtendedType.TUPLEn
                     Ethereum.ContractABI.ExtendedType.SELECTOR
@@ -38,6 +39,7 @@ library
   other-modules:    Internal.Data.Type.Bool
                     Internal.Data.Type.List
   build-depends:    bytestring >= 0.11,
+                    template-haskell >= 2.22.0.0,
                     crypton >= 0.32,
                     memory >= 0.18.0,
                     cereal

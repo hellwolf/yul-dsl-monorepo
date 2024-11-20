@@ -70,7 +70,7 @@ class (ABITypeable a, ABITypeCodec a, Show a) => YulObj a where
 
 instance YulObj ADDR
 instance YulObj BOOL
-instance (KnownBool s, KnownNat n) => YulObj (INTx s n)
+instance (KnownBool s, ValidINTn n) => YulObj (INTx s n)
 instance YulObj (NP '[])
 instance (YulObj x, YulObj (NP xs)) => YulObj (NP (x:xs))
 instance YulObj ()
@@ -90,7 +90,7 @@ type YulO5 a b c d e = (YulObj a, YulObj b, YulObj c, YulObj d, YulObj e)
 class (Num a, YulObj a) => YulNum a
 
 -- | Integer types.
-instance (KnownBool s, KnownNat n) => YulNum (INTx s n)
+instance (KnownBool s, ValidINTn n) => YulNum (INTx s n)
 
 {- * The Cat -}
 
@@ -176,7 +176,7 @@ digestYulCat :: YulCat a b -> String
 digestYulCat = printf "%x" . digest_c8 . B.pack . show
   where c8 _ []     = 0
         c8 n [a]    = (2 ^ n) * toInteger(ord a)
-        c8 n (a:as) = (2 ^ n) * toInteger(ord a) + c8 (n + 8) as
+        c8 n (a:as) =  (2 ^ n) * toInteger(ord a) + c8 (n + 8) as
         digest_c8 bs = go_digest_c8 (B.splitAt 8 bs)
         go_digest_c8 (b, bs') = c8 (0 :: Integer) (B.unpack b) `xorInteger`
                                 if B.length bs' == 0 then 0 else digest_c8 bs'

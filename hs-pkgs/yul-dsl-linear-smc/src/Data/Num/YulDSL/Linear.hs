@@ -21,10 +21,10 @@ import           Ethereum.ContractsABI.YulDSL.Linear
 instance FromInteger Integer where
   fromInteger = id
 
-instance (KnownBool s, KnownNat n) => FromInteger (INTx s n) where
+instance (KnownBool s, ValidINTn n) => FromInteger (INTx s n) where
   fromInteger = UnsafeLinear.toLinear Prelude.Base.fromInteger
 
-instance (KnownBool s, KnownNat n) => FromInteger (Maybe (INTx s n)) where
+instance (KnownBool s, ValidINTn n) => FromInteger (Maybe (INTx s n)) where
   fromInteger = UnsafeLinear.toLinear Prelude.Base.fromInteger
 
 {- * Num instances for (YulCat r a) -}

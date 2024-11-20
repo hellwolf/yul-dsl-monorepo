@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
 
 Copyright   : (c) 2024 Miao, ZhiCheng
@@ -15,7 +16,7 @@ contract ABI types to support the entire contract ABI specification.
 -}
 module Ethereum.ContractABI.ABICoreType
   ( ABICoreType (..)
-  , KnownNat (natSing), Nat, natVal -- for working with INTx
+  , ValidINTn, Nat, natSing, natVal -- for working with INTx, BYTEn
   , abiCoreTypeCanonName, abiCoreTypeCompactName
   , WORD, word, wordVal, defWord, maxWord, ABIWordValue (toWord, fromWord)
   , ABITypeCodec (abiEncoder, abiDecoder)
@@ -27,6 +28,8 @@ import           Data.Char               (toUpper)
 import           Data.Coerce             (coerce)
 import           GHC.TypeLits            (KnownNat (natSing), Nat, SNat, fromSNat, natVal)
 import           Numeric                 (showHex)
+-- template-haskell
+import qualified Language.Haskell.TH     as TH
 -- cereal
 import qualified Data.Serialize          as S
 --
@@ -34,6 +37,12 @@ import           Internal.Data.Type.Bool (KnownBool, SBool, toBool)
 
 
 {- * ABICoreType and its utilities -}
+
+-- | A constraint that restricts what Nat values are valid for 'INTx' and 'BYTESn'.
+class KnownNat n => ValidINTn n
+
+-- | A top-level splice that declares all the valid INTx n values.
+flip foldMap [1..32] $ \i -> [d| instance ValidINTn $(TH.litT (TH.numTyLit i)) |]
 
 -- | Contract ABI core types.
 data ABICoreType where

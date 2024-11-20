@@ -18,5 +18,5 @@ deriving newtype instance Arbitrary BOOL
 
 -- deriving instance Arbitrary BYTES
 
-instance (KnownBool s, KnownNat n) => Arbitrary (INTx s n) where
+instance (KnownBool s, ValidINTn n) => Arbitrary (INTx s n) where
   arbitrary = chooseBoundedIntegral (minBound, maxBound)

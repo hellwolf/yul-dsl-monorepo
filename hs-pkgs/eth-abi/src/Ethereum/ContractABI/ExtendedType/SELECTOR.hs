@@ -23,7 +23,7 @@ import qualified Data.ByteArray                     as BA
 -- eth-abi
 import           Ethereum.ContractABI.ABICoreType
 import           Ethereum.ContractABI.ABITypeable
-import           Ethereum.ContractABI.CoreType.INTx (U32, intxVal)
+import           Ethereum.ContractABI.CoreType.INTx (U32)
 
 
 -- | External function signature. This optional information does not have run-time representation.
@@ -53,5 +53,5 @@ mkRawSelector :: U32 -> SELECTOR
 mkRawSelector sig = SELECTOR (sig, Nothing)
 
 instance Show SELECTOR where
-  show (SELECTOR (sig, Just (FuncSig (fname, args)))) = "0x" ++ showHex (intxVal sig) " /* " ++  fname ++ "(" ++ intercalate ","args ++ ") */"
-  show (SELECTOR (sig, Nothing))                = "0x" ++ showHex (intxVal sig) ""
+  show (SELECTOR (sig, Just (FuncSig (fname, args)))) = "0x" ++ showHex (toInteger sig) " /* " ++  fname ++ "(" ++ intercalate ","args ++ ") */"
+  show (SELECTOR (sig, Nothing))                = "0x" ++ showHex (toInteger sig) ""

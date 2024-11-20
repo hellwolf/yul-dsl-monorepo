@@ -66,7 +66,8 @@ Ethereum.ContractABI.Types
 | NP xs               | xs'               | N-ary products               | INT 1 :* true :* Nil |
 | BOOL                | [BOOL']           | Boolean                      | true, false          |
 | INTx s n            | [INTx' s n]       | Fixed-precision integers     | -1, 0, 42, 0xffff    |
-| ADDR                | [ADDR'            | Ethereum addresses           | #0xABC5...290a       |
+| ADDR                | [ADDR']           | Ethereum addresses           | #0xABC5...290a       |
+| BYTESn n            | [BYTESn']         | Binary type of n bytes       |                      |
 | BYTES               | [BYTES']          | Packed byte arrays           | TODO                 |
 | ARRAY a             | [ARRAY' a]        | Arrays                       | TODO                 |
 | FIXx s m n          | [FIX m n]         | Fixed-point decimal numbers  | TODO                 |
@@ -121,7 +122,7 @@ YulDSL
 TODOs:
 
 - Safety:
-  - [ ] `YulCat p a b `, `p :: FnPerm` as the type-Level function permission tag.
+  - [ ] `P (v :: Nat) r a`, linearly-safety with data generation versioning tag "v".
 - Value primitives:
   - [ ] `YulAbi{Enc,Dec}`, contracts ABI serialization.
   - [ ] `YulCast`, casting values between value types.

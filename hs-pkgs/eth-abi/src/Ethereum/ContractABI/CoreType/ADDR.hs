@@ -22,7 +22,7 @@ module Ethereum.ContractABI.CoreType.ADDR
   ) where
 
 -- base
-import GHC.TypeLits ( type (^), type (-), fromSNat, type (<=) )
+import GHC.TypeLits (KnownNat, type (^), type (-), fromSNat, type (<=))
 import Numeric      (showHex)
 -- cereal
 import qualified Data.Serialize as S
@@ -42,7 +42,7 @@ type MAX_ADDR = (2 ^ 256) - 1
 maxAddr :: ADDR
 maxAddr = ADDR (fromSNat (natSing @MAX_ADDR))
 
-constAddr :: forall (a :: Nat) -> ( KnownNat a , a <= MAX_ADDR )
+constAddr :: forall (a :: Nat) -> (KnownNat a , a <= MAX_ADDR)
           => ADDR
 constAddr a = ADDR (fromSNat (natSing @a))
 

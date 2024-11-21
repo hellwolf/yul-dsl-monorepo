@@ -11,41 +11,44 @@ import           YulDSL.Core.Fn
 import           YulDSL.Core.YulCat
 
 
--- | Effect type for the external function call.
-data FuncEffect = FuncTx | FuncStatic
+-- |  type for the external function call.
+data StoragePermission = ReadonlyExternalStorage
+                       | WritableExternalStorage
+                       | DelegatedStorage
 
 data ScopedFn where
-  ExternalFn :: forall as b. YulO2 (NP as) b => FuncEffect -> SELECTOR -> FnNP as b -> ScopedFn
-  LibraryFn  :: forall as b. YulO2 (NP as) b => FnNP as b -> ScopedFn
+  ExternalFn :: forall eff as b. YulO2 (NP as) b => StoragePermission -> SELECTOR -> FnNP eff as b -> ScopedFn
+  LibraryFn  :: forall eff as b. YulO2 (NP as) b => FnNP eff as b -> ScopedFn
 
-externalFn :: forall f as b.
+externalFn :: forall f as b eff.
               ( YulO2 (NP as) b
               , UncurryNP'Fst f ~ as
               , UncurryNP'Snd f ~ b
-              ) => Fn f -> ScopedFn
-externalFn (MkFn f) = ExternalFn FuncTx (mkTypedSelector @(NP as) (fnId f)) f
+              ) => Fn eff f -> ScopedFn
+externalFn (MkFn f) = ExternalFn WritableExternalStorage (mkTypedSelector @(NP as) (fnId f)) f
 
-staticFn :: forall f as b.
+staticFn :: forall f as b eff.
             ( YulO2 (NP as) b
             , UncurryNP'Fst f ~ as
             , UncurryNP'Snd f ~ b
-            ) => Fn f -> ScopedFn
-staticFn (MkFn f) = ExternalFn FuncStatic (mkTypedSelector @(NP as) (fnId f)) f
+            ) => Fn eff f -> ScopedFn
+staticFn (MkFn f) = ExternalFn ReadonlyExternalStorage (mkTypedSelector @(NP as) (fnId f)) f
 
-libraryFn :: forall f as b.
+libraryFn :: forall f as b eff.
              ( YulO2 (NP as) b
              , UncurryNP'Fst f ~ as
              , UncurryNP'Snd f ~ b
-             ) => Fn f -> ScopedFn
+             ) => Fn eff f -> ScopedFn
 libraryFn (MkFn f) = LibraryFn f
 
-show_fn_spec :: forall as b. YulO2 (NP as) b => FnNP as b -> String
+show_fn_spec :: forall as b eff. YulO2 (NP as) b => FnNP eff as b -> String
 show_fn_spec f = "fn " <> fnId f <> "(" <> abiTypeCanonName @(NP as) <> ") -> " <> abiTypeCanonName @b
 
 instance Show ScopedFn where
-  show (ExternalFn FuncTx _ f)     = "external " <> show_fn_spec f <> "\n" <> show (fnCat f)
-  show (ExternalFn FuncStatic _ f) = "static "   <> show_fn_spec f <> "\n" <> show (fnCat f)
-  show (LibraryFn f)               = "internal " <> show_fn_spec f <> "\n" <> show (fnCat f)
+  show (ExternalFn WritableExternalStorage _ f) = "external " <> show_fn_spec f <> "\n" <> show (fnCat f)
+  show (ExternalFn ReadonlyExternalStorage _ f) = "static "   <> show_fn_spec f <> "\n" <> show (fnCat f)
+  show (ExternalFn DelegatedStorage _ f)        = "delegated "   <> show_fn_spec f <> "\n" <> show (fnCat f)
+  show (LibraryFn f)                            = "internal " <> show_fn_spec f <> "\n" <> show (fnCat f)
 
 removeScope :: ScopedFn -> AnyFn
 removeScope (ExternalFn _ _ f) = MkAnyFn f
@@ -57,7 +60,7 @@ removeScope (LibraryFn f)      = MkAnyFn f
 --   * Do not confuse this with YulObj which is an "object" in the category of YulCat.
 --   * Specification: https://docs.soliditylang.org/en/latest/yul.html#specification-of-yul-object
 data YulObject = MkYulObject { yulObjectName :: String
-                             , yulObjectCtor :: YulCat () ()
+                             , yulObjectCtor :: AnyYulCat  -- FIXME support constructor
                              , yulObjectSFns :: [ScopedFn] -- scoped functions
                              , yulSubObjects :: [YulObject]
                              -- , TODO support object data
@@ -70,7 +73,7 @@ instance Show YulObject where
            <> (show . yulObjectCtor) o
 
 mkYulObject :: String
-            -> YulCat () ()
+            -> AnyYulCat
             -> [ScopedFn]
             -> YulObject
 mkYulObject name ctor afns = MkYulObject { yulObjectName = name

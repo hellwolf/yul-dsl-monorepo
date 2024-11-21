@@ -32,7 +32,7 @@ initEvalState :: EvalState
 initEvalState = EvalState { store_map = M.empty
                           }
 
-evalYulCat' :: YulO2 a b => EvalState -> YulCat a b -> a -> (EvalState, b)
+evalYulCat' :: YulO2 a b => EvalState -> YulCat eff a b -> a -> (EvalState, b)
 evalYulCat' s YulId             a  = (s, a)
 evalYulCat' s YulCoerce         a  = (s, fromJust . abiDecode . abiEncode $ a)
 evalYulCat' s (YulComp n m)     a  = (s'', c) where (s' , b) = evalYulCat' s  m a
@@ -49,5 +49,5 @@ evalYulCat' s  YulSGet          r  = (s, fromJust (fromWord =<< M.lookup r (stor
 evalYulCat' s  YulSPut      (r, a) = (s', ()) where s' = s { store_map = M.insert r (toWord a) (store_map s) }
 evalYulCat' _ _ _ = error "evalYulCat"
 
-evalYulCat :: YulO2 a b => YulCat a b -> a -> b
+evalYulCat :: YulO2 a b => YulCat eff a b -> a -> b
 evalYulCat s c = snd (evalYulCat' initEvalState s c)

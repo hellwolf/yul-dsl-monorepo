@@ -30,12 +30,12 @@ instance ProdObj YulObj where
   objprod = yul_prod_objs
   objunit = Dict
 
-instance Category YulCat where
-  type Obj YulCat = YulObj
+instance Category (YulCat eff) where
+  type Obj (YulCat eff) = YulObj
   id  = YulId
   (∘) = YulComp
 
-instance Monoidal YulCat where
+instance Monoidal (YulCat eff) where
   (×)     = YulProd
   unitor  = YulCoerce
   unitor' = YulCoerce
@@ -43,7 +43,7 @@ instance Monoidal YulCat where
   assoc'  = YulCoerce
   swap    = YulSwap
 
-instance Cartesian YulCat where
+instance Cartesian (YulCat eff) where
   (▵) = YulFork
   exl = YulExl
   exr = YulExr

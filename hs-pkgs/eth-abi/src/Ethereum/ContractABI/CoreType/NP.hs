@@ -1,7 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes    #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE LinearTypes            #-}
-{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE LinearTypes         #-}
+{-# LANGUAGE TypeFamilies        #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
@@ -20,7 +19,8 @@ Ethereum contract ABI compatible tuples encoded as n-ary products (NP).
 -}
 module Ethereum.ContractABI.CoreType.NP
   ( NP (Nil, (:*))
-  , LiftFunction, Multiplicity (Many, One)
+  , Multiplicity (Many, One)
+  , LiftFunction
   , UncurryNP'Fst, UncurryNP'Snd, UncurryNP'Multiplicity, UncurryNP
   , CurryNP
   , CurryingNP'Head, CurryingNP'Tail
@@ -126,11 +126,11 @@ show_any_np (MkAnyNonEmptyNP (x :* xs))  = [show x] <> show_any_np (MkAnyNonEmpt
 
 {- ** Type level functions for NP -}
 
--- | Lift a new currying function type from the simple function signature @f@ with a type function @m@ for each of its
---   arguments with multiplicity arrows in @p@.
-type family LiftFunction f (m :: Type -> Type) (p :: Multiplicity) where
-  LiftFunction  (a1 -> g) m p = m a1 %p-> LiftFunction g m p
-  LiftFunction        (b) m _ = m b
+-- | Lift a new currying function type from the simple function signature @f@, with a type function @m@ for each of its
+--   arguments with multiplicity arrows in @p@, and the result of the function with a type function @mb@.
+type family LiftFunction f (m :: Type -> Type) (mb :: Type -> Type) (p :: Multiplicity) where
+  LiftFunction  (a1 -> g) m mb p = m a1 %p-> LiftFunction g m mb p
+  LiftFunction        (b) m mb _ = mb b
 
 -- | Uncurry the arguments of a function to a list of types.
 type family UncurryNP'Fst f :: [Type] where
@@ -155,7 +155,7 @@ type UncurryNP f = NP (UncurryNP'Fst f) %(UncurryNP'Multiplicity f)-> UncurryNP'
 --   Note: To add multiplicity-polymorphic arrows or to decorate arguments with additional type function, use
 --   'LiftFunction'.
 type family CurryNP np b where
-  CurryNP (NP (a:as)) b = a -> CurryNP (NP as) b
+  CurryNP (NP (x:xs)) b = x -> CurryNP (NP xs) b
   CurryNP (NP    '[]) b = b
 
 -- | The type of the head of arguments of an currying function.
@@ -169,19 +169,25 @@ type family CurryingNP'Tail f where
   CurryingNP'Tail (a1 %p-> g) = CurryingNP'Tail g
   CurryingNP'Tail         (b) = b
 
-class UncurryingNP f (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) |
-  m2 -> m1 p where
+-- | Uncurrying a function into a function of NP to @b@.
+class UncurryingNP f (xs :: [Type]) b
+      (m1 :: Type -> Type) (m1b :: Type -> Type)
+      (m2 :: Type -> Type) (m2b :: Type -> Type)
+      (p :: Multiplicity) where
   uncurryingNP :: forall f'.
                   ( UncurryNP'Fst f ~ xs
                   , UncurryNP'Snd f ~ b
-                  , LiftFunction f m1 p ~ f'
-                  ) => f'                     -- ^ from @LiftFunction (         f) m1 p@
-                  %p-> (m2 (NP xs) %p-> m2 b) -- ^ to   @LiftFunction (NP xs -> b) m2 p@
+                  , LiftFunction f m1 m1b p ~ f'
+                  ) => f'                       -- ^ from @LiftFunction2 (         f) m1 m1b p@
+                  %p-> (m2 (NP xs) %p-> m2b b)  -- ^ to   @LiftFunction2 (NP xs -> b) m2 m2b p@
 
-class CurryingNP (xs :: [Type]) b (m1 :: Type -> Type) (m2 :: Type -> Type) (p :: Multiplicity) |
-  m2 -> m1 p where
+-- | Currying a function of NP to @b@.
+class CurryingNP (xs :: [Type]) b
+      (m1 :: Type -> Type) (m1b :: Type -> Type)
+      (m2 :: Type -> Type)
+      (p :: Multiplicity) where
   curryingNP :: forall f f'.
                 ( CurryNP (NP xs) b ~ f
-                , LiftFunction f m1 p ~ f'
-                ) => (m2 (NP xs) %p-> m1 b) -- ^ from @m2 (NP xs) %p-> m1 b@
-                %p-> f'                     -- ^ to   @LiftFunction f m1 p@
+                , LiftFunction f m1 m1b p ~ f'
+                ) => (m2 (NP xs) %p-> m1b b) -- ^ from @m2 (NP xs) %p-> m1 b@
+                %p-> f'                      -- ^ to   @LiftFunction f m1 p@

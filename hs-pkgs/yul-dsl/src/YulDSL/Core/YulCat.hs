@@ -41,6 +41,7 @@ The classification objects in the YulCat symmetrical monoidal category:
 module YulDSL.Core.YulCat
   ( YulObj (yul_prod_objs), YulO1, YulO2, YulO3, YulO4, YulO5
   , YulNum
+  , Pure (MkPure)
   , YulCat (..), AnyYulCat (..), (>.>), (<.<)
   , MPOrd (..), IfThenElse (..)
   , digestYulCat,
@@ -92,60 +93,63 @@ class (Num a, YulObj a) => YulNum a
 -- | Integer types.
 instance (KnownBool s, ValidINTn n) => YulNum (INTx s n)
 
+-- | Data kinds for pure morphisms in the yul category.
+data Pure = MkPure
+
+type family StorageAccessEffect (eff :: k) :: k
+
 {- * The Cat -}
 
 -- | A GADT-style DSL of Yul that constructs morphisms between objects (YulObj) of the "Yul Category".
 --
 --  Note: - The inhabitants of this are actually morphisms of the Yul category. "Cat" is just a nice sounding moniker,
 --  while the actual category is "Yul Category".
-data YulCat a b where
+data YulCat (eff :: k) a b where
   -- Type-level Operations (Zero Runtime Cost)
   -- | Convert between coercible Yul objects.
-  YulCoerce :: forall a b. (YulO2 a b, ABITypeCoercible a b) => YulCat a b
+  YulCoerce :: forall eff a b. (YulO2 a b, ABITypeCoercible a b) => YulCat eff a b
   -- | Split the head and tail of a n-ary product where n >= 1.
-  YulSplit :: forall as. YulO1 (NP as) => YulCat (NP as) (Head as, NP (Tail as))
+  YulSplit :: forall eff as. YulO1 (NP as) => YulCat eff (NP as) (Head as, NP (Tail as))
 
   -- SMC Primitives
   --  Category
-  YulId   :: forall a.     YulO2 a a     => YulCat a a
-  YulComp :: forall a b c. YulO3 a b c   => YulCat c b %1 -> YulCat a c %1 -> YulCat a b
+  YulId   :: forall eff a.     YulO2 a a   => YulCat eff a a
+  YulComp :: forall eff a b c. YulO3 a b c => YulCat eff c b %1 -> YulCat eff a c %1 -> YulCat eff a b
   --  Monoidal
-  YulProd :: forall a b c d. YulO4 a b c d => YulCat a b %1 -> YulCat c d %1 -> YulCat (a, c) (b, d)
-  YulSwap :: forall a b.     YulO2 a b     => YulCat (a, b) (b, a)
+  YulProd :: forall eff a b c d. YulO4 a b c d => YulCat eff a b %1 -> YulCat eff c d %1 -> YulCat eff (a, c) (b, d)
+  YulSwap :: forall eff a b.     YulO2 a b     => YulCat eff (a, b) (b, a)
   --  Cartesian
-  YulFork :: forall a b c. YulO3 a b c => YulCat a b %1 -> YulCat a c %1 -> YulCat a (b, c)
-  YulExl  :: forall a b.   YulO2 a b   => YulCat (a, b) a
-  YulExr  :: forall a b.   YulO2 a b   => YulCat (a, b) b
-  YulDis  :: forall a.     YulO1 a     => YulCat a ()
-  YulDup  :: forall a.     YulO1 a     => YulCat a (a, a)
+  YulFork :: forall eff a b c. YulO3 a b c => YulCat eff a b %1 -> YulCat eff a c %1 -> YulCat eff a (b, c)
+  YulExl  :: forall eff a b.   YulO2 a b   => YulCat eff (a, b) a
+  YulExr  :: forall eff a b.   YulO2 a b   => YulCat eff (a, b) b
+  YulDis  :: forall eff a.     YulO1 a     => YulCat eff a ()
+  YulDup  :: forall eff a.     YulO1 a     => YulCat eff a (a, a)
 
   -- Control Flow Primitives
   --
-  -- | Embed a constant value.
-  YulEmbed :: forall r a  . YulO2 r a => a -> YulCat r a
   -- | Call a yul internal function by reference its id.
-  YulJump  :: forall a b  . YulO2 a b => String -> YulCat a b %1 -> YulCat a b
+  YulJump  :: forall eff a b. YulO2 a b => String -> YulCat eff a b %1 -> YulCat eff a b
   -- | Call a external function.
   -- YulCall  :: forall a b r. YulO3 a b r => YulCat r (FUNC a b) %1 -> YulCat a b
   -- | If-then-else.
-  YulITE   :: forall a    . YulO1 a => YulCat (BOOL, (a, a)) a
-  -- | Mapping over a list.
-  -- YulMap   :: forall a b  . YulO2 a b   => YulCat a b %1 -> YulCat [a] [b]
+  YulITE   :: forall eff a. YulO1 a => YulCat eff (BOOL, (a, a)) a
 
   -- YulVal Primitives
   --
+  -- | Embed a constant value.
+  YulEmbed :: forall eff a r. YulO2 a r => a -> YulCat eff r a
   -- * Boolean Operations
-  YulNot :: YulCat BOOL BOOL
-  YulAnd :: YulCat (BOOL, BOOL) BOOL
-  YulOr  :: YulCat (BOOL, BOOL) BOOL
+  YulNot :: YulCat eff BOOL BOOL
+  YulAnd :: YulCat eff (BOOL, BOOL) BOOL
+  YulOr  :: YulCat eff (BOOL, BOOL) BOOL
   -- * Num Types
-  YulNumAdd :: forall a. YulNum a => YulCat (a, a) a
-  YulNumMul :: forall a. YulNum a => YulCat (a, a) a
-  YulNumAbs :: forall a. YulNum a => YulCat a a
-  YulNumSig :: forall a. YulNum a => YulCat a a
-  YulNumNeg :: forall a. YulNum a => YulCat a a
+  YulNumAdd :: forall eff a. YulNum a => YulCat eff (a, a) a
+  YulNumMul :: forall eff a. YulNum a => YulCat eff (a, a) a
+  YulNumAbs :: forall eff a. YulNum a => YulCat eff a a
+  YulNumSig :: forall eff a. YulNum a => YulCat eff a a
+  YulNumNeg :: forall eff a. YulNum a => YulCat eff a a
   -- * Number comparison with a three-way boolean-switches (LT, EQ, GT).
-  YulNumCmp :: forall a. YulNum a => (BOOL, BOOL, BOOL) -> YulCat (a, a) BOOL
+  YulNumCmp :: forall eff a. YulNum a => (BOOL, BOOL, BOOL) -> YulCat eff (a, a) BOOL
 
   -- * Contract ABI Serialization
   -- YulAbiEnc :: YulObj a => YulCat a BYTES
@@ -153,18 +157,18 @@ data YulCat a b where
 
   -- Storage Primitives
   --
-  YulSGet :: forall a. (YulO1 a, ABIWordValue a) => YulCat ADDR a
-  YulSPut :: forall a. (YulO1 a, ABIWordValue a) => YulCat (ADDR, a) ()
+  YulSGet :: forall eff a. (YulO1 a, ABIWordValue a) => YulCat (StorageAccessEffect eff) ADDR a
+  YulSPut :: forall eff a. (YulO1 a, ABIWordValue a) => YulCat (StorageAccessEffect eff) (ADDR, a) ()
 
 -- | Existential wrapper of the 'YulCat'.
-data AnyYulCat = forall a b. YulO2 a b => MkAnyYulCat (YulCat a b)
+data AnyYulCat = forall eff a b. YulO2 a b => MkAnyYulCat (YulCat eff a b)
 
 -- | Left to right composition of 'YulCat'.
-(>.>) :: forall a b c. YulO3 a b c => YulCat a b %1 -> YulCat b c %1 -> YulCat a c
+(>.>) :: forall eff a b c. YulO3 a b c => YulCat eff a b %1 -> YulCat eff b c %1 -> YulCat eff a c
 m >.> n = n `YulComp` m
 
 -- | Right-to-left composition of 'YulCat'.
-(<.<) :: forall a b c. YulO3 a b c => YulCat b c %1 -> YulCat a b %1 -> YulCat a c
+(<.<) :: forall eff a b c. YulO3 a b c => YulCat eff b c %1 -> YulCat eff a b %1 -> YulCat eff a c
 (<.<) = YulComp
 
 -- Same precedence as (>>>) (<<<);
@@ -172,7 +176,7 @@ m >.> n = n `YulComp` m
 infixr 1 >.>, <.<
 
 -- | It's not as scary as it sounds. It produces a fingerprint for the morphism.
-digestYulCat :: YulCat a b -> String
+digestYulCat :: YulCat eff a b -> String
 digestYulCat = printf "%x" . digest_c8 . B.pack . show
   where c8 _ []     = 0
         c8 n [a]    = (2 ^ n) * toInteger(ord a)
@@ -186,37 +190,38 @@ digestYulCat = printf "%x" . digest_c8 . B.pack . show
 {- ** UncurryingNP instances -}
 
 -- (x)
-instance forall x a.
-         ( LiftFunction x (YulCat a) Many ~ YulCat a x
-         , YulO2 x a
-         ) => UncurryingNP (x) '[] x (YulCat a) (YulCat a) Many where
+instance forall x r eff.
+         ( LiftFunction x (YulCat eff r) (YulCat eff r) Many ~ YulCat eff r x
+         , YulO2 x r
+         ) => UncurryingNP (x) '[] x (YulCat eff r) (YulCat eff r) (YulCat eff r) (YulCat eff r) Many where
   uncurryingNP x _ = x
 
 -- (x -> ...xs -> b)
-instance forall x xs b g a.
-         ( YulO5 x (NP xs) b (NP (x:xs)) a
+instance forall x xs b g r eff.
+         ( YulO5 x (NP xs) b (NP (x:xs)) r
          , UncurryNP'Fst g ~ xs
          , UncurryNP'Snd g ~ b
-         , UncurryingNP g xs b (YulCat a) (YulCat a) Many
-         ) => UncurryingNP (x -> g) (x:xs) b (YulCat a) (YulCat a) Many where
-  uncurryingNP f xxs = uncurryingNP @g @xs @b @(YulCat a) @(YulCat a) @Many (f x) xs
+         , UncurryingNP g xs b (YulCat eff r) (YulCat eff r) (YulCat eff r) (YulCat eff r) Many
+         ) => UncurryingNP (x -> g) (x:xs) b (YulCat eff r) (YulCat eff r) (YulCat eff r) (YulCat eff r) Many where
+  uncurryingNP f xxs = uncurryingNP @g @xs @b @(YulCat eff r) @(YulCat eff r) @(YulCat eff r) @(YulCat eff r) @Many
+                       (f x) xs
     where xxs' = xxs >.> YulSplit
           x   = xxs' >.> YulExl
           xs  = xxs' >.> YulExr
 
 {- ** CurryingNP instances -}
 
-instance forall b a.
-         ( YulO2 b a
-         , LiftFunction b (YulCat a) Many ~ YulCat a b
-         ) => CurryingNP '[] b (YulCat a) (YulCat a) Many where
+instance forall b r eff.
+         ( YulO2 b r
+         , LiftFunction b (YulCat eff r) (YulCat eff r) Many ~ YulCat eff r b
+         ) => CurryingNP '[] b (YulCat eff r) (YulCat eff r) (YulCat eff r) Many where
   curryingNP cb = cb (YulDis >.> YulCoerce)
 
-instance forall x xs b a.
-         ( YulO5 x (NP xs) b (NP (x:xs)) a
-         , CurryingNP xs b (YulCat a) (YulCat a) Many
-         ) => CurryingNP (x:xs) b (YulCat a) (YulCat a) Many where
-  curryingNP cb x = curryingNP @xs @b @(YulCat a) @(YulCat a)
+instance forall x xs b r eff.
+         ( YulO5 x (NP xs) b (NP (x:xs)) r
+         , CurryingNP xs b (YulCat eff r) (YulCat eff r) (YulCat eff r) Many
+         ) => CurryingNP (x:xs) b (YulCat eff r) (YulCat eff r) (YulCat eff r) Many where
+  curryingNP cb x = curryingNP @xs @b @(YulCat eff r) @(YulCat eff r)
                     (\xs -> cb (YulFork x xs >.> YulCoerce))
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -228,7 +233,7 @@ instance forall x xs b a.
 --   Note:
 --   * It is deliberately done so for compactness of the string representation of the 'YulCat'.
 --   * It is meant also for strong equality checking of 'YulCat' used in yul object building.
-instance Show (YulCat a b) where
+instance Show (YulCat eff a b) where
   show (YulCoerce)         = "coerce" <> abi_type_name @a <> abi_type_name @b
   show (YulId)             = "id"
   show (YulSplit)          = "▿" <> abi_type_name @a
@@ -257,11 +262,14 @@ instance Show (YulCat a b) where
   show (YulSPut)           = "sput" <> abi_type_name @a
 --  show _                   = error "Show YulCat TODO"
 
+instance Show AnyYulCat where
+  show (MkAnyYulCat c) = show c
+
 ------------------------------------------------------------------------------------------------------------------------
 -- Useful Type Classes For Custom Prelude
 ------------------------------------------------------------------------------------------------------------------------
 
-instance (YulO2 a r, YulNum a) => Num (YulCat r a) where
+instance (YulO2 a r, YulNum a) => Num (YulCat eff r a) where
   a + b = YulNumAdd <.< YulProd a b <.< YulDup
   a * b = YulNumMul <.< YulProd a b <.< YulDup
   abs = YulComp YulNumAbs
@@ -279,7 +287,7 @@ class MPOrd a b | a -> b where
   (/=?) :: forall w. a %w -> a %w -> b
   infixr 4 <?, <=?, >?, >=?, ==?, /=?
 
-instance (YulO2 a r, YulNum a) => MPOrd (YulCat r a) (YulCat r BOOL) where
+instance (YulO2 a r, YulNum a) => MPOrd (YulCat eff r a) (YulCat eff r BOOL) where
   a  <? b = YulNumCmp (true , false, false) <.< YulProd a b <.< YulDup
   a <=? b = YulNumCmp (true , true , false) <.< YulProd a b <.< YulDup
   a  >? b = YulNumCmp (false, false, true ) <.< YulProd a b <.< YulDup
@@ -291,7 +299,7 @@ instance (YulO2 a r, YulNum a) => MPOrd (YulCat r a) (YulCat r BOOL) where
 class IfThenElse a b where
   ifThenElse :: forall w. a %w -> b %w -> b %w -> b
 
-instance YulO2 a r => IfThenElse (YulCat r BOOL) (YulCat r a) where
+instance YulO2 a r => IfThenElse (YulCat eff r BOOL) (YulCat eff r a) where
   ifThenElse c a b = YulITE <.< YulFork c (YulFork a b)
 
 {- INTERNAL FUNCTIONs -}

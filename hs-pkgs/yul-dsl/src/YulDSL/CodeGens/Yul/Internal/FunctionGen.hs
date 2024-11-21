@@ -24,7 +24,7 @@ import           YulDSL.CodeGens.Yul.Internal.CodeGen
 
 --
 do_compile_cat :: HasCallStack => Indenter -> AnyYulCat -> [Val] -> CGState CGOutput
-do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
+do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
   -- code-gen utilities
   --
   ret_vars vars = pure ("", vars)
@@ -33,16 +33,16 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
   mk_code' = mk_code ind vals_a
   wrap_let_vars = \case Nothing -> id; Just vars -> \body -> ind (vars <> " {") <> body <> ind "}"
   -- go functions
-  go :: forall a b. YulO2 a b => YulCat a b -> CGState CGOutput
+  go :: forall a b. YulO2 a b => YulCat eff a b -> CGState CGOutput
   go (YulCoerce)        = ret_vars vals_a
   go (YulSplit)         = ret_vars vals_a
   go (YulId)            = ret_vars vals_a
   go (YulComp cb ac)  = go_comp cb ac
   go (YulProd ab cd)  = go_prod ab cd
-  go (YulSwap @m @n)  = ret_vars (swap_vals (Proxy @m) (Proxy @n) vals_a)
+  go (YulSwap @_ @m @n)  = ret_vars (swap_vals (Proxy @m) (Proxy @n) vals_a)
   go (YulFork ab ac)  = go_fork ab ac
-  go (YulExl @mn @m)  = go_extract (Proxy @mn) (Proxy @m) True  {- extractLeft -}
-  go (YulExr @mn @n)  = go_extract (Proxy @mn) (Proxy @n) False {- extractLeft -}
+  go (YulExl @_ @mn @m)  = go_extract (Proxy @mn) (Proxy @m) True  {- extractLeft -}
+  go (YulExr @_ @mn @n)  = go_extract (Proxy @mn) (Proxy @n) False {- extractLeft -}
   go (YulDis)           = ret_vars (dis_vals (Proxy @a) vals_a)
   go (YulDup)           = go_dup (Proxy @a)
   go (YulSGet)          = ret_expr $ "sload(" <> vals_to_code vals_a <> ")"
@@ -53,17 +53,17 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
   -- go (YulMap (MkFn n _)) = _
   -- go (YulFoldl (MkFn n _)) = _
   -- go (YulCall (MkFn n _)) = _
-  go (YulITE @m)      = go_ite (Proxy @m)
+  go (YulITE @_ @m)      = go_ite (Proxy @m)
   go (YulNot)           = ret_expr $ "not(" <> vals_to_code vals_a <> ")"
   go (YulAnd)           = ret_expr $ "and(" <> vals_to_code vals_a <> ")"
   go (YulOr)            = ret_expr $ "or(" <> vals_to_code vals_a <> ")"
   go (YulNumAdd)        = ret_expr $ "add(" <> vals_to_code vals_a <> ")"
   go (YulNumNeg)        = ret_expr $ "sub(0, " <> vals_to_code vals_a <> ")"
-  go (YulNumCmp @m s) = go_num_cmp s (Proxy @m)
+  go (YulNumCmp @_ @m s) = go_num_cmp s (Proxy @m)
   go _                = error $
     -- FIXME remove
     "do_compile_cat unimpl:" <> abiTypeCompactName @a <> " ~> " <> abiTypeCompactName @b
-  go_comp :: forall a b c. YulO3 a b c => YulCat c b -> YulCat a c -> CGState CGOutput
+  go_comp :: forall a b c. YulO3 a b c => YulCat eff c b -> YulCat eff a c -> CGState CGOutput
   go_comp cb ac = do
     (code_ac, vals_c) <- do_compile_cat ind (MkAnyYulCat ac) vals_a
     (code_cb, vals_b) <- do_compile_cat ind (MkAnyYulCat cb) vals_c
@@ -71,7 +71,7 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
     return ( mk_code' "comp" (Proxy @(c, b)) (Proxy @(a, c)) $
              wrap_let_vars out_vars (code_ac <> code_cb)
            , vals_b )
-  go_fork :: forall a b c. YulO3 a b c => YulCat a b -> YulCat a c -> CGState CGOutput
+  go_fork :: forall a b c. YulO3 a b c => YulCat eff a b -> YulCat eff a c -> CGState CGOutput
   go_fork ab ac = do
     (code_ab, vars_b) <- do_compile_cat ind (MkAnyYulCat ab) vals_a
     (code_ac, vars_c) <- do_compile_cat ind (MkAnyYulCat ac) vals_a
@@ -83,7 +83,7 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
   go_extract _ _ extractLeft = let leftVars = abi_type_count_vars @m
     in return ( mk_code' ("extract" <> if extractLeft then "L" else "R") (Proxy @m) (Proxy @n) ""
               , if extractLeft then take leftVars vals_a else drop leftVars vals_a)
-  go_prod :: forall a b c d. YulO4 a b c d => YulCat a b -> YulCat c d -> CGState CGOutput
+  go_prod :: forall a b c d. YulO4 a b c d => YulCat eff a b -> YulCat eff c d -> CGState CGOutput
   go_prod ab cd = do
     (code_ab, vars_b1) <- do_compile_cat ind (MkAnyYulCat ab) (fst_vals (Proxy @a) (Proxy @c) vals_a)
     (code_cd, vars_b2) <- do_compile_cat ind (MkAnyYulCat cd) (snd_vals (Proxy @a) (Proxy @c) vals_a)
@@ -101,7 +101,7 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
                                       assign_vars_to_vars ind vars_a2 vars_a1
                                     )
            , fmap LetVar (vars_a1 <> vars_a2) )
-  go_jump :: forall a b. YulO2 a b => Proxy a -> Proxy b -> String -> YulCat a b -> CGState CGOutput
+  go_jump :: forall a b. YulO2 a b => Proxy a -> Proxy b -> String -> YulCat eff a b -> CGState CGOutput
   go_jump _ _ cid cat' = do
     modify (\d@(MkCGStateData { dependant_cats = deps }) -> d {
                dependant_cats = M'.insert cid (MkAnyYulCat cat') deps
@@ -131,14 +131,14 @@ do_compile_cat ind (MkAnyYulCat cat) vals_a = go cat where
   go_num_cmp' op1 op2 _ = gen_assert (length vals_a == 2) $
     return ("", [ValExpr $ op1 <> vals_to_code vals_a <> op2 ])
 
-compile_cat :: forall a b. (HasCallStack, YulO2 a b) => Indenter -> YulCat a b -> ([Var], [Var]) -> CGState Code
+compile_cat :: forall a b eff. (HasCallStack, YulO2 a b) => Indenter -> YulCat eff a b -> ([Var], [Var]) -> CGState Code
 compile_cat ind acat (vars_a, vars_r) = do
   (code, vals_b) <- do_compile_cat ind (MkAnyYulCat acat) (fmap LetVar vars_a)
   pure $
     code <>
     assign_vals_to_vars ind vars_r vals_b
 
-compile_one_fn :: forall a b. (HasCallStack, YulO2 a b) => Indenter -> FnCat a b -> CGState Code
+compile_one_fn :: forall a b eff. (HasCallStack, YulO2 a b) => Indenter -> FnCat eff a b -> CGState Code
 compile_one_fn ind f = do
   reset_var_gen
   vars_a <- mk_let_vars (Proxy @a)
@@ -168,7 +168,7 @@ compile_deps ind fidFilter = do
           <$> get
   mapM (compile_one_any_fn ind) deps
 
-compile_fn :: forall a b. (HasCallStack, YulO2 a b) => Indenter -> FnCat a b -> CGState Code
+compile_fn :: forall a b eff. (HasCallStack, YulO2 a b) => Indenter -> FnCat eff a b -> CGState Code
 compile_fn ind f = do
   main_code <- compile_one_fn ind f
   deps_codes <- compile_deps ind (/= fnId f)

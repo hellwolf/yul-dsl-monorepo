@@ -20,7 +20,7 @@ import           YulDSL.CodeGens.Yul.Internal.CodeGen
 import           YulDSL.CodeGens.Yul.Internal.FunctionGen
 
 compile_fn_dispatcher :: HasCallStack => Indenter -> ScopedFn -> CGState (Maybe (Code, ABICodecGen, ABICodecGen))
-compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, _)))) (_ :: FnCat a b)) = do
+compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, _)))) (_ :: FnCat eff a b)) = do
   vars_a <- mk_let_vars (Proxy @a)
   vars_b <- mk_let_vars (Proxy @b)
   io_vars <- declare_vars
@@ -71,7 +71,7 @@ compile_dispatchers ind fns = cbracket_m ind "/* dispatcher */" $ \ind' -> do
 
 compile_object :: HasCallStack => Indenter -> YulObject -> CGState Code
 compile_object ind (MkYulObject { yulObjectName = oname
-                                , yulObjectCtor = ctor
+                                , yulObjectCtor = (MkAnyYulCat ctor)
                                 , yulObjectSFns = sfns
                                 , yulSubObjects = subobjs
                                 }) = do

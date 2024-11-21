@@ -94,10 +94,12 @@ Ethereum.ContractABI.Types
 TODOs:
 
 - CoreTypes:
-  - ADDR feature: constant through overloaded label with checksum support.
   - BYTESn
+    - all supported operations
   - BYTES
+    - ...
   - ARRAY
+    - ...
 - ExtendedTypes:
   - REF
   - FUNC
@@ -122,7 +124,7 @@ YulDSL
 TODOs:
 
 - Safety:
-  - [ ] `P (v :: Nat) r a`, linearly-safety with data generation versioning tag "v".
+  - [ ] `Yul'P (v :: Nat) r a`, linearly-safety with data generation versioning tag "v".
 - Value primitives:
   - [ ] `YulAbi{Enc,Dec}`, contracts ABI serialization.
   - [ ] `YulCast`, casting values between value types.
@@ -171,7 +173,7 @@ call3 = fn @(Maybe U8 -> Maybe U8) "id"
 
 TODOs:
 
-- [ ] :L: Support all `YulDSL` constructors.
+- [ ] :L: Support all `YulDSL` data constructors.
 
 ## CodeGens.YulGen
 

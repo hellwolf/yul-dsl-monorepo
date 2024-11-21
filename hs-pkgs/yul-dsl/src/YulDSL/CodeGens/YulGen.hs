@@ -14,7 +14,7 @@ import           YulDSL.CodeGens.Yul.Internal.ObjectGen      (compile_object)
 
 
 -- | Compiling a yul function.
-compileFn :: forall a b. YulO2 a b => FnCat a b -> Code
+compileFn :: forall eff a b. YulO2 a b => FnCat eff a b -> Code
 compileFn fn = gen_code (compile_fn init_ind fn)
 
 -- | Compiling the yul object.

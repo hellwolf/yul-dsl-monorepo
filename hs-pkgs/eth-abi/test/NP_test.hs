@@ -13,8 +13,8 @@ type family TypeEq a b where
   TypeEq _ _ = False
 
 test_tf_lift_function_examples = and
-  [ toBool' @(TypeEq (LiftFunction (U8 -> BOOL) Identity Many) (Identity U8 -> Identity BOOL))
-  , toBool' @(TypeEq (LiftFunction BOOL Identity Many) (Identity BOOL))
+  [ toBool' @(TypeEq (LiftFunction (U8 -> BOOL) Identity Identity Many) (Identity U8 -> Identity BOOL))
+  , toBool' @(TypeEq (LiftFunction BOOL Identity Identity Many) (Identity BOOL))
   ]
 
 test_tf_ncurry_examples = and

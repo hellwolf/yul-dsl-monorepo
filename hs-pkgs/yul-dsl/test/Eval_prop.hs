@@ -15,19 +15,19 @@ import           TestCommon           ()
 
 test_coerce_uint256_unit_prod :: forall a. a ~ U256 => a -> Bool
 test_coerce_uint256_unit_prod a = toInteger a == toInteger b
-  where (b, ()) = evalYulCat (YulCoerce @a @(a, ())) a
+  where (b, ()) = evalYulCat (YulCoerce @MkPure @a @(a, ())) a
 
 test_coerce_two_vals_unit_hlist :: forall p q. (p ~ I128, q ~ BOOL) => p -> q -> Bool
 test_coerce_two_vals_unit_hlist a b = a == a' && b == b' &&
                                       a == a'' && b == b''
-  where (a', b') = evalYulCat (YulCoerce @(NP [p, q]) @(p, q)) (a :* b :* Nil)
-        (a'' :* b'' :* Nil) = evalYulCat (YulCoerce @(p, q) @(NP [p, q])) (a, b)
+  where (a', b') = evalYulCat (YulCoerce @MkPure @(NP [p, q]) @(p, q)) (a :* b :* Nil)
+        (a'' :* b'' :* Nil) = evalYulCat (YulCoerce @MkPure @(p, q) @(NP [p, q])) (a, b)
 --
 test_coerce_commutative :: forall p q r. (p ~ ADDR, q ~ U32, r ~ BOOL) => p -> q -> r -> Bool
 test_coerce_commutative a b c = a == a' && b == b' && c == c' &&
                                 a == a'' && b == b'' && c == c''
-  where ((a',b'),c') = evalYulCat (YulCoerce @(p, (q, r)) @((p, q), r)) (a, (b, c))
-        (a'',(b'',c'')) = evalYulCat (YulCoerce @((p, q), r) @(p, (q, r))) ((a, b), c)
+  where ((a',b'),c') = evalYulCat (YulCoerce @MkPure @(p, (q, r)) @((p, q), r)) (a, (b, c))
+        (a'',(b'',c'')) = evalYulCat (YulCoerce @MkPure @((p, q), r) @(p, (q, r))) ((a, b), c)
 
 test_num_add :: U256 -> U256 -> Expectation
 test_num_add a b = if a' + b' <= toInteger (maxBound @U256) then a + b == c `shouldBe` True

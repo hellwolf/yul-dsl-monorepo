@@ -1,11 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ImpredicativeTypes  #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
 
 module Ethereum.ContractsABI.YulDSL.Linear where
 
 
 -- base
-import           GHC.TypeLits                                  (type (+), type (-))
+import           GHC.TypeLits                                  (type (+))
 -- linear-base
 import           Prelude.Linear
 import qualified Unsafe.Linear                                 as UnsafeLinear
@@ -42,21 +43,22 @@ type P'L v = P (YulCat (MkLinearEffect v))
 type UNIT'L v r = P'L v r ()
 type ADDR'L v r = P'L v r ADDR
 type BOOL'L v r = P'L v r BOOL
-type U256'L v r = P'L v r U256
 type I256'L v r = P'L v r I256
+type U256'L v r = P'L v r U256
 
 -- | Yul category port diagram as a data constructor, otherwise type synonym cannot be partial for @YulCat'L r a@.
 data YulCat'L v1 vn r a b where
   MkYulCat'L :: forall a b r v1 vn. YulO3 a b r => (P'L v1 r a ⊸ P'L vn r b) ⊸ YulCat'L v1 vn r a b
-
--- MkYulCat'L :: forall a b v vd r.  (P'L v r a ⊸ P'L (v + vd) r b) ⊸ YulCat'L vd r a b
--- MkYulCat'L = MkYulCat'L . UnsafeLinear.coerce {- DON'T DO THIS AT HOME -}
 
 -- | Unwrap YulCat'L linearly.
 unYulCat'L :: forall a b r v1 vn. YulO3 a b r => YulCat'L v1 vn r a b ⊸ (P'L v1 r a ⊸ P'L vn r b)
 unYulCat'L (MkYulCat'L c) =  c
 
 {- * Yul Port Combinators -}
+
+dis'l :: forall d v r. YulO2 d r
+      => P'L v r d ⊸ P'L v r ()
+dis'l = discard
 
 const'l :: forall a d v r. YulO3 a d r
         => a -> (P'L v r d ⊸ P'L v r a)
@@ -78,36 +80,41 @@ cons'l x xs = coerce'l (merge (x, xs))
 
 {- ** UncurryingNP instances -}
 
-instance forall x v r a.
-         ( LiftFunction x (P'L v r) (P'L v r) One ~ P'L v r x
+instance forall x v1 vn r a.
+         ( LiftFunction x (P'L v1 r) (P'L vn r) One ~ P'L vn r x
          , YulO3 x r a
          , x ~ UncurryNP'Snd x
-         ) => UncurryingNP (x) '[] x (P'L v r) (P'L v r) (YulCat'L v v r a) (YulCat'L v v r a) One where
-  uncurryingNP x (MkYulCat'L g) = MkYulCat'L (\a -> ignore (coerce'l (g a)) x)
+         ) => UncurryingNP (x) '[] x (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) (YulCat'L v1 vn r a) One where
+  uncurryingNP x (MkYulCat'L g) = MkYulCat'L (\a -> g a &                 -- :: P'L v1 (NP '[])
+                                                    coerce'l @_ @() &     -- :: P'L v1 ()
+                                                    UnsafeLinear.coerce & -- :: P'L vn ()
+                                                    \u -> ignore u x)     -- :: P'L vn x
 
 instance forall x xs b g v1 vn r a.
          ( YulO5 x (NP xs) b r a
          , UncurryingNP g xs b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) (YulCat'L v1 vn r a) One
          ) => UncurryingNP (x -> g) (x:xs) b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) (YulCat'L v1 vn r a) One where
-  uncurryingNP f (MkYulCat'L g) = MkYulCat'L
+  uncurryingNP f (MkYulCat'L h) = MkYulCat'L
     (\xxs -> dup2'l xxs &
-             \(xxs1, xxs2) -> split (coerce'l (g xxs1)) &
+             \(xxs1, xxs2) -> split (coerce'l @(NP (x:xs)) @(x, NP xs) (h xxs1)) &
              \(x, xs) -> unYulCat'L
                          (uncurryingNP
-                           @g @xs @b @(P'L v1 r) @(P'L vn r) @(YulCat'L v1 v1 r a) @(YulCat'L v1 vn r a) @One
-                           (f x) (g' xs)
+                           @g @xs @b
+                           @(P'L v1 r) @(P'L vn r) @(YulCat'L v1 v1 r a) @(YulCat'L v1 vn r a) @One
+                           (UnsafeLinear.coerce f x) -- TODO: not sure why this unsafe coercion is required.
+                           (g xs)
                          )
                          xxs2
     )
-    where g' :: P'L v1 r (NP xs) ⊸ YulCat'L v1 v1 r a (NP xs)
-          g' xs = MkYulCat'L (\as -> ignore (discard as) xs)
+    where g :: P'L v1 r (NP xs) ⊸ YulCat'L v1 v1 r a (NP xs)
+          g xs = MkYulCat'L (\as -> ignore (discard as) xs)
 
 {- ** CurryingNP instances -}
 
-instance forall x v r a.
+instance forall x v1 vn r a.
          ( YulO3 x r a
-         , LiftFunction (CurryNP (NP '[]) x) (P'L v r) (P'L v r) One ~ P'L v r x
-         ) => CurryingNP '[] x (P'L v r) (P'L v r) (YulCat'L v v r a) One where
+         , LiftFunction (CurryNP (NP '[]) x) (P'L v1 r) (P'L vn r) One ~ P'L vn r x
+         ) => CurryingNP '[] x (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) One where
   curryingNP cb = cb (MkYulCat'L (\a -> coerce'l (discard a)))
 
 instance forall x xs b r a v1 vn.
@@ -117,32 +124,31 @@ instance forall x xs b r a v1 vn.
   curryingNP cb x = curryingNP @xs @b @(P'L v1 r) @(P'L vn r) @(YulCat'L v1 v1 r a) @One
                     (\(MkYulCat'L fxs) -> cb (MkYulCat'L (\a -> (cons'l x (fxs a)))))
 
-curry'l :: forall f as b r v1 vn f'.
-        ( YulO3 (NP as) b r
-        , as ~ UncurryNP'Fst f
+curry'l :: forall f xs b r vd f'.
+        ( YulO3 (NP xs) b r
+        , xs ~ UncurryNP'Fst f
         , b  ~ UncurryNP'Snd f
-        , f' ~ LiftFunction f (P'L v1 r) (P'L vn r) One
-        , UncurryingNP f as b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r (NP as)) (YulCat'L v1 vn r (NP as)) One
-        ) => f' -> (P'L v1 r (NP as) ⊸ P'L vn r b)
+        , f' ~ LiftFunction f (P'L 0 r) (P'L vd r) One
+        , UncurryingNP f xs b (P'L 0 r) (P'L vd r) (YulCat'L 0 0 r (NP xs)) (YulCat'L 0 vd r (NP xs)) One
+        ) => f' -> (P'L 0 r (NP xs) ⊸ P'L vd r b)
 curry'l f' = unYulCat'L (uncurryingNP
-                          @f @as @b @(P'L v1 r) @(P'L vn r) @(YulCat'L v1 v1 r (NP as)) @(YulCat'L v1 vn r (NP as)) @One
-                         f' (MkYulCat'L id))
+                          @f @xs @b
+                          @(P'L 0 r) @(P'L vd r) @(YulCat'L 0 0 r (NP xs)) @(YulCat'L 0 vd r (NP xs)) @One
+                          f' (MkYulCat'L id))
 
 -- | Define a `YulCat` morphism from a linear port function.
-fn'l :: forall xs b v1 vd vn.
+fn'l :: forall xs b vd.
         ( YulO2 (NP xs) b
         , UncurryNP'Fst (CurryNP (NP xs) b) ~ xs
         , UncurryNP'Snd (CurryNP (NP xs) b) ~ b
-        , v1 + vd ~ vn
         )
      => String
-     -> (forall r. YulO1 r => P'L v1 r (NP xs) ⊸ P'L vn r b)
+     -> (forall r. YulObj r => P'L 0 r (NP xs) ⊸ P'L vd r b)
      -> Fn (MkLinearEffect vd) (CurryNP (NP xs) b)
-fn'l fid f = fn
-  where cat :: forall. YulCat (MkLinearEffect vd) (NP xs) b
-        cat = UnsafeLinear.coerce (decode f)
-        fn :: Fn (MkLinearEffect vd) (CurryNP (NP xs) b)
-        fn = MkFn (MkFnCat fid cat)
+fn'l fid f = MkFn (MkFnCat fid (decode (h f)))
+  where h :: (forall r. YulObj r => P'L 0 r (NP xs) ⊸ P'L vd r b)
+          ⊸ (forall r. YulObj r => P'L vd r (NP xs) ⊸ P'L vd r b)
+        h = UnsafeLinear.coerce
 
 call'l :: forall f x xs b g' r v1 vd vn.
         ( YulO4 x (NP xs) b r
@@ -164,22 +170,16 @@ call'l (MkFn f) x' = dup2'l x' &
 
 {- * storage utilities -}
 
--- sget :: forall v r. (YulO2 v r, ABIWordValue v)
---      => P'L r ADDR ⊸ P'L r v -- FIXME use Maybe type
--- sget = encode YulSGet
+sget :: forall a r v. (YulO2 a r, ABIWordValue a)
+     => P'L v r ADDR ⊸ P'L v r a
+sget = encode YulSGet
 
--- sput :: forall v r. (YulO2 v r, ABIWordValue v)
---      => P'L r ADDR ⊸ P'L r v ⊸ P'L r ()
--- sput toP valP = encode YulSPut (merge (toP, valP))
--- (<==) :: forall v r. (YulO2 v r, ABIWordValue v)
---       => P'L r ADDR ⊸ P'L r v ⊸ P'L r ()
--- (<==) = sput
+sput :: forall a r v. (YulO2 a r, ABIWordValue a)
+     => P'L v r ADDR ⊸ P'L v r a ⊸ P'L (v + 1) r a
+sput to x = dup2'l x &
+            \(x', x'') -> encode YulSPut (merge (to, x')) &
+            \u -> UnsafeLinear.coerce (ignore u x'')
 
--- sputAt :: forall v r. (YulO2 v r, ABIWordValue v)
---        => ADDR -> P'L r v ⊸ P'L r ()
--- sputAt to v = mkUnit v & \(v', u) -> const'l to u & \a -> sput a v'
--- (<==@) :: forall v r. (YulO2 v r, ABIWordValue v)
---       => ADDR -> P'L r v ⊸ P'L r ()
--- (<==@) = sputAt
-
--- infixr 1 <==, <==@
+sputAt :: forall a r v. (YulO2 a r, ABIWordValue a)
+       => ADDR -> P'L v r a ⊸ P'L (v + 1) r a
+sputAt to x = mkUnit x & \(x', u) -> const'l to u & \a -> sput a x'

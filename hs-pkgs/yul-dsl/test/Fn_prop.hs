@@ -8,6 +8,10 @@ import           Ethereum.ContractABI
 import           YulDSL.Core
 
 
+simple_id = MkFnCat @MkPure @U256 @U256 "simple_id" $ YulId
+
+simple_coerce = MkFnCat "simple_coerce" $ YulCoerce @MkPure @U256 @U256
+
 foo0 :: PureFn (U8)
 foo0 = fn @(U8) "id" (YulEmbed 42)
 

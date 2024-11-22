@@ -96,8 +96,6 @@ instance (KnownBool s, ValidINTn n) => YulNum (INTx s n)
 -- | Data kinds for pure morphisms in the yul category.
 data Pure = MkPure
 
-type family StorageAccessEffect (eff :: k) :: k
-
 {- * The Cat -}
 
 -- | A GADT-style DSL of Yul that constructs morphisms between objects (YulObj) of the "Yul Category".
@@ -157,8 +155,8 @@ data YulCat (eff :: k) a b where
 
   -- Storage Primitives
   --
-  YulSGet :: forall eff a. (YulO1 a, ABIWordValue a) => YulCat (StorageAccessEffect eff) ADDR a
-  YulSPut :: forall eff a. (YulO1 a, ABIWordValue a) => YulCat (StorageAccessEffect eff) (ADDR, a) ()
+  YulSGet :: forall eff a. (YulO1 a, ABIWordValue a) => YulCat eff ADDR a
+  YulSPut :: forall eff a. (YulO1 a, ABIWordValue a) => YulCat eff (ADDR, a) ()
 
 -- | Existential wrapper of the 'YulCat'.
 data AnyYulCat = forall eff a b. YulO2 a b => MkAnyYulCat (YulCat eff a b)

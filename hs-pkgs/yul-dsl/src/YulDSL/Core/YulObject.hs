@@ -81,3 +81,6 @@ mkYulObject name ctor afns = MkYulObject { yulObjectName = name
                                          , yulObjectSFns = afns
                                          , yulSubObjects = []
                                          }
+
+emptyCtor :: AnyYulCat
+emptyCtor = MkAnyYulCat (YulDis @Pure @())

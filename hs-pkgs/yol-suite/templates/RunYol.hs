@@ -19,7 +19,7 @@ default (String)
 type Result = Either T.Text T.Text
 
 data Compiler = MkCompiler
-  { fnMode      :: forall a b. YulO2 a b => FnCat a b ->  IO Result
+  { fnMode      :: forall eff a b. YulO2 a b => FnCat eff a b ->  IO Result
   , objectMode  :: YulObject -> IO Result
   , projectMode :: YOLCBuilder.Manifest -> IO Result
   }

@@ -10,7 +10,8 @@ manifest = MkManifest
                                , deploymentType = SingletonContract
                                , upgradabilityMode = NonUpgradable
                                }
-                 , MkBuildUnit { mainObject = Basic.object
+                 ,
+                   MkBuildUnit { mainObject = Basic.object
                                , deploymentType = SingletonContract
                                , upgradabilityMode = NonUpgradable
                                }

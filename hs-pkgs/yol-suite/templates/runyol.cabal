@@ -6,6 +6,7 @@ build-type:     Simple
 common yol-module-options
     default-language:     GHC2024
     default-extensions:   LinearTypes
+                          ImpredicativeTypes
                           BlockArguments
                           OverloadedStrings
                           UnicodeSyntax

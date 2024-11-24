@@ -4,10 +4,9 @@
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE LinearTypes            #-}
 {-# LANGUAGE TypeFamilies           #-}
-
 {-|
 
-Copyright   : (c) 2023 Miao, ZhiCheng
+Copyright   : (c) 2023-2024 Miao, ZhiCheng
 License     : LGPL-3
 Maintainer  : zhicheng.miao@gmail.com
 Stability   : experimental

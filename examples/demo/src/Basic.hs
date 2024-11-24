@@ -14,46 +14,43 @@ disFn :: YulObj a => PureFn (a -> ())
 disFn = MkFn (MkFnCat "disFn" YulDis)
 
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
-foo1 = fn'l "foo1"
-  (curry'l @(U256 -> U256) \x ->
-      dup2'l x & \(x, x') -> x + x'
-  )
+foo1 = fn'l "foo1" $
+  uncurry'l @(U256 -> U256) \x ->
+  dup2'l x & \(x, x') -> x + x'
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns true.
 --
 --   Note: you can create any number of "unit" signals by adding '()' to the input list.
-foo2 = fn'l "foo2"
-  ( curry'l @(U256 -> U256 -> U256)
-    \x1 x2 -> dup2'l x2 &
-    \(x2, x2') -> x1 + (x2 + x2')
-  )
+foo2 = fn'l "foo2" $
+  uncurry'l @(U256 -> U256 -> U256)
+  \x1 x2 -> dup2'l x2 &
+  \(x2, x2') -> x1 + (x2 + x2')
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
-foo3 = fn'l "foo3"
-  ( curry'l @(U256 -> U256 -> (BOOL, U256))
-    \x1 x2 -> sputAt (constAddr 0xdeadbeef) (x1 + x2) &
-    \y -> mkUnit y &
-    \(y, u) -> merge (const'l true u, y)
-  )
+foo3 = fn'l "foo3" $
+  uncurry'l @(U256 -> U256 -> (BOOL, U256))
+  \x1 x2 -> sputAt (constAddr 0xdeadbeef) (x1 + x2) &
+  \y -> mkUnit y &
+  \(y, u) -> merge (const'l true u, y)
 
 -- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
-rangeSum'l = fn'l "rangeSumL"
-  ( curry'l @(U256 -> U256 -> U256 -> U256)
-    \from step until -> mkUnit from &
-    \(from, u) -> dup2'l from &
-    \(from, from') -> dup2'l step &
-    \(step, step') -> dup2'l until &
-    \(until, until') -> dup2'l (from + step) &
-    \(j, j') -> from' + if j <=? until
-                        then call'l rangeSum'l j' step' until'
-                        else const'l 0 u
-  )
+rangeSum'l = fn'l "rangeSumL" $
+  uncurry'l @(U256 -> U256 -> U256 -> U256)
+  \from step until -> mkUnit from &
+  \(from, u) -> dup2'l from &
+  \(from, from') -> dup2'l step &
+  \(step, step') -> dup2'l until &
+  \(until, until') -> dup2'l (from + step) &
+  \(j, j') -> from' + if j <=? until
+                      then call'l rangeSum'l j' step' until'
+                      else const'l 0 u
 
 -- | "rangeSum" implemented in a value function
 rangeSum'v1 = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV1"
-  \from step until ->
-    let j = from + step
-    in from + if j <=? until then call'p rangeSum'v1 j step until else YulEmbed 0
+  \from step until -> let j = from + step
+                      in from + if j <=? until
+                                then call'p rangeSum'v1 j step until
+                                else YulEmbed 0
 
 -- | "rangeSum" implemented in a value function, and a locally scoped function
 rangeSum'v2 = go

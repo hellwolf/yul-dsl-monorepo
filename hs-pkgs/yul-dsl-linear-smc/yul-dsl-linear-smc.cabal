@@ -28,6 +28,7 @@ common basic-options
     default-extensions:   LinearTypes
                           UnicodeSyntax
                           BlockArguments
+                          ImpredicativeTypes
     build-depends:        base >= 4.20.0.0 && < 666
 
 library

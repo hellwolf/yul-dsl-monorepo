@@ -7,7 +7,7 @@ import           Prelude.YulDSL
 
 
 num_add_just = fn'l "add2"
-  ( curry'l @(U256 -> U256 -> U256)
+  ( uncurry'l @(U256 -> U256 -> U256)
     \x1 x2 -> x1 + x2
   )
 

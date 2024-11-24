@@ -15,7 +15,7 @@ erc20_balance_of account = sget (erc20_balance_storage account)
 -- | ERC20 transfer function (no negative balance check for simplicity).
 -- erc20_transfer :: Fn (ADDR -> ADDR -> U256 -> BOOL)
 erc20_transfer = fn'l "transfer"
-  (curry'l @(ADDR -> ADDR -> U256 -> BOOL) \from to amount ->
+  (uncurry'l @(ADDR -> ADDR -> U256 -> BOOL) \from to amount ->
       dis'l to &
       \u -> ignore u from &
       \from -> passAp from erc20_balance_of &

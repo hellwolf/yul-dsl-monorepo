@@ -124,7 +124,7 @@ YulDSL
 TODOs:
 
 - Safety:
-  - [ ] `Yul'P (v :: Nat) r a`, linearly-safety with data generation versioning tag "v".
+  - [ ] `P'L (v :: Nat) r a`, linearly-safety with data generation versioning tag "v".
 - Value primitives:
   - [ ] `YulAbi{Enc,Dec}`, contracts ABI serialization.
   - [ ] `YulCast`, casting values between value types.

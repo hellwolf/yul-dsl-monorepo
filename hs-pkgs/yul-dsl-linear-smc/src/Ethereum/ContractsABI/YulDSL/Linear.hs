@@ -34,8 +34,8 @@ import           Control.Category.Constrained.YulDSL.LinearSMC ()
 -- | Linearized effect, where @v@ is a type-level version of the data.
 data LinearEffect = MkLinearEffect Nat
 
--- | Linear port API with `LinearEffect` tag.
-type P'L v = P (YulCat (MkLinearEffect v))
+-- | Linear port API of yul category with `LinearEffect` kind.
+type P'L v r = P (YulCat (MkLinearEffect v)) r
 
 -- | Polymorphic port type for linear APIs of the yul category.
 -- type P'L v r a = P'L v r a
@@ -124,23 +124,26 @@ instance forall x xs b r a v1 vn.
   curryingNP cb x = curryingNP @xs @b @(P'L v1 r) @(P'L vn r) @(YulCat'L v1 v1 r a) @One
                     (\(MkYulCat'L fxs) -> cb (MkYulCat'L (\a -> (cons'l x (fxs a)))))
 
-curry'l :: forall f xs b r vd f'.
-        ( YulO3 (NP xs) b r
-        , xs ~ UncurryNP'Fst f
-        , b  ~ UncurryNP'Snd f
-        , f' ~ LiftFunction f (P'L 0 r) (P'L vd r) One
-        , UncurryingNP f xs b (P'L 0 r) (P'L vd r) (YulCat'L 0 0 r (NP xs)) (YulCat'L 0 vd r (NP xs)) One
-        ) => f' -> (P'L 0 r (NP xs) ⊸ P'L vd r b)
-curry'l f' = unYulCat'L (uncurryingNP
-                          @f @xs @b
-                          @(P'L 0 r) @(P'L vd r) @(YulCat'L 0 0 r (NP xs)) @(YulCat'L 0 vd r (NP xs)) @One
-                          f' (MkYulCat'L id))
+uncurry'l :: forall f xs b r vd f'.
+             ( YulO3 (NP xs) b r
+             , xs ~ UncurryNP'Fst f
+             , b  ~ UncurryNP'Snd f
+             , f' ~ LiftFunction f (P'L 0 r) (P'L vd r) One
+             , UncurryingNP f xs b (P'L 0 r) (P'L vd r) (YulCat'L 0 0 r (NP xs)) (YulCat'L 0 vd r (NP xs)) One
+             )
+          => f'
+          -> (P'L 0 r (NP xs) ⊸ P'L vd r b)
+uncurry'l f = unYulCat'L (uncurryingNP
+                           @f @xs @b
+                           @(P'L 0 r) @(P'L vd r) @(YulCat'L 0 0 r (NP xs)) @(YulCat'L 0 vd r (NP xs)) @One
+                           f (MkYulCat'L id))
 
 -- | Define a `YulCat` morphism from a linear port function.
-fn'l :: forall xs b vd.
+fn'l :: forall f xs b vd.
         ( YulO2 (NP xs) b
-        , UncurryNP'Fst (CurryNP (NP xs) b) ~ xs
-        , UncurryNP'Snd (CurryNP (NP xs) b) ~ b
+        , CurryNP (NP xs) b ~ f
+        , UncurryNP'Fst f ~ xs
+        , UncurryNP'Snd f ~ b
         )
      => String
      -> (forall r. YulObj r => P'L 0 r (NP xs) ⊸ P'L vd r b)
@@ -151,14 +154,15 @@ fn'l fid f = MkFn (MkFnCat fid (decode (h f)))
         h = UnsafeLinear.coerce
 
 call'l :: forall f x xs b g' r v1 vd vn.
-        ( YulO4 x (NP xs) b r
-        , UncurryNP'Fst f ~ (x:xs)
-        , UncurryNP'Snd f ~ b
-        , v1 + vd ~ vn
-        , LiftFunction (CurryNP (NP xs) b) (P'L v1 r) (P'L vn r) One ~ g'
-        , CurryingNP xs b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r ()) One
-        )
-     => Fn (MkLinearEffect vd) f -> (P'L v1 r x ⊸ g')
+          ( YulO4 x (NP xs) b r
+          , UncurryNP'Fst f ~ (x:xs)
+          , UncurryNP'Snd f ~ b
+          , v1 + vd ~ vn
+          , LiftFunction (CurryNP (NP xs) b) (P'L v1 r) (P'L vn r) One ~ g'
+          , CurryingNP xs b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r ()) One
+          )
+       => Fn (MkLinearEffect vd) f
+       -> (P'L v1 r x ⊸ g')
 call'l (MkFn f) x' = dup2'l x' &
   \(x'', x''') ->
     curryingNP @xs @b @(P'L v1 r) @(P'L vn r) @(YulCat'L v1 v1 r ()) @One

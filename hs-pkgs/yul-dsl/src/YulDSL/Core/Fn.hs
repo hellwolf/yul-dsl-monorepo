@@ -9,7 +9,7 @@ Stability   : experimental
 -}
 module YulDSL.Core.Fn
   ( FnCat (MkFnCat), FnNP, Fn (MkFn, unFn), fnId, fnCat
-  , PureFn
+  , PureFn, YulCat'P
   , AnyFn (MkAnyFn)
   , uncurry'p, fn'p, fn
   , call'p
@@ -55,6 +55,9 @@ deriving instance Show AnyFn
 -- | Function without side effects, hence pure.
 type PureFn = Fn MkPure
 
+-- | Pure yul category morphisms.
+type YulCat'P = YulCat MkPure
+
 -- $yul_cat_val
 --
 -- A yul categorical value of @a ↝ b@ is another way of saying a morphism from @a@ to @b@ in the category of 'YulCat'.
@@ -85,11 +88,12 @@ uncurry'p :: forall f xs b m.
              ( YulO2 (NP xs) b
              , UncurryNP'Fst f ~ xs
              , UncurryNP'Snd f ~ b
-             , YulCat MkPure (NP xs) ~ m
+             , YulCat'P (NP xs) ~ m
              , UncurryingNP f xs b m m m m Many
+             , LiftFunction b m m Many ~ m b
              )
           => LiftFunction f m m Many -- ^ uncurrying function type
-          -> YulCat MkPure (NP xs) b -- ^ result type, or its short form @m b@
+          -> YulCat'P (NP xs) b -- ^ result type, or its short form @m b@
 uncurry'p f = uncurryingNP @f @xs @b @m @m @m @m f YulId
 
 -- | Create a `PureFn` given a function id and a pure categorical value @NP xs ↝ b@
@@ -102,7 +106,7 @@ fn'p :: forall f xs b.
         , UncurryNP'Snd f ~ b
         )
      => String                     -- ^ the function id
-     -> YulCat MkPure (NP xs) b    -- ^ the pure yul categorical value of @NP xs ↝ b@
+     -> YulCat'P (NP xs) b    -- ^ the pure yul categorical value of @NP xs ↝ b@
      -> PureFn (CurryNP (NP xs) b) -- ^ a 'PureFn' of function type @f@
 fn'p fid cat'l = MkFn (MkFnCat fid cat'l)
 
@@ -112,8 +116,9 @@ fn :: forall f xs b m.
       , UncurryNP'Fst f ~ xs
       , UncurryNP'Snd f ~ b
       , CurryNP (NP xs) b ~ f
-      , YulCat MkPure (NP xs) ~ m
+      , YulCat'P (NP xs) ~ m
       , UncurryingNP f xs b m m m m Many
+      , LiftFunction b m m Many ~ m b
       )
    => String                  -- ^ the function id
    -> LiftFunction f m m Many -- ^ the pure yul categorical value of @NP xs ↝ b@
@@ -129,8 +134,9 @@ call'p :: forall f xs b r m.
           , UncurryNP'Fst f ~ xs
           , UncurryNP'Snd f ~ b
           , CurryNP (NP xs) b ~ f
-          , YulCat MkPure r ~ m
+          , YulCat'P r ~ m
           , CurryingNP xs b m m m Many
+          , LiftFunction b m m Many ~ m b
           )
        => PureFn f                -- ^ a 'PureFn' of function type @f@
        -> LiftFunction f m m Many -- ^ a currying function type

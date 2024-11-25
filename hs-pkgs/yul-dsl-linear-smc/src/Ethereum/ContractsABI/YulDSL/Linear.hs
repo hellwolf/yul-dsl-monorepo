@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ImpredicativeTypes  #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 module Ethereum.ContractsABI.YulDSL.Linear where
 
@@ -81,9 +82,8 @@ cons'l x xs = coerce'l (merge (x, xs))
 {- ** UncurryingNP instances -}
 
 instance forall x v1 vn r a.
-         ( LiftFunction x (P'L v1 r) (P'L vn r) One ~ P'L vn r x
-         , YulO3 x r a
-         , x ~ UncurryNP'Snd x
+         ( YulO3 x r a
+         , LiftFunction x (P'L v1 r) (P'L vn r) One ~ P'L vn r x
          ) => UncurryingNP (x) '[] x (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) (YulCat'L v1 vn r a) One where
   uncurryingNP x (MkYulCat'L g) = MkYulCat'L (\a -> g a &                 -- :: P'L v1 (NP '[])
                                                     coerce'l @_ @() &     -- :: P'L v1 ()
@@ -124,19 +124,47 @@ instance forall x xs b r a v1 vn.
   curryingNP cb x = curryingNP @xs @b @(P'L v1 r) @(P'L vn r) @(YulCat'L v1 v1 r a) @One
                     (\(MkYulCat'L fxs) -> cb (MkYulCat'L (\a -> (cons'l x (fxs a)))))
 
-uncurry'l :: forall f xs b r vd f'.
+uncurry'l :: forall f xs b r vd m1 m1b m2 m2b.
              ( YulO3 (NP xs) b r
              , xs ~ UncurryNP'Fst f
              , b  ~ UncurryNP'Snd f
-             , f' ~ LiftFunction f (P'L 0 r) (P'L vd r) One
-             , UncurryingNP f xs b (P'L 0 r) (P'L vd r) (YulCat'L 0 0 r (NP xs)) (YulCat'L 0 vd r (NP xs)) One
+             , P'L  0 r ~ m1
+             , P'L vd r ~ m1b
+             , YulCat'L 0  0 r (NP xs) ~ m2
+             , YulCat'L 0 vd r (NP xs) ~ m2b
+             , UncurryingNP f xs b m1 m1b m2 m2b One
+             , LiftFunction (NP xs -> b) m1 m1b One ~ (P'L 0 r (NP xs) ⊸ P'L vd r b)
+             , LiftFunction b m2 m2b One ~ m2b b
              )
-          => f'
-          -> (P'L 0 r (NP xs) ⊸ P'L vd r b)
-uncurry'l f = unYulCat'L (uncurryingNP
-                           @f @xs @b
-                           @(P'L 0 r) @(P'L vd r) @(YulCat'L 0 0 r (NP xs)) @(YulCat'L 0 vd r (NP xs)) @One
-                           f (MkYulCat'L id))
+          => LiftFunction           f  m1 m1b One
+          -> LiftFunction (NP xs -> b) m1 m1b One
+uncurry'l f = unYulCat'L $
+              uncurryingNP @f @xs @b @m1 @m1b @m2 @m2b @One
+              f (MkYulCat'L id)
+
+-- | Make pure value based linear function.
+mk'p'l :: forall a b r vd. YulO3 a b r => P'L vd r b -> YulCat'L vd vd r a b
+mk'p'l x = MkYulCat'L (\u -> ignore (discard u) x)
+
+uncurry'p'l :: forall f xs b r vd m1 m1b m2 m2b.
+               ( YulO3 (NP xs) b r
+               , xs ~ UncurryNP'Fst f
+               , b  ~ UncurryNP'Snd f
+               , YulCat'P (NP xs)   ~ m1
+               , YulCat'L 0 vd r () ~ m1b
+               , YulCat'L 0  0 r (NP xs) ~ m2
+               , YulCat'L 0 vd r (NP xs) ~ m2b
+               , UncurryingNP f xs b m1 m1b m2 m2b Many
+               , LiftFunction b m2 m2b Many ~ m2b b
+               )
+            => LiftFunction f m1 m1b Many
+            -> (P'L 0 r (NP xs) ⊸ P'L vd r b)
+uncurry'p'l f = unYulCat'L $
+                uncurryingNP @f @xs @b @m1 @m1b @m2 @m2b @Many
+                f (MkYulCat'L id)
+
+-- Type alias for 'Fn' of linear effect, where @vd@ tracks number of state revisions in type-level.
+type LinearFn vd = Fn (MkLinearEffect vd)
 
 -- | Define a `YulCat` morphism from a linear port function.
 fn'l :: forall f xs b vd.
@@ -147,7 +175,7 @@ fn'l :: forall f xs b vd.
         )
      => String
      -> (forall r. YulObj r => P'L 0 r (NP xs) ⊸ P'L vd r b)
-     -> Fn (MkLinearEffect vd) (CurryNP (NP xs) b)
+     -> LinearFn vd (CurryNP (NP xs) b)
 fn'l fid f = MkFn (MkFnCat fid (decode (h f)))
   where h :: (forall r. YulObj r => P'L 0 r (NP xs) ⊸ P'L vd r b)
           ⊸ (forall r. YulObj r => P'L vd r (NP xs) ⊸ P'L vd r b)
@@ -160,8 +188,9 @@ call'l :: forall f x xs b g' r v1 vd vn.
           , v1 + vd ~ vn
           , LiftFunction (CurryNP (NP xs) b) (P'L v1 r) (P'L vn r) One ~ g'
           , CurryingNP xs b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r ()) One
+          , LiftFunction b (YulCat'L v1 v1 r ()) (P (YulCat (MkLinearEffect vn)) r) One ~ P'L vn r b
           )
-       => Fn (MkLinearEffect vd) f
+       => LinearFn vd f
        -> (P'L v1 r x ⊸ g')
 call'l (MkFn f) x' = dup2'l x' &
   \(x'', x''') ->

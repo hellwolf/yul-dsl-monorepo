@@ -126,15 +126,17 @@ show_any_np (MkAnyNonEmptyNP (x :* xs))  = [show x] <> show_any_np (MkAnyNonEmpt
 
 {- ** Type level functions for NP -}
 
--- | Lift a new currying function type from the simple function signature @f@, with a type function @m@ for each of its
---   arguments with multiplicity arrows in @p@, and the result of the function with a type function @mb@.
-type family LiftFunction f (m :: Type -> Type) (mb :: Type -> Type) (p :: Multiplicity) where
-  LiftFunction  (a1 -> g) m mb p = m a1 %p-> LiftFunction g m mb p
+-- | Lift a currying function type from its simplified form, denoted as @f@, into a new form.
+--
+--   This lifted function consists of a type function, @m@, for each argument, followed by a multiplicity arrow of @p@,
+--   and uses a type function @mb@, for the result of the lifted function.
+type family LiftFunction f (m  :: Type -> Type) (mb :: Type -> Type) (p :: Multiplicity) where
+  LiftFunction  (x1 -> g) m mb p = m x1 %p-> LiftFunction g m mb p
   LiftFunction        (b) m mb _ = mb b
 
 -- | Uncurry the arguments of a function to a list of types.
 type family UncurryNP'Fst f :: [Type] where
-  UncurryNP'Fst (a1 %_-> g) = a1 : UncurryNP'Fst (g)
+  UncurryNP'Fst (x1 %_-> g) = x1 : UncurryNP'Fst (g)
   UncurryNP'Fst         (b) = '[]
 
 -- | Uncurry the result of a function.
@@ -144,7 +146,7 @@ type family UncurryNP'Snd f  where
 
 -- | Uncurry and extract the multiplicity of the last arrow.
 type family UncurryNP'Multiplicity f :: Multiplicity where
-  UncurryNP'Multiplicity         (a1 %p-> b) = p
+  UncurryNP'Multiplicity         (x1 %p-> b) = p
   UncurryNP'Multiplicity                 (b) = Many
 
 -- | Uncurry a function to its NP form whose multiplicity of the last arrow is preserved.
@@ -165,29 +167,30 @@ type family CurryingNP'Head f where
 
 -- | The type of the tail of an currying function.
 type family CurryingNP'Tail f where
---  CurryingNP'Tail (a1 %_-> a2 %p-> g) = a2 %p-> CurryingNP'Tail g
   CurryingNP'Tail (a1 %p-> g) = CurryingNP'Tail g
   CurryingNP'Tail         (b) = b
 
--- | Uncurrying a function into a function of NP to @b@.
+-- | Uncurrying a function into a function of @NP xs@ to @b@.
 class UncurryingNP f (xs :: [Type]) b
       (m1 :: Type -> Type) (m1b :: Type -> Type)
       (m2 :: Type -> Type) (m2b :: Type -> Type)
       (p :: Multiplicity) where
-  uncurryingNP :: forall f'.
+  uncurryingNP :: forall.
                   ( UncurryNP'Fst f ~ xs
                   , UncurryNP'Snd f ~ b
-                  , LiftFunction f m1 m1b p ~ f'
-                  ) => f'                       -- ^ from @LiftFunction2 (         f) m1 m1b p@
-                  %p-> (m2 (NP xs) %p-> m2b b)  -- ^ to   @LiftFunction2 (NP xs -> b) m2 m2b p@
+                  -- rewrite the second lift function into its one-arity form
+                  , LiftFunction (NP xs -> b) m2 m2b p ~ (m2 (NP xs) %p-> m2b b)
+                  ) => LiftFunction           f  m1 m1b p  -- ^ from this lifted function
+                  %p-> LiftFunction (NP xs -> b) m2 m2b p  -- ^ to this lifted function
 
--- | Currying a function of NP to @b@.
+-- | Currying a function of @NP xs@ to @b@.
 class CurryingNP (xs :: [Type]) b
-      (m1 :: Type -> Type) (m1b :: Type -> Type)
+      (m1 :: Type -> Type) (mb :: Type -> Type)
       (m2 :: Type -> Type)
       (p :: Multiplicity) where
-  curryingNP :: forall f f'.
+  curryingNP :: forall f.
                 ( CurryNP (NP xs) b ~ f
-                , LiftFunction f m1 m1b p ~ f'
-                ) => (m2 (NP xs) %p-> m1b b) -- ^ from @m2 (NP xs) %p-> m1 b@
-                %p-> f'                      -- ^ to   @LiftFunction f m1 p@
+                -- rewrite the first lift function into its one-arity form
+                , LiftFunction (NP xs -> b) m2 mb p ~ (m2 (NP xs) %p-> mb b)
+                ) => LiftFunction (NP xs -> b) m2 mb p -- ^ from this lifted function
+                %p-> LiftFunction           f  m1 mb p -- ^ to this lifted function

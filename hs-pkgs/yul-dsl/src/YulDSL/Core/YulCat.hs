@@ -188,14 +188,13 @@ digestYulCat = printf "%x" . digest_c8 . B.pack . show
 
 -- (x)
 instance forall x r eff.
-         ( LiftFunction x (YulCat eff r) (YulCat eff r) Many ~ YulCat eff r x
-         , YulO2 x r
+         ( YulO2 x r
          ) => UncurryingNP (x) '[] x (YulCat eff r) (YulCat eff r) (YulCat eff r) (YulCat eff r) Many where
   uncurryingNP x _ = x
 
 -- (x -> ...xs -> b)
 instance forall x xs b g r eff.
-         ( YulO5 x (NP xs) b (NP (x:xs)) r
+         ( YulO4 x (NP xs) b r
          , UncurryNP'Fst g ~ xs
          , UncurryNP'Snd g ~ b
          , UncurryingNP g xs b (YulCat eff r) (YulCat eff r) (YulCat eff r) (YulCat eff r) Many

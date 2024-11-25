@@ -22,7 +22,12 @@ foo3 = fn'l "foo3" $
 
 foo4 = fn'l "foo4" $
   uncurry'l @(U256 -> U256 -> U256 -> U256 -> U256)
-    \x1 x2 x3 x4 -> x1 + x2 + x3 + x4
+  \x1 x2 x3 x4 -> x1 + x2 + x3 + x4
+
+bar3 = fn'l "bar3" $
+  uncurry'p'l @(U256 -> U256 -> U256 -> U256)
+  \x1 x2 x3 -> MkYulCat'L (\u -> const'l 42 (discard u))
+    -- x1 + x1 + x2 + x3
 
 fooSPut = fn'l "fooSPut" $
   uncurry'l @(ADDR -> U256 -> ())

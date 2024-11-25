@@ -179,7 +179,7 @@ TODOs:
 
 > [!NOTE]
 >
-> Generate yul code for Fn, YuLCat, and YulObject.
+> Generate yul code for Fn, YulCat, and YulObject.
 
 TODOs:
 

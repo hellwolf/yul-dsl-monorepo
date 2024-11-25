@@ -48,10 +48,10 @@ Packages
 - [*yul-dsl-linear-smc*](./hs-pkgs/yul-dsl-linear-smc/README.md) - Embedding YulDSL in Haskell Using Linear Types
 - [*yol-suite*](./hs-pkgs/yol-suite/README.md) - A Collection of YulDSL Programs for the New Pioneer of Ethereum Smart
   Contracts Development
-  - yolc: the evil twin of "solc"; this is the compiler program for "YulDSL/Haskell".
-  - attila: who wields the foundy, forges his path; this is the counter part of the "forge" from
+  - **yolc**: the evil twin of "solc"; this is the compiler program for "YulDSL/Haskell".
+  - **attila**: who wields the foundy, forges his path; this is the counter part of the "forge" from
     [foundry](https://github.com/foundry-rs/foundry).
-  - drwitch: who persuades the tyrant, shapes our history; this is the counter part of the "cast" from
+  - **drwitch**: who persuades the tyrant, shapes our history; this is the counter part of the "cast" from
     [foundry](https://github.com/foundry-rs/foundry).
 
 Features

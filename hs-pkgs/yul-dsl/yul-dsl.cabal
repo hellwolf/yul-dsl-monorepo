@@ -2,7 +2,7 @@ cabal-version:  3.0
 name:           yul-dsl
 version:        0.1.0.0
 category:       Language
-synopsis:       YulDSL, a DSL for Solidity/Yul
+synopsis:       A DSL for Solidity/Yul
 description:    YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
 
                 Additionally, the package uses a technique called "evaluating linear functions to symmetric monoidal
@@ -14,14 +14,16 @@ description:    YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell 
                 and share 'YulDSL' as portable modules with each other.
 
 license:        LGPL-3.0-or-later
-license-file:   LICENSE
+license-file:   LGPL-3.0-LICENSE
 author:         Miao, ZhiCheng
-maintainer:     zhicheng.miao@gmail.com
+maintainer:     helwolf@yolc.dev
 copyright:      (c) 2023-2024 Miao, ZhiCheng
+
+extra-doc-files:     README.md
+-- extra-doc-files:  CHANGELOG.md
 
 tested-with:    GHC==9.10.1
 build-type:     Simple
--- extra-doc-files:    CHANGELOG.md
 
 common basic-options
   default-language:   GHC2024

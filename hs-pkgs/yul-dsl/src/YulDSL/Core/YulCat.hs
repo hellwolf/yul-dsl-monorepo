@@ -8,7 +8,7 @@
 
 Copyright   : (c) 2023-2024 Miao, ZhiCheng
 License     : LGPL-3
-Maintainer  : zhicheng.miao@gmail.com
+Maintainer  : hellwolf@yolc.dev
 Stability   : experimental
 
 
@@ -21,7 +21,6 @@ Machine](https://ethereum.org/en/developers/docs/evm/) (EVM).
 
 This module provides an "Embedded (in Haskell) Domain Specific Language" (eDSL) for programming in Yul, called
 'YulCat'.
-
 
 Further more, the 'YulCat' is instantiated as a "Symmetric Monoidal Category" (SMC). Being a SMC enables the possibility
 for compiling linearly-typed functions in Haskell directly to the 'YulCat', that is believed to greatly enhance the

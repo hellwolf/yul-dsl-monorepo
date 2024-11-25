@@ -5,7 +5,7 @@
 Copyright   : (c) 2024 Miao, ZhiCheng
 License     : MIT
 
-Maintainer  : zhicheng.miao@gmail.com
+Maintainer  : hellwolf@yolc.dev
 Stability   : experimental
 Portability : GHC2024
 

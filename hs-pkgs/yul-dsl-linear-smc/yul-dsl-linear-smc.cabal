@@ -2,16 +2,8 @@ Cabal-Version:  3.0
 name:           yul-dsl-linear-smc
 version:        0.1.0.0
 category:       Language
-synopsis:       Programming Solidity/Yul in linear-typed functions
-license:        LGPL-3.0-or-later
-license-file:   LICENSE
-author:         Miao, ZhiCheng
-maintainer:     zhicheng.miao@gmail.com
-copyright:      (c) 2023-2024 Miao, ZhiCheng
-tested-with:    GHC==9.10.1
-build-type:     Simple
-
-description:    YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
+synopsis:       Embedding YulDSL in Haskell Using Linear Types
+description:    YulDSL provides an eDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
 
                 Additionally, the package uses a technique called "evaluating linear functions to symmetric monoidal
                 categories (Jean-Philippe Bernardy and Arnaud Spiwack)" to provide an ergonomic linear functions
@@ -20,6 +12,18 @@ description:    YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell 
                 Furthermore, the 'YulDSL' has its portable artifact form (WORK-IN-PROGRESS), which opens the door for
                 other frontends (a visual programming interface or other principled programming languages) to produce
                 and share 'YulDSL' as portable modules with each other.
+
+license:        LGPL-3.0-or-later
+license-file:   LGPL-3.0-LICENSE
+author:         Miao, ZhiCheng
+maintainer:     hellwolf@yolc.dev
+copyright:      (c) 2023-2024 Miao, ZhiCheng
+
+extra-doc-files:  README.md
+-- extra-doc-files:  CHANGELOG.md
+
+tested-with:    GHC==9.10.1
+build-type:     Simple
 
 common basic-options
     default-language:     GHC2024

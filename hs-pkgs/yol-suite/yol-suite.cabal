@@ -2,24 +2,27 @@ cabal-version:   3.4
 name:            yol-suite
 version:         0.1.0.0
 category:        Development
-synopsis:        YOL suite is *For the New Pioneer* of EVM application development
+synopsis:        A collection of YulDSL programs for the new pioneer of Ethereum smart contracts development
 description:     YOL stands for *Yet Original Language*. The suite consists of:
 
-                 * yolc "the evil twin of solc": a compiler for the Haskell port of yul-dsl.
+                 * yolc "the evil twin of solc": the compiler for YulDSL/Haskell.
 
                  * attila "who wields the foundry, forges his path": a testing framework using foundry under the hood.
 
                  * drwitch "who persuades the tyrant, shapes our history": a minimalistic multitool for interacting with
                    EVM smart contracts.
 
-license:         LGPL-3.0-only
-license-file:    LICENSE
+license:         LGPL-3.0-or-later
+license-file:    LGPL-3.0-LICENSE
 author:          Miao, ZhiCheng
-maintainer:      zhicheng.miao@gmail.com
-tested-with:     GHC==9.10.1
+maintainer:      hellwolf@yolc.dev
 copyright:       (c) 2023-2024 Miao, ZhiCheng
+
+extra-doc-files: README.md
+                 CHANGELOG.md
+
+tested-with:     GHC==9.10.1
 build-type:      Simple
-extra-doc-files: CHANGELOG.md
 
 common basic-options
   default-language: GHC2024

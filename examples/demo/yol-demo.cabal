@@ -3,10 +3,13 @@ name:           yol-demo
 version:        0.1
 category:       control
 synopsis:       Examples built with yolc (A YulDSL/Haskell Compiler)
-license:        LGPL-3.0-or-later
+
+license:        MIT
 license-file:   LICENSE
 author:         Miao, ZhiCheng
-maintainer:     zhicheng.miao@gmail.com
+maintainer:     hellwolf@yolc.dev
+copyright:      (c) 2023-2024 Miao, ZhiCheng
+
 tested-with:    GHC==9.6.2
 build-type:     Simple
 

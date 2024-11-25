@@ -32,6 +32,7 @@ import           Control.Category.Constrained.YulDSL.LinearSMC ()
 
 {- * Yul Port Types -}
 
+{- HLint ignore LinearEffect "Use newtype instead of data" -}
 -- | Linearized effect, where @v@ is a type-level version of the data.
 data LinearEffect = MkLinearEffect Nat
 
@@ -74,8 +75,13 @@ dup2'l :: forall a v r. YulO2 a r
 dup2'l = split . copy
 
 cons'l :: forall x xs v r. YulO3 x (NP xs) r
-         => P'L v r x ⊸ P'L v r (NP xs) ⊸ P'L v r (NP (x:xs))
+       => P'L v r x ⊸ P'L v r (NP xs) ⊸ P'L v r (NP (x:xs))
 cons'l x xs = coerce'l (merge (x, xs))
+
+lift'l :: forall a b v r. YulO3 a b r => YulCat'P a b -> (P'L v r a ⊸ P'L v r b)
+lift'l c =  let c' :: P (YulCat MkPure) r a ⊸ P (YulCat MkPure) r b
+                c' = encode c
+            in UnsafeLinear.coerce c' -- coercing from the 'Pure' kind to the 'LinearEffect' kind
 
 {- * Ethereum.ContractABI instances * -}
 
@@ -142,16 +148,12 @@ uncurry'l f = unYulCat'L $
               uncurryingNP @f @xs @b @m1 @m1b @m2 @m2b @One
               f (MkYulCat'L id)
 
--- | Make pure value based linear function.
-mk'p'l :: forall a b r vd. YulO3 a b r => P'L vd r b -> YulCat'L vd vd r a b
-mk'p'l x = MkYulCat'L (\u -> ignore (discard u) x)
-
 uncurry'p'l :: forall f xs b r vd m1 m1b m2 m2b.
                ( YulO3 (NP xs) b r
                , xs ~ UncurryNP'Fst f
                , b  ~ UncurryNP'Snd f
-               , YulCat'P (NP xs)   ~ m1
-               , YulCat'L 0 vd r () ~ m1b
+               , YulCat'P (NP xs)        ~ m1
+               , YulCat'L 0 vd r (NP xs) ~ m1b
                , YulCat'L 0  0 r (NP xs) ~ m2
                , YulCat'L 0 vd r (NP xs) ~ m2b
                , UncurryingNP f xs b m1 m1b m2 m2b Many

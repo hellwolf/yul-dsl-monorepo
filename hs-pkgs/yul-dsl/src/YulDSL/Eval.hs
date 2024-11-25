@@ -1,13 +1,13 @@
 {-|
 
-Copyright   : (c) 2023 Miao, ZhiCheng
+Copyright   : (c) 2023-2024 Miao, ZhiCheng
 License     : LGPL-3
-Maintainer  : zhicheng.miao@gmail.com
+Maintainer  : hellwolf@yolc.dev
 Stability   : experimental
 
 = Description
 
-This module provides a function 'evalYulCat' simulating the evaluation of the 'YulDSL'.
+This module provides a system for evaluation of a YulCat morphism semantically.
 
 -}
 

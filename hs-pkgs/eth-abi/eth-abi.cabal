@@ -2,15 +2,18 @@ cabal-version:  3.0
 name:           eth-abi
 version:        0.1.0.0
 category:       Data Structures
-synopsis:       Ethereum contracts
+synopsis:       Ethereum contract ABI specification in Haskell
 description:    These include Ethereum contract ABI specification, https://docs.soliditylang.org/en/latest/abi-spec.html
                 implemented in Haskell types, their derived types, and dependently typed variants of some.
 
 license:        MIT
-license-file:   LICENSE
+license-file:   MIT-LICENSE
 author:         Miao, ZhiCheng
-maintainer:     zhicheng.miao@gmail.com
+maintainer:     helwolf@yolc.dev
 copyright:      (c) 2024 Miao, ZhiCheng
+
+-- extra-doc-files:  README.md
+-- extra-doc-files:  CHANGELOG.md
 
 tested-with:    GHC==9.10.1
 build-type:     Simple

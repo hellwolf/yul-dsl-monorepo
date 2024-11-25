@@ -5,7 +5,7 @@
 
 Copyright   : (c) 2023 Miao, ZhiCheng
 License     : LGPL-3
-Maintainer  : zhicheng.miao@gmail.com
+Maintainer  : hellwolf@yolc.dev
 Stability   : experimental
 
 = Description

@@ -43,11 +43,12 @@ The advantage of such a construction hinges on a few prior works that, by provid
 lawful) set of "verbs," you can convert from this language to a different domain. Notably, these are two known works of
 this fashion:
 
-1) "Compiling to Categories" by Conal Elliott (2017) shows how to translate the cartesian closed category into simply
-typed lambda calculus.
+1) ["Compiling to Categories" by Conal Elliott (2017)](http://conal.net/papers/compiling-to-categories/) shows how to
+translate the cartesian closed category into simply typed lambda calculus.
 
-2) "Evaluating Linear Functions to Symmetric Monoidal Categories" by Jean-Philippe Bernardy and Arnaud Spiwack (2021)
-explores the correspondence between linear types supported in Haskell and symmetric monoidal categories (SMC).
+2) ["Evaluating Linear Functions to Symmetric Monoidal Categories" by Jean-Philippe Bernardy and Arnaud Spiwack
+(2021)](https://arxiv.org/abs/2103.06195) explores the correspondence between linear types supported in Haskell and
+symmetric monoidal categories (SMC).
 
 YulDSL/Haskell
 ===========

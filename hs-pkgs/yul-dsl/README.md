@@ -7,8 +7,6 @@ code.
 Motivation
 ----------
 
-> [!TIP]
->
 > They (the programming languages) also differ in physical appearance, and more important, in logical structure. The
 > question arises, do the idiosyncracies reflect basic logical properties of the situations that are being catered for?
 > Or are they accidents of history and personal background that may be obscuring fruitful developments?

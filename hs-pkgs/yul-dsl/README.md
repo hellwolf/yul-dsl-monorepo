@@ -13,7 +13,7 @@ Motivation
 > question arises, do the idiosyncracies reflect basic logical properties of the situations that are being catered for?
 > Or are they accidents of history and personal background that may be obscuring fruitful developments?
 >
-> - "The Next 700 Programming Languages" by P. J. Landin.
+> — "The Next 700 Programming Languages" by P. J. Landin.
 
 * Many emerging ecosystems utilize specialized programming languages designed specifically for their needs. For example,
   the Solidity programming language was created for the Ethereum Virtual Machine (EVM) ecosystem.
@@ -45,10 +45,11 @@ The advantage of such a construction hinges on a few prior works that, by provid
 lawful) set of "verbs," you can convert from this language to a different domain. Notably, these are two known works of
 this fashion:
 
-"Compiling to Categories" by Conal Elliott (2017) shows how to translate the cartesian closed category into simply typed
-lambda calculus.  "Evaluating Linear Functions to Symmetric Monoidal Categories" by Jean-Philippe Bernardy and Arnaud
-Spiwack (2021) explores the correspondence between linear types supported in Haskell and symmetric monoidal categories
-(SMC).
+1) "Compiling to Categories" by Conal Elliott (2017) shows how to translate the cartesian closed category into simply
+typed lambda calculus.
+
+2) "Evaluating Linear Functions to Symmetric Monoidal Categories" by Jean-Philippe Bernardy and Arnaud Spiwack (2021)
+explores the correspondence between linear types supported in Haskell and symmetric monoidal categories (SMC).
 
 YulDSL/Haskell
 ===========

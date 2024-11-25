@@ -1,6 +1,7 @@
 module Ethereum.ContractABI
   ( module Ethereum.ContractABI.ABICoreType
   , module Ethereum.ContractABI.ABITypeable
+  , module Ethereum.ContractABI.ABICodec
   , module Ethereum.ContractABI.CoreType.NP
   , module Ethereum.ContractABI.CoreType.BOOL
   , module Ethereum.ContractABI.CoreType.ADDR
@@ -12,6 +13,7 @@ module Ethereum.ContractABI
   -- , module Ethereum.ContractABI.ExtendedType.Maybe
   ) where
 
+import           Ethereum.ContractABI.ABICodec
 import           Ethereum.ContractABI.ABICoreType
 import           Ethereum.ContractABI.ABITypeable
 import           Ethereum.ContractABI.ABITypeCoercible

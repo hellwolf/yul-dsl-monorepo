@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
-
 {-|
 
 Copyright   : (c) 2024 Miao, ZhiCheng

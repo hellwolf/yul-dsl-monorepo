@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Ethereum.ContractABI.ExtendedType.TUPLEn where

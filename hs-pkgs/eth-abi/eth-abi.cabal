@@ -16,16 +16,19 @@ tested-with:    GHC==9.10.1
 build-type:     Simple
 
 common basic-options
-  default-language: GHC2024
-  ghc-options:      -Wall
-                    -Wunused-packages
-  build-depends:    base >= 4.20.0.0 && < 666
+  default-language:   GHC2024
+  ghc-options:        -Wall
+                      -Wunused-packages
+  default-extensions: TypeFamilies
+                      RequiredTypeArguments
+  build-depends:      base >= 4.20.0.0 && < 666
 
 library
   import:           basic-options
   hs-source-dirs:   src
   exposed-modules:  Ethereum.ContractABI.ABICoreType
                     Ethereum.ContractABI.ABITypeable
+                    Ethereum.ContractABI.ABICodec
                     Ethereum.ContractABI.CoreType.NP
                     Ethereum.ContractABI.CoreType.BOOL
                     Ethereum.ContractABI.CoreType.ADDR

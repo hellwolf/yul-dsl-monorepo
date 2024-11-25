@@ -24,10 +24,11 @@ build-type:     Simple
 -- extra-doc-files:    CHANGELOG.md
 
 common basic-options
-  default-language: GHC2024
-  ghc-options:      -Wall
-                    -Wunused-packages
-  build-depends:    base >= 4.20.0.0 && < 666
+  default-language:   GHC2024
+  ghc-options:        -Wall
+                      -Wunused-packages
+  default-extensions: TypeFamilies
+  build-depends:      base >= 4.20.0.0 && < 666
 
 library
   import:           basic-options

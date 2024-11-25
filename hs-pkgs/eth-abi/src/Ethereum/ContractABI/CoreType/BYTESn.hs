@@ -1,5 +1,4 @@
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies    #-}
 module Ethereum.ContractABI.CoreType.BYTESn
   ( BYTESn
   , B1, B2, B3, B4, B5, B6, B7, B8
@@ -13,6 +12,7 @@ import           Control.Monad                      (forM)
 -- template-haskell
 import qualified Language.Haskell.TH                as TH
 --
+import           Ethereum.ContractABI.ABICodec
 import           Ethereum.ContractABI.ABICoreType
 import           Ethereum.ContractABI.ABITypeable
 import           Ethereum.ContractABI.CoreType.INTx

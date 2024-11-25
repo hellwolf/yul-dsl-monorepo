@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
 module NP_test where
 
 import           Data.Functor.Identity (Identity)

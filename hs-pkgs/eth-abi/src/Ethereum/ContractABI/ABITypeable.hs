@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DefaultSignatures   #-}
-{-# LANGUAGE TypeFamilies        #-}
 
 {-|
 
@@ -21,16 +20,11 @@ module Ethereum.ContractABI.ABITypeable
  , AnyABITypeable (MkAnyABITypeable)
  , AnyABITypeDerivedOf (MkAnyABIDerivedType)
  , abiTypeCanonName, abiTypeCompactName
- , abiEncode, abiDecode
  ) where
 
 -- base
 import           Data.Kind                        (Constraint, Type)
 import           Data.List                        (intercalate)
--- bytestring
-import qualified Data.ByteString                  as B
--- cereal
-import qualified Data.Serialize                   as S
 --
 import           Ethereum.ContractABI.ABICoreType
 
@@ -72,11 +66,3 @@ abiTypeCanonName = intercalate "," (fmap abiCoreTypeCanonName (abiTypeInfo @a))
 -- | A 'abiTypeCanonName' variant that is compact to saving characters.
 abiTypeCompactName :: forall a. ABITypeable a => String
 abiTypeCompactName = intercalate "" (fmap abiCoreTypeCompactName (abiTypeInfo @a))
-
-abiEncode :: forall a. (ABITypeable a, ABITypeCodec a)
-          => a -> B.ByteString
-abiEncode = S.runPut . abiEncoder
-
-abiDecode :: forall a. (ABITypeable a, ABITypeCodec a)
-          => B.ByteString -> Maybe a
-abiDecode = either (const Nothing) Just . S.runGet abiDecoder

@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
-
 {-|
 
 Copyright   : (c) 2024 Miao, ZhiCheng
@@ -24,6 +22,7 @@ import qualified Data.Serialize                   as S
 --
 import           Internal.Data.Type.Bool
 --
+import           Ethereum.ContractABI.ABICodec
 import           Ethereum.ContractABI.ABICoreType
 import           Ethereum.ContractABI.ABITypeable
 

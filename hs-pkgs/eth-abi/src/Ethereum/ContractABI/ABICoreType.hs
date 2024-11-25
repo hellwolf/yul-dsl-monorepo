@@ -16,10 +16,12 @@ contract ABI types to support the entire contract ABI specification.
 -}
 module Ethereum.ContractABI.ABICoreType
   ( ABICoreType (..)
-  , ValidINTn, Nat, natSing, natVal -- for working with INTx, BYTEn
+  -- for working with INTx, BYTEn
+  , ValidINTn, Nat, natSing, natVal
+  -- ABI type names
   , abiCoreTypeCanonName, abiCoreTypeCompactName
+  -- EVM word representations
   , WORD, word, wordVal, defWord, maxWord, ABIWordValue (toWord, fromWord)
-  , ABITypeCodec (abiEncoder, abiDecoder)
   ) where
 
 -- base
@@ -30,13 +32,11 @@ import           GHC.TypeLits            (KnownNat (natSing), Nat, SNat, fromSNa
 import           Numeric                 (showHex)
 -- template-haskell
 import qualified Language.Haskell.TH     as TH
--- cereal
-import qualified Data.Serialize          as S
 --
 import           Internal.Data.Type.Bool (KnownBool, SBool, toBool)
 
 
-{- * ABICoreType and its utilities -}
+{- * ABICoreType and their utilities -}
 
 -- | A constraint that restricts what Nat values are valid for 'INTx' and 'BYTESn'.
 class KnownNat n => ValidINTn n
@@ -95,7 +95,7 @@ abiCoreTypeCompactName (ARRAY' a)  = "A" ++ abiCoreTypeCompactName a
 {- * EVM word representations  -}
 
 -- | Raw storage value for ABI value types.
-newtype WORD = WORD Integer deriving newtype (Eq, Ord)
+newtype WORD = WORD Integer deriving newtype (Eq)
 
 instance Show WORD where
     show (WORD a) = "0x" ++ fmap toUpper (showHex a "")
@@ -120,8 +120,3 @@ class Bounded a => ABIWordValue a where
   fromWord :: WORD -> Maybe a
   -- | Convert from a ABI typed value to a storage value.
   toWord   :: a -> WORD
-
--- | ABI type bytstream codec
-class ABITypeCodec a where
-  abiDecoder :: S.Get a
-  abiEncoder :: S.Putter a

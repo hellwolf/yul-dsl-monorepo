@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeFamilies        #-}
 
 {-|
 
@@ -38,6 +37,7 @@ import           Data.Proxy                       (Proxy (Proxy))
 -- cereal
 import qualified Data.Serialize                   as S
 -- eth-abi
+import           Ethereum.ContractABI.ABICodec
 import           Ethereum.ContractABI.ABICoreType
 import           Ethereum.ContractABI.ABITypeable
 import           Internal.Data.Type.Bool

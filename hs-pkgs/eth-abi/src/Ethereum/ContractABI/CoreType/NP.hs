@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE LinearTypes         #-}
-{-# LANGUAGE TypeFamilies        #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
@@ -37,7 +36,7 @@ import qualified Data.Serialize                   as S
 --
 import           Internal.Data.Type.List
 --
-import           Ethereum.ContractABI.ABICoreType
+import           Ethereum.ContractABI.ABICodec
 import           Ethereum.ContractABI.ABITypeable
 
 

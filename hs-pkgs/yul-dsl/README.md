@@ -33,11 +33,11 @@ The signature design choice for YulDSL is to base itself on [category
 theory](https://ncatlab.org/nlab/show/category+theory). In contrast to ones that base themselves on stack machines or
 lambda calculi.
 
-In simple language, this means that all the "nouns" of this language are the types of values, and all the "verbs" in
-this language describe the transition from one type of value to another.
+In simple terms, this means that all the "nouns" of this language are the types of values, and all the "verbs" in this
+language describe the transition from one type of value to another. Hence, a "verb" always connects two "nouns."
 
-Following the analogy, a "verb" always connects two "nouns." Verbs can compose with each other by matching their "nouns"
-types to form a long "paragraph," aka. a program.
+Following the analogy, each "sentence" has one verb, and "sentences" can compose with each other by matching their
+"nouns" types to form a long "paragraph," aka. a program.
 
 The advantage of such a construction hinges on a few prior works that, by providing a specific (namely, mathematically
 lawful) set of "verbs," you can convert from this language to a different domain. Notably, these are two known works of

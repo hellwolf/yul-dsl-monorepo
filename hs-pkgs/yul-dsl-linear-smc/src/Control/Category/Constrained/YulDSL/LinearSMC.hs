@@ -1,6 +1,4 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-
 {-|
 
 Copyright   : (c) 2023 Miao, ZhiCheng

@@ -39,6 +39,7 @@ library
                     YulDSL.Core.Fn
                     YulDSL.Core.YulObject
                     YulDSL.Core
+                    YulDSL.Effects.Pure
                     YulDSL.Eval
                     YulDSL.CodeGens.YulGen
   other-modules:    YulDSL.CodeGens.Yul.Internal.CodeFormatters

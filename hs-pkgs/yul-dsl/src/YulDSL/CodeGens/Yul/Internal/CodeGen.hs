@@ -43,7 +43,7 @@ cur_var (MkAutoVarGen i0) = "v_" <> T.pack (go i0) where
 new_auto_var :: AutoVarGen -> (Var, AutoVarGen)
 new_auto_var g@(MkAutoVarGen i0) = (cur_var g, MkAutoVarGen (i0 + 1))
 
--- | Generate a list of variables for the 'ABIType' a.
+-- | Generate a list of variables for the 'ABITypeable' a.
 --
 -- Examples:
 -- >>> gen_vars (Proxy @(INT256, BOOL))

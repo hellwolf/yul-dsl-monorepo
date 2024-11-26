@@ -1,15 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ImpredicativeTypes  #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
-{-# LANGUAGE TypeFamilies        #-}
-
-module Ethereum.ContractsABI.YulDSL.Linear where
-
+module YulDSL.Effects.LinearSMC where
 
 -- base
 import           GHC.TypeLits                                  (type (+))
 -- linear-base
-import           Prelude.Linear
+import           Prelude.Linear                                hiding (Eq (..), Ord (..))
 import qualified Unsafe.Linear                                 as UnsafeLinear
 -- linear-smc
 import           Control.Category.Constrained                  ()
@@ -28,6 +25,7 @@ import           Control.Category.Linear
 import           YulDSL.Core
 -- orphansed instances for categories in linear-smc
 import           Control.Category.Constrained.YulDSL.LinearSMC ()
+import           Data.MPOrd.YulDSL.LinearSMC
 
 
 {- * Yul Port Types -}
@@ -35,6 +33,8 @@ import           Control.Category.Constrained.YulDSL.LinearSMC ()
 {- HLint ignore LinearEffect "Use newtype instead of data" -}
 -- | Linearized effect, where @v@ is a type-level version of the data.
 data LinearEffect = MkLinearEffect Nat
+
+type instance NonPureEffect (MkLinearEffect v) = True
 
 -- | Linear port API of yul category with `LinearEffect` kind.
 type P'L v r = P (YulCat (MkLinearEffect v)) r
@@ -58,30 +58,38 @@ unYulCat'L (MkYulCat'L c) =  c
 
 {- * Yul Port Combinators -}
 
-dis'l :: forall d v r. YulO2 d r
-      => P'L v r d ⊸ P'L v r ()
+emb'l :: forall a d v r. YulO3 a d r
+        => a -> (P'L v r d ⊸ P'L v r a)
+emb'l a = encode (YulEmbed a) . discard
+
+dup'l :: forall a v r. YulO2 a r
+      => P'L v r a ⊸ (P'L v r a, P'L v r a)
+dup'l = split . copy
+
+use'l :: forall a b v r. YulO3 a b r
+      => P'L v r a ⊸ (P'L v r a ⊸ P'L v r b) ⊸ (P'L v r a, P'L v r b)
+use'l a f = dup'l a & \(a', a'') -> (a', f a'')
+
+dis'l :: forall a v r. YulO2 a r
+      => P'L v r a ⊸ P'L v r ()
 dis'l = discard
 
-const'l :: forall a d v r. YulO3 a d r
-        => a -> (P'L v r d ⊸ P'L v r a)
-const'l a = encode (YulEmbed a) . discard
+const'l :: forall a b v r. YulO3 a b r
+      => P'L v r a ⊸ P'L v r b ⊸ P'L v r a
+const'l = flip (ignore . discard)
 
 coerce'l :: forall a b v r. (YulO3 a b r, ABITypeCoercible a b)
          => P'L v r a ⊸ P'L v r b
 coerce'l = encode YulCoerce
 
-dup2'l :: forall a v r. YulO2 a r
-       => P'L v r a ⊸ (P'L v r a, P'L v r a)
-dup2'l = split . copy
-
 cons'l :: forall x xs v r. YulO3 x (NP xs) r
        => P'L v r x ⊸ P'L v r (NP xs) ⊸ P'L v r (NP (x:xs))
 cons'l x xs = coerce'l (merge (x, xs))
 
-lift'l :: forall a b v r. YulO3 a b r => YulCat'P a b -> (P'L v r a ⊸ P'L v r b)
-lift'l c =  let c' :: P (YulCat MkPure) r a ⊸ P (YulCat MkPure) r b
-                c' = encode c
-            in UnsafeLinear.coerce c' -- coercing from the 'Pure' kind to the 'LinearEffect' kind
+-- lift'l :: forall a b v r. YulO3 a b r => YulCat'P a b -> (P'L v r a ⊸ P'L v r b)
+-- lift'l c =  let c' :: P (YulCat MkPure) r a ⊸ P (YulCat MkPure) r b
+--                 c' = encode c
+--             in UnsafeLinear.coerce c' -- coercing from the 'Pure' kind to the 'LinearEffect' kind
 
 {- * Ethereum.ContractABI instances * -}
 
@@ -101,7 +109,7 @@ instance forall x xs b g v1 vn r a.
          , UncurryingNP g xs b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) (YulCat'L v1 vn r a) One
          ) => UncurryingNP (x -> g) (x:xs) b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) (YulCat'L v1 vn r a) One where
   uncurryingNP f (MkYulCat'L h) = MkYulCat'L
-    (\xxs -> dup2'l xxs &
+    (\xxs -> dup'l xxs &
              \(xxs1, xxs2) -> split (coerce'l @(NP (x:xs)) @(x, NP xs) (h xxs1)) &
              \(x, xs) -> unYulCat'L
                          (uncurryingNP
@@ -194,7 +202,7 @@ call'l :: forall f x xs b g' r v1 vd vn.
           )
        => LinearFn vd f
        -> (P'L v1 r x ⊸ g')
-call'l (MkFn f) x' = dup2'l x' &
+call'l (MkFn f) x' = dup'l x' &
   \(x'', x''') ->
     curryingNP @xs @b @(P'L v1 r) @(P'L vn r) @(YulCat'L v1 v1 r ()) @One
     (\(MkYulCat'L fxs) -> g x'' (fxs (discard x''')))
@@ -211,10 +219,30 @@ sget = encode YulSGet
 
 sput :: forall a r v. (YulO2 a r, ABIWordValue a)
      => P'L v r ADDR ⊸ P'L v r a ⊸ P'L (v + 1) r a
-sput to x = dup2'l x &
+sput to x = dup'l x &
             \(x', x'') -> encode YulSPut (merge (to, x')) &
             \u -> UnsafeLinear.coerce (ignore u x'')
 
 sputAt :: forall a r v. (YulO2 a r, ABIWordValue a)
        => ADDR -> P'L v r a ⊸ P'L (v + 1) r a
-sputAt to x = mkUnit x & \(x', u) -> const'l to u & \a -> sput a x'
+sputAt to x = mkUnit x & \(x', u) -> emb'l to u & \a -> sput a x'
+
+
+--
+-- Prelude type class instances
+--
+
+-- | 'MPEq' instance for linear yul ports.
+instance (YulObj r, YulNum a) => MPEq (P'L v r a) (BOOL'L v r) where
+  a == b = encode (YulNumCmp (false, true , false)) (merge (a, b))
+  a /= b = encode (YulNumCmp (true , false, true )) (merge (a, b))
+
+-- | 'MPOrd' instance for linear yul ports.
+instance (YulObj r, YulNum a) => MPOrd (P'L v r a) (BOOL'L v r) where
+  a  < b = encode (YulNumCmp (true , false, false)) (merge (a, b))
+  a <= b = encode (YulNumCmp (true , true , false)) (merge (a, b))
+  a  > b = encode (YulNumCmp (false, false, true )) (merge (a, b))
+  a >= b = encode (YulNumCmp (false, true , true )) (merge (a, b))
+
+instance YulO2 a r => IfThenElse (BOOL'L v r) (P'L v r a) where
+  ifThenElse c a b = encode YulITE (merge(c, merge(a, b)))

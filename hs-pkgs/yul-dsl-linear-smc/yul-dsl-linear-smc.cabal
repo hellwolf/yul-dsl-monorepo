@@ -30,6 +30,7 @@ common basic-options
     ghc-options:          -Wall
                           -Wunused-packages
     default-extensions:   LinearTypes
+                          TypeFamilies
                           UnicodeSyntax
                           BlockArguments
                           ImpredicativeTypes
@@ -43,9 +44,9 @@ library
                     linear-smc >= 2.2.3,
                     yul-dsl
   exposed-modules:  Control.Category.Constrained.YulDSL.LinearSMC
-                    Control.Category.Linear.Extra
-                    Data.Num.YulDSL.Linear
-                    Ethereum.ContractsABI.YulDSL.Linear
+                    Data.MPOrd.YulDSL.LinearSMC
+                    Data.Num.YulDSL.LinearSMC
+                    YulDSL.Effects.LinearSMC
                     Prelude.YulDSL
 
 Test-Suite test-yul-dsl-linear-smc

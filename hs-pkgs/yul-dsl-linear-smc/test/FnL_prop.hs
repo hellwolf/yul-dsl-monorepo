@@ -7,7 +7,7 @@ import           Prelude        ()
 import           Prelude.YulDSL
 
 foo0 = fn'l "foo0" $
-  uncurry'l @(() -> U256) (const'l 42)
+  uncurry'l @(() -> U256) (emb'l 42)
 
 foo1 = fn'l "foo1" $
   uncurry'l @(U256 -> U256) id
@@ -24,16 +24,14 @@ foo4 = fn'l "foo4" $
   uncurry'l @(U256 -> U256 -> U256 -> U256 -> U256)
   \x1 x2 x3 x4 -> x1 + x2 + x3 + x4
 
-bar3 = fn'l "bar3" $
-  uncurry'p'l @(U256 -> U256 -> U256 -> U256)
-  \x1 x2 x3 -> MkYulCat'L do
-    \xs ->
-      let x1' = lift'l x1 xs
-          x2' = lift'l x2 xs
-          x3' = lift'l x3 xs
-      in x1' + x1' + x2' + x3'
-
-    -- x1 + x1 + x2 + x3
+-- bar3 = fn'l "bar3" $
+--   uncurry'p'l @(U256 -> U256 -> U256 -> U256)
+--   \x1 x2 x3 -> MkYulCat'L do
+--     \xs ->
+--       let x1' = lift'l x1 xs
+--           x2' = lift'l x2 xs
+--           x3' = lift'l x3 xs
+--       in x1' + x1' + x2' + x3'
 
 fooSPut = fn'l "fooSPut" $
   uncurry'l @(ADDR -> U256 -> ())

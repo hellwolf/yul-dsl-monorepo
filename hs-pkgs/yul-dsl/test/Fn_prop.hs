@@ -14,7 +14,7 @@ simple_id = MkFnCat @MkPure @U256 @U256 "simple_id" YulId
 simple_coerce = MkFnCat "simple_coerce" $ YulCoerce @MkPure @U256 @U256
 
 foo0 :: PureFn (U8)
-foo0 = fn @(U8) "" (YulEmbed 42)
+foo0 = fn @(U8) "" (emb'p 42)
 
 foo1 :: PureFn (U8 -> U8)
 foo1 = fn @(U8 -> U8) ""

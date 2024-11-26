@@ -22,6 +22,7 @@ import           Ethereum.ContractABI.ExtendedType.SELECTOR (SELECTOR, mkTypedSe
 --
 import           YulDSL.Core.Fn
 import           YulDSL.Core.YulCat
+import           YulDSL.Effects.Pure
 
 
 -- |  type for the external function call.
@@ -96,4 +97,4 @@ mkYulObject name ctor afns = MkYulObject { yulObjectName = name
                                          }
 
 emptyCtor :: AnyYulCat
-emptyCtor = MkAnyYulCat (YulDis @Pure @())
+emptyCtor = MkAnyYulCat (YulDis @MkPure @())

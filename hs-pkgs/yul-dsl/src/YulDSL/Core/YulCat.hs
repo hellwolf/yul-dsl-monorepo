@@ -1,16 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes    #-}
-{-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE LinearTypes            #-}
-{-# LANGUAGE TypeFamilies           #-}
 {-|
-
 Copyright   : (c) 2023-2024 Miao, ZhiCheng
 License     : LGPL-3
 Maintainer  : hellwolf@yolc.dev
 Stability   : experimental
-
 
 = Description
 
@@ -31,7 +26,6 @@ YulCat is designed to be a category. The objects in this category are instances 
 The classification objects in the YulCat symmetrical monoidal category:
 
   * 'YulObj'
-  * 'YulVal'
   * 'YulNum'
 
 -}
@@ -39,14 +33,16 @@ The classification objects in the YulCat symmetrical monoidal category:
 module YulDSL.Core.YulCat
   ( YulObj (yul_prod_objs), YulO1, YulO2, YulO3, YulO4, YulO5
   , YulNum
-  , Pure (MkPure)
+  , NonPureEffect, IsNonPureEffect
   , YulCat (..), AnyYulCat (..), (>.>), (<.<)
-  , MPOrd (..), IfThenElse (..)
+  , (<?), (<=?), (>?), (>=?), (==?), (/=?)
+  , IfThenElse (..)
   , digestYulCat,
   ) where
 
 -- base
 import           Data.Char             (ord)
+import           Data.Kind             (Constraint)
 import           GHC.Integer           (xorInteger)
 import           Text.Printf           (printf)
 -- constraints
@@ -91,10 +87,14 @@ class (Num a, YulObj a) => YulNum a
 -- | Integer types.
 instance (KnownBool s, ValidINTn n) => YulNum (INTx s n)
 
--- | Data kinds for pure morphisms in the yul category.
-data Pure = MkPure
-
 {- * The Cat -}
+
+-- | An open type family for marking effects non-pure, in order to access some restricted YulCat morphisms.
+type family NonPureEffect (eff :: k) :: Bool
+
+-- |
+type IsNonPureEffect :: k -> Constraint
+type IsNonPureEffect eff = NonPureEffect eff ~ True
 
 -- | A GADT-style DSL of Yul that constructs morphisms between objects (YulObj) of the "Yul Category".
 --
@@ -153,8 +153,8 @@ data YulCat (eff :: k) a b where
 
   -- Storage Primitives
   --
-  YulSGet :: forall eff a. (YulO1 a, ABIWordValue a) => YulCat eff ADDR a
-  YulSPut :: forall eff a. (YulO1 a, ABIWordValue a) => YulCat eff (ADDR, a) ()
+  YulSGet :: forall eff a. (IsNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff ADDR a
+  YulSPut :: forall eff a. (IsNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff (ADDR, a) ()
 
 -- | Existential wrapper of the 'YulCat'.
 data AnyYulCat = forall eff a b. YulO2 a b => MkAnyYulCat (YulCat eff a b)
@@ -261,7 +261,7 @@ instance Show AnyYulCat where
   show (MkAnyYulCat c) = show c
 
 ------------------------------------------------------------------------------------------------------------------------
--- Useful Type Classes For Custom Prelude
+-- Prelude Customization Helpers
 ------------------------------------------------------------------------------------------------------------------------
 
 instance (YulO2 a r, YulNum a) => Num (YulCat eff r a) where
@@ -272,23 +272,20 @@ instance (YulO2 a r, YulNum a) => Num (YulCat eff r a) where
   fromInteger = YulEmbed . fromInteger
   negate a = YulNumNeg <.< a
 
--- | Multi-parameter ordering typeclass where boolean type is @b@
-class MPOrd a b | a -> b where
-  ( <?) :: forall w. a %w -> a %w -> b
-  (<=?) :: forall w. a %w -> a %w -> b
-  ( >?) :: forall w. a %w -> a %w -> b
-  (>=?) :: forall w. a %w -> a %w -> b
-  (==?) :: forall w. a %w -> a %w -> b
-  (/=?) :: forall w. a %w -> a %w -> b
-  infixr 4 <?, <=?, >?, >=?, ==?, /=?
+-- YulNum Ord operations:
 
-instance (YulO2 a r, YulNum a) => MPOrd (YulCat eff r a) (YulCat eff r BOOL) where
-  a  <? b = YulNumCmp (true , false, false) <.< YulProd a b <.< YulDup
-  a <=? b = YulNumCmp (true , true , false) <.< YulProd a b <.< YulDup
-  a  >? b = YulNumCmp (false, false, true ) <.< YulProd a b <.< YulDup
-  a >=? b = YulNumCmp (false, true , true ) <.< YulProd a b <.< YulDup
-  a ==? b = YulNumCmp (false, true , false) <.< YulProd a b <.< YulDup
-  a /=? b = YulNumCmp (true , false, true ) <.< YulProd a b <.< YulDup
+(<?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p -> YulCat eff r BOOL
+a  <? b = YulNumCmp (true , false, false) <.< YulProd a b <.< YulDup
+(<=?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+a <=? b = YulNumCmp (true , true , false) <.< YulProd a b <.< YulDup
+(>?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+a  >? b = YulNumCmp (false, false, true ) <.< YulProd a b <.< YulDup
+(>=?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+a >=? b = YulNumCmp (false, true , true ) <.< YulProd a b <.< YulDup
+(==?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+a ==? b = YulNumCmp (false, true , false) <.< YulProd a b <.< YulDup
+(/=?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+a /=? b = YulNumCmp (true , false, true ) <.< YulProd a b <.< YulDup
 
 -- | IfThenElse for enabling rebindable syntax.
 class IfThenElse a b where

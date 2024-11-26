@@ -16,20 +16,20 @@ module Prelude.YulDSL
     module Prelude.Linear
     -- linear-smc
   , module Control.Category.Linear
-  , module Control.Category.Linear.Extra
     -- yul-dsl
   , module YulDSL.Core
     --
-  , module Ethereum.ContractsABI.YulDSL.Linear
+  , module Data.MPOrd.YulDSL.LinearSMC
+  , module YulDSL.Effects.LinearSMC
   ) where
 
 -- linear-base
-import           Prelude.Linear
+import           Prelude.Linear              hiding (Eq (..), Ord (..))
 -- linear-smc
 import           Control.Category.Linear
 -- yul-dsl
 import           YulDSL.Core
 --
-import           Control.Category.Linear.Extra
-import           Data.Num.YulDSL.Linear              ()
-import           Ethereum.ContractsABI.YulDSL.Linear
+import           Data.MPOrd.YulDSL.LinearSMC
+import           Data.Num.YulDSL.LinearSMC   ()
+import           YulDSL.Effects.LinearSMC

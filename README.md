@@ -7,19 +7,19 @@ The main motivation behind Yolc is strike a balance between these values for bui
 
 Yolc is purely functional with linear type safety, made for the Ethereum virtual machine.
 
-> What does *purely functional linear type safety/ mean here? Read more [here](#).
+> What does *purely functional linear type safety* mean here? Read more [here](#).
 
 *Expressive*
 
 YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
 
-> Why does /expressiveness/ matter? Read more [here](#).
+> Why does *expressiveness* matter? Read more [here](#).
 
 *Fun*
 
 Yolc allows you to write safe code in production, a joyful experience for super coders.
 
-> Find more some [examples code here](#).
+> Check out these [example codes](#).
 
 > [!CAUTION]
 >
@@ -65,38 +65,43 @@ Extensible Type System Compatible with Ethereum Contract ABI Specification
 > These include [Ethereum contract ABI specification](https://docs.soliditylang.org/en/latest/abi-spec.html)
 > implemented in as *core types*, their *type extensions*, including *dependently typed extensions*.
 
-| ABIType Instances   | [ABICoreType]     | Name                         | Examples             |
-|---------------------|-------------------|------------------------------|----------------------|
-| *(core types)*      |                   |                              |                      |
-| NP xs               | xs'               | N-ary products               | INT 1 :* true :* Nil |
-| BOOL                | [BOOL']           | Boolean                      | true, false          |
-| INTx s n            | [INTx' s n]       | Fixed-precision integers     | -1, 0, 42, 0xffff    |
-| ADDR                | [ADDR']           | Ethereum addresses           | #0xABC5...290a       |
-| BYTESn n            | [BYTESn']         | Binary type of n bytes       |                      |
-| BYTES               | [BYTES']          | Packed byte arrays           | TODO                 |
-| ARRAY a             | [ARRAY' a]        | Arrays                       | TODO                 |
-| FIXx s m n          | [FIX m n]         | Fixed-point decimal numbers  | TODO                 |
-| *(extended types)*  |                   |                              |                      |
-| U32, ..., U256      | [INTx' False n]   | Aliases of unsigned integers | (see INTx)           |
-| I32, ..., I256      | [INTx' True n]    | Aliases of signed integers   | (see INTx)           |
-| B1, B2, .. B32      | [BYTESn n]        | Aliases of byte arrays       | (see BYTESn)         |
-| REF a w             | [B32']            | Memory or storage references | TODO                 |
-| MAYBE a             | [MAYBE' a]        | Maybe a value                | TODO                 |
-| FUNC c sel          | [U192']           | Contract function pointer    | TODO                 |
-| (a, b)              | [a', b']          | Tuples                       | (a, b)               |
-| TUPLEn n            | [a1', a2' .. an'] | Tuples of N-elements         | (), a, (a, b, c)     |
-| STRUCT lens_xs      | xs'               | Struct with lenses           | TODO                 |
-| STRING              | [BYTES']          | UTF-8 strings                | TODO                 |
-| MAP a b             | [B32']            | Hash tables, aka. maps       | TODO                 |
-| *(dependent types)* |                   |                              |                      |
-| BOOL'd v            | [BOOL']           | Dependent booleans           | TODO                 |
-| INTx'd s n v        | [INTx' s n]       | Dependent integers           | TODO                 |
-| BYTES'd l           | [BYTES']          | Length-indexed byte arrays   | TODO                 |
-| ARRAY'd a l         | [ARRAY' a]        | Length-indexed arrays        | TODO                 |
-| STRING'd v          | [BYTES']          | Dependent strings            | TODO                 |
+| ABIType Instances   | [ABICoreType]   | Name (Selector Name)                  | Examples               |
+|---------------------|-----------------|---------------------------------------|------------------------|
+| *(core types)*      |                 |                                       |                        |
+| NP xs               | xs'             | N-ary products ((T1, ... Tn))         | INT 1 :* true :* Nil   |
+| BOOL                | [BOOL']         | Boolean (bool)                        | true, false            |
+| INTx s n            | [INTx' s n]     | Fixed-precision integers (int?/uint?) | -1, 0, 42, 0xffff      |
+| ADDR                | [ADDR']         | Ethereum addresses (address)          | constAddr "#0xABC5..." |
+| BYTESn n            | [BYTESn']       | Binary type of n bytes (bytes?)       |                        |
+| BYTES               | [BYTES']        | Packed byte arrays (bytes)            | TODO                   |
+| ARRAY a             | [ARRAY' a]      | Arrays (T[])                          | TODO                   |
+| FIXx s m n          | [FIX m n]       | Fixed-point decimal numbers (fixed)   | TODO                   |
+| *(extended types)*  |                 |                                       |                        |
+| U8, U16, ... U256   | [INTx' False n] | Aliases of unsigned integers          | (see INTx)             |
+| I8, I16, ... I256   | [INTx' True n]  | Aliases of signed integers            | (see INTx)             |
+| B1, B2, ... B32     | [BYTESn n]      | Aliases of byte arrays                | (see BYTESn)           |
+| REF a w             | [B32']          | Memory or storage references          | TODO                   |
+| MAYBE a             | [MAYBE' a]      | Maybe a value                         | TODO                   |
+| FUNC c sel          | [U192']         | Contract function pointer             | TODO                   |
+| (a, b)              | [a', b']        | Tuples                                | (a, b)                 |
+| TUPLEn n            | [a1', ... an']  | Tuples of N-elements                  | (), a, (a, b, c)       |
+| STRUCT lens_xs      | xs'             | Struct with lenses                    | TODO                   |
+| STRING              | [BYTES']        | UTF-8 strings                         | TODO                   |
+| MAP a b             | [B32']          | Hash tables, aka. maps                | TODO                   |
+| *(dependent types)* |                 |                                       |                        |
+| BOOL'd v            | [BOOL']         | Dependent booleans                    | TODO                   |
+| INTx'd s n v        | [INTx' s n]     | Dependent integers                    | TODO                   |
+| BYTES'd l           | [BYTES']        | Length-indexed byte arrays            | TODO                   |
+| ARRAY'd a l         | [ARRAY' a]      | Length-indexed arrays                 | TODO                   |
+| STRING'd v          | [BYTES']        | Dependent strings                     | TODO                   |
 
-Value Space and Its Combinators
--------------------------------
+Pure Effect
+-----------
+
+TODO.
+
+Linear Effect
+-------------
 
 TODO.
 
@@ -105,12 +110,12 @@ Function Definition & Currying
 
 ```haskell
 -- define a pure value function
-foo3 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8) "id"
-       (\a b c -> a + b + c)
+foo3 = fn @(Maybe U8 -> Maybe U8 -> Maybe U8 -> Maybe U8) "foo3"
+  \a b c -> a + b + c
 
 -- call other pure value function
-call3 = fn @(Maybe U8 -> Maybe U8) "id"
-  (\a -> call foo3 a a a)
+call3 = fn @(Maybe U8 -> Maybe U8) "call3"
+  \a -> call foo3 a a a
 ```
 
 --------------------------------------------------
@@ -136,40 +141,37 @@ TODOs & Future Plans
     - [ ] Maybe
     - [ ] STRING
     - [ ] Tuple, TUPLEn
-    - [ ]  STRUCT
+    - [ ] STRUCT with named fields
   - ABITypeCodec
     - [ ]  Compatibility with the solidity abi-spec
 - yul-dsl
-  - Safety:
-    - [ ] `P'L (v :: Nat) r a`, linearly-safety with data generation versioning tag "v".
   - Value primitives:
     - [ ] `YulAbi{Enc,Dec}`, contracts ABI serialization.
     - [ ] `YulCast`, casting values between value types.
   - Control flow primitives:
     - [ ] `YulMap`, tight loop over an array.
     - [ ] `YulLen`, array length.
-    - [ ] `YulPat`, pattern matching.
-  - Effects:
+    - [ ] `YulNum (Maybe a)`, safe numerical operations.
+  - Non pure operations:
     - [ ] `YulSet, YulSPut`, storage operations.
     - [ ] `YulCall`, external function calls.
-  - Combinators:
-    - [x] `(>.>)` and `(<.<)` operators for the directional morphisms.
   - Utilities
-    - [x] MPOrd class
-    - [x] IfThenElse class
-    - [x] Num instance
     - [-] Show instance
+    - [ ] Pattern matching using type synonyms for `YumNum a => (Maybe a)`
   - Evaluator
-    - [ ] :L: Support all `YulDSL` data constructors.
+    - [ ] Support all `YulDSL` data constructors.
   - Function Gen:
     - [ ] Change the logic to delay code gen until inner layer requires it.
-  - CodeGen core:
-    - [ ] Fn autoId (instead of using yulCatDigest.)
   - Object builder:
     - [ ] dispatcher builder with full dispatcher calldata codec support.
     - [ ] constructor support.
+  - CodeGen core:
+    - [ ] Fn autoId (instead of using yulCatDigest.)
 - yul-dsl-linear-smc
-  - Prelude curation
+  - [ ] `P'L (v :: Nat) r a` and `YulCat'L`, linear-safety with data generation versioning tag "v".
+  - [ ] All operations: `emb'l, use'l, dis'l, dup'l`
+  - [ ] Complete the Num classes
+  - [ ] Prelude curation
 - yol-suite
   - Software distributions:
     - [ ] github dev console
@@ -198,7 +200,6 @@ TODOs & Future Plans
     - Output modes:
       - [x] Show output mode.
       - [x] Yul output mode.
-      - [ ] Haskell diagrams output mode.
     - Compiler Modes:
       - [x] `symbol   :: FnCat a b`, fnMode
       - [x] `object   :: YulObject`, objectMode
@@ -212,7 +213,7 @@ TODOs & Future Plans
     - [ ] Etherscan verification pipeline.
 - drwitch (not planned for the first release)
 
-**Feature Plans**
+**Feature Versions**
 
 - Generate diagrams using Haskell diagrams package.
 - Liquid Haskell integration.

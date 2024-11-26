@@ -44,7 +44,8 @@ library
                     Ethereum.ContractABI
   other-modules:    Internal.Data.Type.Bool
                     Internal.Data.Type.List
-  build-depends:    bytestring >= 0.11,
+  build-depends:    ghc-experimental >= 0.1.0.0,
+                    bytestring >= 0.11,
                     template-haskell >= 2.22.0.0,
                     crypton >= 0.32,
                     memory >= 0.18.0,

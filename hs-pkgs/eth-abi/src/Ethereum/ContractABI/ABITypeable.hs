@@ -20,6 +20,7 @@ module Ethereum.ContractABI.ABITypeable
  , AnyABITypeable (MkAnyABITypeable)
  , AnyABITypeDerivedOf (MkAnyABIDerivedType)
  , abiTypeCanonName, abiTypeCompactName
+ , IsABICoreType
  ) where
 
 -- base
@@ -27,7 +28,7 @@ import           Data.Kind                        (Constraint, Type)
 import           Data.List                        (intercalate)
 --
 import           Ethereum.ContractABI.ABICoreType
-
+import           Internal.Data.Type.Bool          (TypeEq)
 
 -- | Type information for all core and derived contract ABI types.
 class ABITypeable a where
@@ -42,12 +43,14 @@ class ABITypeable a where
   default abiTypeInfo :: ABITypeable (ABITypeDerivedOf a) => [ABICoreType]
   abiTypeInfo = abiTypeInfo @(ABITypeDerivedOf a)
 
+  -- | Convert a value from the extended type to the core type.
   abiToCoreType :: a -> ABITypeDerivedOf a
-  default abiToCoreType :: a ~ ABITypeDerivedOf a => a -> ABITypeDerivedOf a
+  default abiToCoreType :: ABITypeDerivedOf a ~ a => a -> ABITypeDerivedOf a
   abiToCoreType = id
 
+  -- | Convert a value from the core type to the extended type.
   abiFromCoreType :: ABITypeDerivedOf a -> a
-  default abiFromCoreType :: a ~ ABITypeDerivedOf a => ABITypeDerivedOf a -> a
+  default abiFromCoreType :: ABITypeDerivedOf a ~ a => ABITypeDerivedOf a -> a
   abiFromCoreType = id
 
 -- | Existential type of all abi types.
@@ -66,3 +69,7 @@ abiTypeCanonName = intercalate "," (fmap abiCoreTypeCanonName (abiTypeInfo @a))
 -- | A 'abiTypeCanonName' variant that is compact to saving characters.
 abiTypeCompactName :: forall a. ABITypeable a => String
 abiTypeCompactName = intercalate "" (fmap abiCoreTypeCompactName (abiTypeInfo @a))
+
+-- | Test if a 'ABITypeable' is a core type.
+type IsABICoreType :: Type -> Bool
+type IsABICoreType a = TypeEq a (ABITypeDerivedOf a)

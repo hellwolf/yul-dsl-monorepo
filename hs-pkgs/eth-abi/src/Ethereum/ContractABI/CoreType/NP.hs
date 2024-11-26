@@ -1,7 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE LinearTypes         #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-
 {-|
 
 Copyright   : (c) 2024 Miao, ZhiCheng
@@ -91,23 +90,13 @@ instance ABITypeable () where
 -- | ABI typeable tuple.
 instance (ABITypeable a1, ABITypeable a2) => ABITypeable (a1, a2) where
   type instance ABITypeDerivedOf (a1, a2) = NP '[a1, a2]
-  abiToCoreType (a1, a2) = a1 :* a2 :* Nil
-  abiFromCoreType (a1 :* a2 :* Nil) = (a1, a2)
+  abiToCoreType (x1, x2) = x1 :* x2 :* Nil
+  abiFromCoreType (x1 :* x2 :* Nil) = (x1, x2)
 
 instance ABITypeCodec () where
-  abiEncoder = S.put
-  abiDecoder = S.get
 
-instance ( ABITypeable a1, ABITypeable a2
-         , ABITypeCodec a1, ABITypeCodec a2
-         ) => ABITypeCodec (a1, a2) where
-  abiEncoder (x1, x2) = do
-    abiEncoder x1
-    abiEncoder x2
-  abiDecoder = do
-    x1 <- abiDecoder
-    x2 <- abiDecoder
-    pure (x1, x2)
+instance ( ABITypeCodec a1, ABITypeCodec a2
+         ) => ABITypeCodec (a1, a2)
 
 {- ** Show instances -}
 

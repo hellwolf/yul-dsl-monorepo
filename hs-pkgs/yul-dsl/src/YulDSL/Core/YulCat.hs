@@ -229,7 +229,7 @@ instance forall x xs b r eff.
 --   * It is deliberately done so for compactness of the string representation of the 'YulCat'.
 --   * It is meant also for strong equality checking of 'YulCat' used in yul object building.
 instance Show (YulCat eff a b) where
-  show (YulCoerce)         = "coerce" <> abi_type_name @a <> abi_type_name @b
+  show (YulCoerce)         = "coe" <> abi_type_name @a <> abi_type_name @b
   show (YulId)             = "id"
   show (YulSplit)          = "▿" <> abi_type_name @a
   show (YulComp cb ac)     = "(" <> show ac <> ");(" <> show cb <> ")"
@@ -241,7 +241,7 @@ instance Show (YulCat eff a b) where
   show (YulDis)            = "ε" <> abi_type_name @a
   show (YulDup)            = "δ" <> abi_type_name @a
   show (YulEmbed x)        = "{" <> show x <>  "}"
-  show (YulJump cid _)     = "jump " <> cid
+  show (YulJump cid _)     = "jmp " <> cid
   -- show (YulCall c)         = "call " <> show c
   show (YulITE)            = "?" <> abi_type_name @a
   show (YulNot)            = "not"
@@ -253,8 +253,8 @@ instance Show (YulCat eff a b) where
   show (YulNumAbs)         = "abs" <> abi_type_name @a
   show (YulNumNeg)         = "neg" <> abi_type_name @a
   show (YulNumCmp (i,j,k)) = "cmp" <> s i <> s j <> s k where s x = if x == true then "t" else "f"
-  show (YulSGet)           = "sget" <> abi_type_name @a
-  show (YulSPut)           = "sput" <> abi_type_name @a
+  show (YulSGet)           = "get" <> abi_type_name @a
+  show (YulSPut)           = "put" <> abi_type_name @a
 --  show _                   = error "Show YulCat TODO"
 
 instance Show AnyYulCat where

@@ -14,13 +14,14 @@ erc20_balance_of = fn'l "balanceOf" $ uncurry'l @(ADDR -> U256)
   \account -> sget (erc20_balance_storage account)
 
 -- | ERC20 transfer function (no negative balance check for simplicity).
--- erc20_transfer :: Fn (ADDR -> ADDR -> U256 -> BOOL)
-erc20_transfer = fn'l "transfer" $ uncurry'l @(ADDR -> ADDR -> U256 -> BOOL)
-    \from to amount -> const'l to from
-  & \from -> use'l from (call'l erc20_balance_of)
-  & \(from, balance) -> sput (erc20_balance_storage from) (balance - amount)
-  -- (\amount -> passAp to erc20_balance_of & \(to, balance) ->
-  --     sput (erc20_balance_storage to) (balance + amount)) &
+erc20_transfer = fn'pl "transfer" $ uncurry'pl @(ADDR -> ADDR -> U256 -> BOOL)
+  \from to amount -> dup'l (lift'pl amount)
+  & \(amount, amount') -> use'l (lift'pl from) (call'l erc20_balance_of)
+  & \(from, balance1before) -> sput (erc20_balance_storage from) (balance1before - amount)
+  & \balance1After -> use'l (lift'pl to) (call'l erc20_balance_of)
+  & \(to, balance2before) -> sput (erc20_balance_storage to) (balance2before - amount')
+  & \balance2After -> dis'l balance1After
+  & flip ignore (dis'l balance2After)
   & emb'l true
 
 object = mkYulObject "ERC20" emptyCtor

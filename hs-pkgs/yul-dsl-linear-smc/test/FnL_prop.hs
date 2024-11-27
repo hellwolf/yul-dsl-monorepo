@@ -24,18 +24,13 @@ foo4 = fn'l "foo4" $
   uncurry'l @(U256 -> U256 -> U256 -> U256 -> U256)
   \x1 x2 x3 x4 -> x1 + x2 + x3 + x4
 
--- bar3 = fn'l "bar3" $
---   uncurry'p'l @(U256 -> U256 -> U256 -> U256)
---   \x1 x2 x3 -> MkYulCat'L do
---     \xs ->
---       let x1' = lift'l x1 xs
---           x2' = lift'l x2 xs
---           x3' = lift'l x3 xs
---       in x1' + x1' + x2' + x3'
+bar3 = fn'pl "bar3" $
+  uncurry'pl @(U256 -> U256 -> U256 -> U256)
+  \x1 x2 x3 -> lift'pl x1 + lift'pl x2 + lift'pl x3
 
 fooSPut = fn'l "fooSPut" $
   uncurry'l @(ADDR -> U256 -> ())
-   \addr val -> dis'l (sput addr val)
+   \addr val -> dis'l (sput addr val id)
 
 call0 = fn'l "call0" $
   uncurry'l @(() -> U256)

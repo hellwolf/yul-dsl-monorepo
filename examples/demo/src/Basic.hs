@@ -2,17 +2,6 @@
 
 module Basic where
 
-------------------------------------------------------------------------------------------------------------------------
--- Trivial Diagrams
-------------------------------------------------------------------------------------------------------------------------
-
-
-const_42 :: Fn (MkLinearEffect 0) (U256)
-const_42 = MkFn (MkFnCat "const_42" $ decode (emb'l (fromInteger 42)))
-
-disFn :: YulObj a => PureFn (a -> ())
-disFn = MkFn (MkFnCat "disFn" YulDis)
-
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
 foo1 = fn'l "foo1" $
   uncurry'l @(U256 -> U256) \x ->

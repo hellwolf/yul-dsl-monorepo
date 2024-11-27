@@ -1,7 +1,7 @@
 Yolc - A Safe, Expressive, Fun Language for Ethereum
 ====================================================
 
-The main motivation behind Yolc is strike a balance between these values for building Ethereum smart contracts:
+The main motivation behind Yolc is to strike a balance between these values for building Ethereum smart contracts:
 
 *Safe*
 

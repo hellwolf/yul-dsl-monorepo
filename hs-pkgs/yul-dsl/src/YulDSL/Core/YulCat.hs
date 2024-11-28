@@ -133,7 +133,7 @@ data YulCat (eff :: k) a b where
   -- YulVal Primitives
   --
   -- | Embed a constant value.
-  YulEmbed :: forall eff a r. YulO2 a r => a -> YulCat eff r a
+  YulEmbed :: forall eff a b. YulO2 a b => a -> YulCat eff b a
   -- * Boolean Operations
   YulNot :: YulCat eff BOOL BOOL
   YulAnd :: YulCat eff (BOOL, BOOL) BOOL

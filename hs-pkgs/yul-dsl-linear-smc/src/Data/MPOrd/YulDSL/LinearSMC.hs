@@ -3,7 +3,7 @@
 module Data.MPOrd.YulDSL.LinearSMC where
 
 -- linear-base
-import           Prelude.Linear (Consumable, lseq)
+import           Prelude.Linear (Bool (False, True), Consumable, lseq)
 -- yul-dsl
 import           YulDSL.Core
 

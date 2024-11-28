@@ -4,16 +4,16 @@
 module Data.Num.YulDSL.LinearSMC where
 
 -- base
-import qualified Prelude                  as Prelude.Base
+import qualified Prelude                             as Prelude.Base
 -- linear-base
 import           Prelude.Linear
-import qualified Unsafe.Linear            as UnsafeLinear
+import qualified Unsafe.Linear                       as UnsafeLinear
 -- linear-smc
-import           Control.Category.Linear  (encode, merge)
+import           Control.Category.Linear             (encode, merge)
 -- yul-dsl
 import           YulDSL.Core
 --
-import           YulDSL.Effects.LinearSMC
+import           YulDSL.Effects.LinearSMC.LinearPort
 
 
 {- * FromInteger instances -}
@@ -38,14 +38,14 @@ instance (YulObj r, YulNum a) => AddIdentity (YulCat eff r a) where
 instance (YulObj r, YulNum a) => AdditiveGroup (YulCat eff r a) where
   negate a = YulNumNeg <.< a
 
-{- * Num instances for (P'L v r) -}
+{- * Num instances for (P'V v r) -}
 
-instance (YulNum a, YulObj r) => Additive (P'L v r a) where
+instance (YulNum a, YulObj r) => Additive (P'V v r a) where
   a + b = encode YulNumAdd (merge (a, b))
 
-instance (YulNum a, YulObj r) => AddIdentity (P'L v r a) where
+instance (YulNum a, YulObj r) => AddIdentity (P'V v r a) where
   -- Note: uni-port is forbidden in linear-smc, but linear-base AdditiveGroup requires this instance.
   zero = error "unit is undefined for linear ports"
 
-instance (YulNum a, YulObj r) => AdditiveGroup (P'L v r a) where
+instance (YulNum a, YulObj r) => AdditiveGroup (P'V v r a) where
   negate = encode YulNumNeg

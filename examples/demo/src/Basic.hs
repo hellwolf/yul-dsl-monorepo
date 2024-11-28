@@ -5,14 +5,14 @@ module Basic where
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
 foo1 = fn'l "foo1" $
   uncurry'l @(U256 -> U256) \x ->
-  dup'l x & \(x, x') -> x + x'
+  use'l x id & \(x, x') -> x + x'
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns true.
 --
 --   Note: you can create any number of "unit" signals by adding '()' to the input list.
 foo2 = fn'l "foo2" $
   uncurry'l @(U256 -> U256 -> U256)
-  \x1 x2 -> dup'l x2 &
+  \x1 x2 -> use'l x2 id &
   \(x2, x2') -> x1 + (x2 + x2')
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
@@ -26,10 +26,10 @@ foo3 = fn'l "foo3" $
 rangeSum'l = fn'l "rangeSumL" $
   uncurry'l @(U256 -> U256 -> U256 -> U256)
   \from step until -> mkUnit from &
-  \(from, u) -> dup'l from &
-  \(from, from') -> dup'l step &
-  \(step, step') -> dup'l until &
-  \(until, until') -> dup'l (from + step) &
+  \(from, u) -> use'l from id &
+  \(from, from') -> use'l step id &
+  \(step, step') -> use'l until id &
+  \(until, until') -> use'l (from + step) id &
   \(j, j') -> from' + if j <= until
                       then call'l rangeSum'l j' step' until'
                       else emb'l 0 u

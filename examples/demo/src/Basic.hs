@@ -18,9 +18,9 @@ foo2 = fn'l "foo2" $
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
 foo3 = fn'l "foo3" $
   uncurry'l @(U256 -> U256 -> (BOOL, U256))
-  \x1 x2 -> sputAt (constAddr 0xdeadbeef) (x1 + x2) &
-  \y -> mkUnit y &
-  \(y, u) -> merge (emb'l true u, y)
+  \x1 x2 -> sputAt (constAddr 0xdeadbeef) (x1 + x2)
+  \y -> mkUnit y
+  & \(y, u) -> merge (emb'l true u, y)
 
 -- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
 rangeSum'l = fn'l "rangeSumL" $
@@ -47,35 +47,6 @@ rangeSum'v2 = go
     go = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV2" \from step until ->
       let j = from + step
       in from + if j <=? until then call'p go j step until else emb'p 0
-
--- idVar :: Fn U256 U256
--- idVar = lfn "idVar" \a -> a' + a'
---   where a' = mkVar a
---   -- mkUnit a & \(a, u) ->
---   -- unVar (mkVar a) u
-
--- rangeSum' :: Fn (U256 :* U256 :* U256) U256
--- rangeSum' = lfn "rangeSum1" \(a :* b :* c) ->
---   mkUnit a & \(a, u) ->
---   let a' = mkVar47G a
---       b' = mkVar b
---       c' = mkVar c
---       d = a' + b'
---   in unVar d u
---   -- in ifThenElse (d <? c) (apfun rangeSum' (d :* b :* c)) (zero)
-
---  enumFromThenTo a b c
-
--- safeHead :: Fn [U256] U256
--- safeHead = lfn "safeHead" \xs -> head xs
-
--- safeHead :: Fn ([U256] :* ()) (One U256)
--- safeHead = lfn "safeHead" \(xs :* ()) -> yulCoerce (head xs)
-  -- where go :: forall r. YulObj r => Uint256P r ⊸ Uint256P r ⊸ Uint256P r
-  --       go x1 x2 = copy x1 & split & \(x1, x1') ->
-  --         copy x2 & split & \(x2, x2') ->
-  --         ifThenElse (x1' ?== x2') (yulCoerce x1) (yulCoerce x2)
-  --         -- (copy x2 & split & \(x2, x2') -> go x2 x2')
 
 object = mkYulObject "Basic" emptyCtor
          [ externalFn foo1

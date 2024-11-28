@@ -4,7 +4,8 @@
 module YulDSL.Effects.LinearSMC where
 
 -- base
-import           GHC.TypeLits                                  (type (+))
+import           GHC.TypeError                                 (Assert, TypeError)
+import           GHC.TypeLits                                  (ErrorMessage (Text), type (+), type (<=))
 -- linear-base
 import           Prelude.Linear                                hiding (Eq (..), Ord (..))
 import qualified Unsafe.Linear                                 as UnsafeLinear
@@ -42,11 +43,16 @@ type instance NonPureEffect (PureInputLinearOutput vd) = True
 type instance NonPureEffect (LinearInputOutput vd) = True
 
 -- | Various types of linear effects for the linearly port API.
-data PortEffect = PurePort       -- ^ Pure port that does not need to be versioned
-                | LinearPort Nat -- ^ Linearly versioned port
+data PortEffect = PurePort         -- ^ Pure port that does not need to be versioned
+                | LinearPort Nat   -- ^ Linearly versioned port
+                | TerminalPort Nat -- ^ Termination port
 
 type instance NonPureEffect PurePort = False
 type instance NonPureEffect (LinearPort v) = True
+type family IsNotTerminalPort (a :: PortEffect) :: Bool where
+  IsNotTerminalPort (TerminalPort _) = False
+  IsNotTerminalPort _ = True
+type AssertNotTerminalPort a = Assert (IsNotTerminalPort a) (TypeError (Text "Terminal port reached"))
 
 -- | Linear port of yul categories with linear effect kind.
 type P'xL (eff :: PortEffect) = P (YulCat eff)
@@ -56,6 +62,10 @@ type P'L v = P'xL (LinearPort v)
 
 -- | Linear port of yul category with pure data.
 type P'PL = P'xL PurePort
+
+type P'TL v = P'xL (TerminalPort v)
+
+type CPS'xL ie vn r a b = (P'xL ie r b ⊸ P'TL vn r b) ⊸ P'TL vn r b
 
 -- | Yul category port diagram as a data constructor, otherwise type synonym cannot be partial for @YulCat'L r a@.
 data YulCat'L v1 vn r a b where
@@ -113,36 +123,36 @@ encode'l cat x = -- ghc can infer it; annotating for readability and double chec
 -- Linear port operations
 --
 
-emb'l :: forall a d eff r. YulO3 a d r
+emb'l :: forall a d eff r. (AssertNotTerminalPort eff, YulO3 a d r)
         => a -> (P'xL eff r d ⊸ P'xL eff r a)
 emb'l a = encode (YulEmbed a) . discard
 
-dup'l :: forall a eff r. YulO2 a r
+dup'l :: forall a eff r. (AssertNotTerminalPort eff, YulO2 a r)
       => P'xL eff r a ⊸ (P'xL eff r a, P'xL eff r a)
 dup'l = split . copy
 
-use'l :: forall a b eff r. YulO3 a b r
+use'l :: forall a b eff r. (AssertNotTerminalPort eff, YulO3 a b r)
       => P'xL eff r a ⊸ (P'xL eff r a ⊸ P'xL eff r b) ⊸ (P'xL eff r a, P'xL eff r b)
 use'l a f = dup'l a & \(a', a'') -> (a', f a'')
 
-dis'l :: forall a eff r. YulO2 a r
+dis'l :: forall a eff r. (AssertNotTerminalPort eff, YulO2 a r)
       => P'xL eff r a ⊸ P'xL eff r ()
 dis'l = discard
 
-const'l :: forall a b eff r. YulO3 a b r
+const'l :: forall a b eff r. (AssertNotTerminalPort eff, YulO3 a b r)
       => P'xL eff r a ⊸ P'xL eff r b ⊸ P'xL eff r a
 const'l = flip (ignore . discard)
 
-coerce'l :: forall a b eff r. (YulO3 a b r, ABITypeCoercible a b)
+coerce'l :: forall a b eff r. (AssertNotTerminalPort eff, YulO3 a b r, ABITypeCoercible a b)
          => P'xL eff r a ⊸ P'xL eff r b
 coerce'l = encode YulCoerce
 
-cons'l :: forall x xs eff r. YulO3 x (NP xs) r
+cons'l :: forall x xs eff r. (AssertNotTerminalPort eff, YulO3 x (NP xs) r)
        => P'xL eff r x ⊸ P'xL eff r (NP xs) ⊸ P'xL eff r (NP (x:xs))
 cons'l x xs = coerce'l (merge (x, xs))
 
 --
--- UncurryingNP instances
+-- Operations for LinearInputOutput
 --
 
 instance forall x v1 vn r a.
@@ -171,23 +181,6 @@ instance forall x xs b g v1 vn r a.
                          xxs2
     )
 
---
--- Operations for LinearInputOutput
---
-
-instance forall x v1 vn r a.
-         ( YulO3 x r a
-         , LiftFunction (CurryNP (NP '[]) x) (P'L v1 r) (P'L vn r) One ~ P'L vn r x
-         ) => CurryingNP '[] x (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) One where
-  curryingNP cb = cb (MkYulCat'L (\a -> coerce'l (discard a)))
-
-instance forall x xs b r a v1 vn.
-         ( YulO5 x (NP xs) b r a
-         , CurryingNP xs b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) One
-         ) => CurryingNP (x:xs) b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) One where
-  curryingNP cb x = curryingNP @xs @b @(P'L v1 r) @(P'L vn r) @(YulCat'L v1 v1 r a) @One
-                    (\(MkYulCat'L fxs) -> cb (MkYulCat'L (\a -> (cons'l x (fxs a)))))
-
 uncurry'l :: forall f xs b r vd m1 m1b m2 m2b.
              ( YulO3 (NP xs) b r
              , xs ~ UncurryNP'Fst f
@@ -215,6 +208,19 @@ fn'l :: forall f xs b vd.
      -> (forall r. YulObj r => P'L 0 r (NP xs) ⊸ P'L vd r b)
      -> Fn (LinearInputOutput vd) (CurryNP (NP xs) b)
 fn'l fid f = MkFn (MkFnCat fid (decode'l f))
+
+instance forall x v1 vn r a.
+         ( YulO3 x r a
+         , LiftFunction (CurryNP (NP '[]) x) (P'L v1 r) (P'L vn r) One ~ P'L vn r x
+         ) => CurryingNP '[] x (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) One where
+  curryingNP cb = cb (MkYulCat'L (\a -> coerce'l (discard a)))
+
+instance forall x xs b r a v1 vn.
+         ( YulO5 x (NP xs) b r a
+         , CurryingNP xs b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) One
+         ) => CurryingNP (x:xs) b (P'L v1 r) (P'L vn r) (YulCat'L v1 v1 r a) One where
+  curryingNP cb x = curryingNP @xs @b @(P'L v1 r) @(P'L vn r) @(YulCat'L v1 v1 r a) @One
+                    (\(MkYulCat'L fxs) -> cb (MkYulCat'L (\a -> (cons'l x (fxs a)))))
 
 call'l :: forall f x xs b g' r v1 vd vn.
           ( YulO4 x (NP xs) b r
@@ -310,16 +316,16 @@ sget :: forall a r v. (YulO2 a r, ABIWordValue a)
      => P'L v r ADDR ⊸ P'L v r a
 sget = encode YulSGet
 
-sput :: forall a b r v1 vd. (YulO3 a b r, ABIWordValue a)
-     => P'L v1 r ADDR ⊸ P'L v1 r a ⊸ (P'L (v1 + 1) r a ⊸ P'L (v1 + 1 + vd) r b) ⊸ P'L (v1 + 1 + vd) r b
+sput :: forall a b r v1 vd. (YulO3 a b r, ABIWordValue a, v1 + 1 <= vd)
+     => P'L v1 r ADDR ⊸ P'L v1 r a ⊸ (P'L (v1 + 1) r a ⊸ P'L vd r b) ⊸ P'L vd r b
 sput to x f = dup'l x
   & \(x', x'') -> encode YulSPut (merge (to, x')) &
   -- increase port version by one
   \u -> UnsafeLinear.coerce @(P'L v1 r a) @(P'L (v1 + 1) r a) (ignore u x'')
   & f
 
-sputAt :: forall a b r v1 vd. (YulO3 a b r, ABIWordValue a)
-       => ADDR -> P'L v1 r a ⊸ (P'L (v1 + 1) r a ⊸ P'L (v1 + 1 + vd) r b) ⊸ P'L (v1 + 1 + vd) r b
+sputAt :: forall a b r v1 vd. (YulO3 a b r, ABIWordValue a, v1 + 1 <= vd)
+       => ADDR -> P'L v1 r a ⊸ (P'L (v1 + 1) r a ⊸ P'L vd r b) ⊸ P'L vd r b
 sputAt to x f = mkUnit x & \(x', u) -> emb'l to u & \a -> sput a x' f
 
 --

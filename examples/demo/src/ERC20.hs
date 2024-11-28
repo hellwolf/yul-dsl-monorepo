@@ -15,14 +15,19 @@ erc20_balance_of = fn'l "balanceOf" $ uncurry'l @(ADDR -> U256)
 
 -- | ERC20 transfer function (no negative balance check for simplicity).
 erc20_transfer = fn'pl "transfer" $ uncurry'pl @(ADDR -> ADDR -> U256 -> BOOL)
-  \from to amount -> dup'l (lift'pl amount)
+  \from to amount -> dup'l amount
   & \(amount, amount') -> use'l (lift'pl from) (call'l erc20_balance_of)
-  & \(from, balance1before) -> sput (erc20_balance_storage from) (balance1before - amount)
-  & \balance1After -> use'l (lift'pl to) (call'l erc20_balance_of)
-  & \(to, balance2before) -> sput (erc20_balance_storage to) (balance2before - amount')
-  & \balance2After -> dis'l balance1After
-  & flip ignore (dis'l balance2After)
-  & emb'l true
+  & \(from, balance1before) -> sput (erc20_balance_storage from) (balance1before - (lift'pl amount))
+  \balance1After -> use'l (ignore (dis'l balance1After) (lift'pl to)) (call'l erc20_balance_of)
+  & \(to, balance2before) -> sput (erc20_balance_storage to) (balance2before - (lift'pl amount'))
+  (emb'l true)
+  -- & \(amount, amount') -> lift'pl from
+  -- & \ from -> lift'pl to
+  -- & \ to -> use'l from (call'l erc20_balance_of)
+  -- & \(from, balance1before) -> sput (erc20_balance_storage from) (balance1before - (lift'pl amount))
+  -- \balance1After -> use'l (ignore (dis'l balance1After) to) (call'l erc20_balance_of)
+  -- & \(to, balance2before) -> sput (erc20_balance_storage to) (balance2before - (lift'pl amount'))
+  -- (emb'l true)
 
 object = mkYulObject "ERC20" emptyCtor
   [ -- externalFn erc20_balance_of FIXME

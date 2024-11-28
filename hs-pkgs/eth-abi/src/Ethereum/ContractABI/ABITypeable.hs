@@ -26,9 +26,9 @@ module Ethereum.ContractABI.ABITypeable
 -- base
 import           Data.Kind                        (Constraint, Type)
 import           Data.List                        (intercalate)
+import           Data.Type.Equality               (type (==))
 --
 import           Ethereum.ContractABI.ABICoreType
-import           Internal.Data.Type.Bool          (TypeEq)
 
 -- | Type information for all core and derived contract ABI types.
 class ABITypeable a where
@@ -72,4 +72,4 @@ abiTypeCompactName = intercalate "" (fmap abiCoreTypeCompactName (abiTypeInfo @a
 
 -- | Test if a 'ABITypeable' is a core type.
 type IsABICoreType :: Type -> Bool
-type IsABICoreType a = TypeEq a (ABITypeDerivedOf a)
+type IsABICoreType a = a == (ABITypeDerivedOf a)

@@ -45,10 +45,6 @@ type P'V v = P'x (VersionedPort v)
 -- Note: Yul ports are defined above as "P'*", and a "yul port diagram" is a linear function from input yul port to a
 -- output yul port.
 
--- | Safe operation that lifts a pure yul port to a versioned yul port.
-lift'pl :: forall a r v. YulO2 a r => P'P r a ⊸ P'V v r a
-lift'pl = UnsafeLinear.coerce
-
 -- | Embed a free value to a yul port diagram that discards any input yul ports.
 emb'l :: forall a b eff r. YulO3 a b r => a -> (P'x eff r b ⊸ P'x eff r a)
 emb'l a = encode (YulEmbed a) . discard

@@ -3,9 +3,10 @@ module ObjectDispatcherTests where
 foo1 = fn'l "foo1"
   -- FIXME use curry'pl
   (uncurry'l @(U256 -> BOOL)
-    \x -> use'l x id
+    \x -> runLT $
+    dup2'l x
     & \(x1, x2) -> sputAt (constAddr 0xdeadbeef) (x1 + x2)
-    (emb'l true)
+    |> fin'emb true
   )
 
 object :: YulObject

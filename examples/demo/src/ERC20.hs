@@ -11,23 +11,20 @@ erc20_balance_storage account =
 
 -- | ERC20 balance of the account.
 erc20_balance_of = fn'l "balanceOf" $ uncurry'l @(ADDR -> U256)
-  \account -> sget (erc20_balance_storage account)
+  \account -> runLT $ sget (erc20_balance_storage account) |= fin'with
 
 -- | ERC20 transfer function (no negative balance check for simplicity).
 erc20_transfer = fn'pl "transfer" $ uncurry'pl @(ADDR -> ADDR -> U256 -> BOOL)
-  \from to amount -> use'l amount id
-  & \(amount, amount') -> use'l (lift'l from) (call'l erc20_balance_of)
-  & \(from, balance1before) -> sput (erc20_balance_storage from) (balance1before - (lift'l amount))
-  \balance1After -> use'l (ignore (dis'l balance1After) (lift'l to)) (call'l erc20_balance_of)
-  & \(to, balance2before) -> sput (erc20_balance_storage to) (balance2before - (lift'l amount'))
-  (emb'l true)
-  -- & \(amount, amount') -> lift'l from
-  -- & \ from -> lift'l to
-  -- & \ to -> use'l from (call'l erc20_balance_of)
-  -- & \(from, balance1before) -> sput (erc20_balance_storage from) (balance1before - (lift'l amount))
-  -- \balance1After -> use'l (ignore (dis'l balance1After) to) (call'l erc20_balance_of)
-  -- & \(to, balance2before) -> sput (erc20_balance_storage to) (balance2before - (lift'l amount'))
-  -- (emb'l true)
+  \from to amount -> runLT $
+     dup2'l amount
+  &  \(amount, amount') -> use'l (lift'pl from) (call'l erc20_balance_of)
+  &+ \(from, balance1before) -> sput (erc20_balance_storage from) (balance1before - (lift'pl amount))
+
+  |> \x -> dis'l x
+  &- use'l (lift'pl to) (call'l erc20_balance_of)
+  &- \(to, balance2before) -> sput (erc20_balance_storage to) (balance2before - (lift'pl amount'))
+
+  |> fin'emb true
 
 object = mkYulObject "ERC20" emptyCtor
   [ -- externalFn erc20_balance_of FIXME

@@ -175,7 +175,7 @@ instance forall x vd r a.
          ( YulO3 x r a
          , LiftFunction x (P'P r) (P'V vd r) One ~ P'V vd r x
          ) => UncurryingNP (x) '[] x (P'P r) (P'V vd r) (YulCat'LPP r a) (YulCat'LPV vd r a) One where
-  uncurryingNP x (MkYulCat'LPP h) = MkYulCat'LPV (\a -> h a &                 -- :: P'V v1 (NP '[])
+  uncurryingNP x (MkYulCat'LPP h) = MkYulCat'LPV (\a -> h a &                -- :: P'V v1 (NP '[])
                                                        coerce'l @_ @() &     -- :: P'V v1 ()
                                                        UnsafeLinear.coerce & -- :: P'V vn ()
                                                        \u -> ignore u x)     -- :: P'V vn x

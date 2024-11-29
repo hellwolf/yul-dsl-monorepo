@@ -30,7 +30,9 @@ bar3 = fn'pl "bar3" $
 
 fooSPut = fn'l "fooSPut" $
   uncurry'l @(ADDR -> U256 -> ())
-   \addr val -> discard (sput addr val id)
+   \addr val -> runLT $
+      sput addr val
+   |> fin'dis
 
 call0 = fn'l "call0" $
   uncurry'l @(() -> U256)

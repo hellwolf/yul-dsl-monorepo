@@ -5,34 +5,24 @@ module Basic where
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
 foo1 = fn'l "foo1" $
   uncurry'l @(U256 -> U256) \x ->
-  use'l x id & \(x, x') -> x + x'
+  dup2'l x & \(x, x') -> x + x'
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns true.
 --
 --   Note: you can create any number of "unit" signals by adding '()' to the input list.
 foo2 = fn'l "foo2" $
   uncurry'l @(U256 -> U256 -> U256)
-  \x1 x2 -> use'l x2 id &
+  \x1 x2 -> dup2'l x2 &
   \(x2, x2') -> x1 + (x2 + x2')
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
 foo3 = fn'l "foo3" $
   uncurry'l @(U256 -> U256 -> (BOOL, U256))
-  \x1 x2 -> sputAt (constAddr 0xdeadbeef) (x1 + x2)
-  \y -> mkUnit y
+  \x1 x2 -> runLT $
+  sputAt (constAddr 0xdeadbeef) (x1 + x2)
+  |> \y -> mkUnit y
   & \(y, u) -> merge (emb'l true u, y)
-
--- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
-rangeSum'l = fn'l "rangeSumL" $
-  uncurry'l @(U256 -> U256 -> U256 -> U256)
-  \from step until -> mkUnit from &
-  \(from, u) -> use'l from id &
-  \(from, from') -> use'l step id &
-  \(step, step') -> use'l until id &
-  \(until, until') -> use'l (from + step) id &
-  \(j, j') -> from' + if j <= until
-                      then call'l rangeSum'l j' step' until'
-                      else emb'l 0 u
+  & fin'with
 
 -- | "rangeSum" implemented in a value function
 rangeSum'v1 = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV1"
@@ -40,6 +30,20 @@ rangeSum'v1 = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV1"
                       in from + if j <= until
                                 then call'p rangeSum'v1 j step until
                                 else emb'p 0
+
+-- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
+--
+-- FIXME: call the pure version of rangeSum instead
+rangeSum'l = fn'l "rangeSumL" $
+  uncurry'l @(U256 -> U256 -> U256 -> U256)
+  \from step until -> mkUnit from &
+  \(from, u) -> dup2'l from &
+  \(from, from') -> dup2'l step &
+  \(step, step') -> dup2'l until &
+  \(until, until') -> dup2'l (from + step) &
+  \(j, j') -> from' + if j <= until
+                      then call'l rangeSum'l j' step' until'
+                      else emb'l 0 u
 
 -- | "rangeSum" implemented in a value function, and a locally scoped function
 rangeSum'v2 = go

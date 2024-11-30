@@ -49,6 +49,7 @@ library
                     Data.MPOrd.YulDSL.LinearSMC
                     Data.Num.YulDSL.LinearSMC
                     YulDSL.Effects.LinearSMC.LinearPort
+                    YulDSL.Effects.LinearSMC.LinearYulCat
                     YulDSL.Effects.LinearSMC.LinearFn
                     YulDSL.Effects.LinearSMC.LinearPipeline
                     YulDSL.Effects.LinearSMC.LinearThread

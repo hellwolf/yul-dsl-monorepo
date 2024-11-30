@@ -3,14 +3,13 @@ module YulDSL.Effects.LinearSMC.LinearPort
     PortEffect (PurePort, VersionedPort)
   , P'x, P'V, P'P
     -- $general_ops
-  , lift'pl, emb'l, const'l, dup2'l
+  , emb'l, const'l, dup2'l
     -- $abi_ops
   , coerce'l, cons'l, uncons'l
     -- $linear_base_instances
   ) where
 -- linear-base
 import           Prelude.Linear
-import qualified Unsafe.Linear                                 as UnsafeLinear
 -- linear-smc
 import           Control.Category.Constrained.YulDSL.LinearSMC ()
 import           Control.Category.Linear
@@ -88,5 +87,8 @@ instance (YulObj r, YulNum a) => MPOrd (P'x eff r a) (P'x eff r BOOL) where
   a >= b = encode (YulNumCmp (false, true , true )) (merge (a, b))
 
 -- | 'IfThenElse' instance for the yul ports.
+--
+-- FIXME, this should use pattern matching and built-in Bool type; otherwise the linearity of the branches are not
+-- respected.
 instance YulO2 a r => IfThenElse (P'x eff r BOOL) (P'x eff r a) where
   ifThenElse c a b = encode YulITE (merge(c, merge(a, b)))

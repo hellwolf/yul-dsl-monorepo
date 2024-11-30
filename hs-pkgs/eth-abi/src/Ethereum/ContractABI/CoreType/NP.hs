@@ -168,8 +168,9 @@ class UncurryingNP f (xs :: [Type]) b
                   , UncurryNP'Snd f ~ b
                   -- rewrite the second lift function into its one-arity form
                   , LiftFunction (NP xs -> b) m2 m2b p ~ (m2 (NP xs) %p-> m2b b)
-                  ) => LiftFunction           f  m1 m1b p  -- ^ from this lifted function
-                  %p-> LiftFunction (NP xs -> b) m2 m2b p  -- ^ to this lifted function
+                  )
+               => LiftFunction           f  m1 m1b p  -- ^ from this lifted function
+             %p-> LiftFunction (NP xs -> b) m2 m2b p  -- ^ to this lifted function
 
 -- | Currying a function of @NP xs@ to @b@.
 class CurryingNP (xs :: [Type]) b
@@ -180,5 +181,6 @@ class CurryingNP (xs :: [Type]) b
                 ( CurryNP (NP xs) b ~ f
                 -- rewrite the first lift function into its one-arity form
                 , LiftFunction (NP xs -> b) m2 mb p ~ (m2 (NP xs) %p-> mb b)
-                ) => LiftFunction (NP xs -> b) m2 mb p -- ^ from this lifted function
-                %p-> LiftFunction           f  m1 mb p -- ^ to this lifted function
+                )
+             => LiftFunction (NP xs -> b) m2 mb p -- ^ from this lifted function
+           %p-> LiftFunction           f  m1 mb p -- ^ to this lifted function

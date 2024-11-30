@@ -18,9 +18,9 @@ foo2 = fn'l "foo2" $
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
 foo3 = fn'l "foo3" $
   uncurry'l @(U256 -> U256 -> (BOOL, U256))
-  \x1 x2 -> runLT $
+  \x1 x2 -> startLTM $
   sputAt (constAddr 0xdeadbeef) (x1 + x2)
-  |> \y -> mkUnit y
+  &+ \y -> mkUnit y
   & \(y, u) -> merge (emb'l true u, y)
   & fin'with
 

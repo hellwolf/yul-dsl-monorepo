@@ -1,6 +1,7 @@
-{-# OPTIONS_GHC -Wno-missing-signatures #-}
-
 module Basic where
+
+import qualified Control.LinearVersionedMonad as LVM
+import           Prelude.YulDSL
 
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
 foo1 = fn'l "foo1" $
@@ -16,13 +17,11 @@ foo2 = fn'l "foo2" $
   \(x2, x2') -> x1 + (x2 + x2')
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
-foo3 = fn'l "foo3" $
-  uncurry'l @(U256 -> U256 -> (BOOL, U256))
-  \x1 x2 -> startLTM $
-  sputAt (constAddr 0xdeadbeef) (x1 + x2)
-  &+ \y -> mkUnit y
-  & \(y, u) -> merge (emb'l true u, y)
-  & fin'with
+foo3 = fn'l "foo3" $ uncurry'l @(U256 -> U256 -> (BOOL, U256)) \x1 x2 -> runYulMonad $ LVM.do
+  val <- sputAt (constAddr 0xdeadbeef) (x1 + x2)
+  mkUnit val
+         & \(val, u) -> merge (emb'l true u, val)
+                        & fin'with
 
 -- | "rangeSum" implemented in a value function
 rangeSum'v1 = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV1"

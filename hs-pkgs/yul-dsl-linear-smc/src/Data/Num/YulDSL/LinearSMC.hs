@@ -4,16 +4,16 @@
 module Data.Num.YulDSL.LinearSMC where
 
 -- base
-import qualified Prelude                             as Prelude.Base
+import qualified Prelude                          as Prelude.Base
 -- linear-base
 import           Prelude.Linear
-import qualified Unsafe.Linear                       as UnsafeLinear
+import qualified Unsafe.Linear                    as UnsafeLinear
 -- linear-smc
-import           Control.Category.Linear             (encode, merge)
+import           Control.Category.Linear          (encode, merge)
 -- yul-dsl
 import           YulDSL.Core
 --
-import           YulDSL.Effects.LinearSMC.LinearPort
+import           YulDSL.Effects.LinearSMC.YulPort
 
 
 {- * FromInteger instances -}

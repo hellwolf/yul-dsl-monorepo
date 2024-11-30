@@ -14,8 +14,8 @@ import           Prelude.Linear
 -- yul-dsl
 import           YulDSL.Core
 --
-import           YulDSL.Effects.LinearSMC.LinearPort
 import           YulDSL.Effects.LinearSMC.LinearYulCat
+import           YulDSL.Effects.LinearSMC.YulPort
 
 
 --

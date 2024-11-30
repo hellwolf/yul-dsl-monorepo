@@ -29,29 +29,30 @@ common basic-options
     default-language:     GHC2024
     ghc-options:          -Wall
                           -Wunused-packages
-    default-extensions:   TypeFamilies
-                          UnicodeSyntax
+    default-extensions:   UnicodeSyntax
                           BlockArguments
+                          QualifiedDo
                           ImpredicativeTypes
                           LinearTypes
-                          RequiredTypeArguments
     build-depends:        base >= 4.20.0.0 && < 666
 
 library
   import:             basic-options
   default-extensions: NoImplicitPrelude
-  hs-source-dirs:   src
+                      TypeFamilies
+                      RequiredTypeArguments
+  hs-source-dirs:     src
   build-depends:    constraints >= 0.13,
                     linear-base >= 0.3.1,
                     linear-smc >= 2.2.3,
                     yul-dsl
   exposed-modules:  Control.Category.Constrained.YulDSL.LinearSMC
+                    Control.LinearVersionedMonad
                     Data.MPOrd.YulDSL.LinearSMC
                     Data.Num.YulDSL.LinearSMC
-                    YulDSL.Effects.LinearSMC.LinearPort
+                    YulDSL.Effects.LinearSMC.YulPort
                     YulDSL.Effects.LinearSMC.LinearYulCat
                     YulDSL.Effects.LinearSMC.LinearFn
-                    YulDSL.Effects.LinearSMC.LinearPipeline
                     YulDSL.Effects.LinearSMC.LinearThread
                     YulDSL.Effects.LinearSMC
                     Prelude.YulDSL

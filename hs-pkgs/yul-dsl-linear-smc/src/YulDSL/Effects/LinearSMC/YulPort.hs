@@ -1,4 +1,4 @@
-module YulDSL.Effects.LinearSMC.LinearPort
+module YulDSL.Effects.LinearSMC.YulPort
   ( -- $linear_port_defs
     PortEffect (PurePort, VersionedPort)
   , P'x, P'V, P'P

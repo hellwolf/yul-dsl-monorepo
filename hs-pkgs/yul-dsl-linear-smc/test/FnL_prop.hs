@@ -1,14 +1,12 @@
-{-# LANGUAGE QualifiedDo #-}
 module FnL_prop where
 
 -- hspec
 import           Test.Hspec
 --
-import           Prelude                               ()
+import           Prelude                      ()
 import           Prelude.YulDSL
 
-import qualified YulDSL.Effects.LinearSMC.LinearThread as LT
-import           YulDSL.Effects.LinearSMC.LinearThread
+import qualified Control.LinearVersionedMonad as LVM
 
 foo0 = fn'l "foo0" $
   uncurry'l @(() -> U256) (emb'l 42)
@@ -28,23 +26,13 @@ foo4 = fn'l "foo4" $
   uncurry'l @(U256 -> U256 -> U256 -> U256 -> U256)
   \x1 x2 x3 x4 -> x1 + x2 + x3 + x4
 
-bar3 = fn'pl "bar3" $
-  uncurry'pl @(U256 -> U256 -> U256 -> U256)
-  \x1 x2 x3 -> startLTM $
-  lift'l x1
-  &+ \x1' -> lift'l x2
-  &+ \x2' -> lift'l x3
-  &+ \x3' -> fin'with (x1' + x2' + x3')
+bar3 = fn'pl "bar3" $ uncurry'pl @(U256 -> U256 -> U256 -> U256) \x1 x2 x3 -> runYulMonad $ LVM.do
+  x1' <- lift'l x1
+  x2' <- lift'l x2
+  x3' <- lift'l x3
+  fin'with (x1' + x2' + x3')
 
-fooSPut = fn'l "fooSPut" $
-  uncurry'l @(ADDR -> U256 -> ())
-   \addr val -> startLTM $
-   sput addr val
-   &+ fin'dis
-
-fooSPutQDo = fn'l "fooSPutDo" $
-  uncurry'l @(ADDR -> U256 -> ())
-   \addr val -> startLTM $ LT.do
+fooSPut = fn'l "fooSPut" $ uncurry'l @(ADDR -> U256 -> ()) \addr val -> runYulMonad $ LVM.do
    val' <- sput addr val
    fin'dis val'
 

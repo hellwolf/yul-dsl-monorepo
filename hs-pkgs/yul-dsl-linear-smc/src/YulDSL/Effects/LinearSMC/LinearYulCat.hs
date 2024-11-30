@@ -10,11 +10,11 @@ import           GHC.TypeLits
 -- linear-base
 import           Control.Category.Linear
 import           Prelude.Linear
-import qualified Unsafe.Linear                       as UnsafeLinear
+import qualified Unsafe.Linear                    as UnsafeLinear
 -- yul-dsl
 import           YulDSL.Core
 --
-import           YulDSL.Effects.LinearSMC.LinearPort
+import           YulDSL.Effects.LinearSMC.YulPort
 
 
 -- | Various types of linear effects for the yul category.

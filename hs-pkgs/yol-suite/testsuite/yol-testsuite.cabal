@@ -10,16 +10,15 @@ common yol-module-options
     ghc-options:          -Wall
                           -Wno-name-shadowing
                           -Wno-missing-signatures
-    default-extensions:   LinearTypes
+    default-extensions:   UnicodeSyntax
                           BlockArguments
-                          OverloadedStrings
-                          UnicodeSyntax
                           RebindableSyntax
-                          ImplicitPrelude
+                          OverloadedStrings
+                          QualifiedDo
+                          ImpredicativeTypes
+                          LinearTypes
     mixins:               base hiding (Prelude),
-                          base (Prelude as Prelude.Base),
-                          yul-dsl-linear-smc (Prelude.YulDSL as Prelude),
-                          yul-dsl-linear-smc
+                          base (Prelude as Prelude.Base)
     build-depends:        base >= 4.13 && < 666,
                           text >= 2.0.1,
                           bytestring >= 0.11,

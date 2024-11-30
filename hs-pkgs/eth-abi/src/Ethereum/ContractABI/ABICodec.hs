@@ -5,6 +5,7 @@ module Ethereum.ContractABI.ABICodec
   ) where
 
 -- base
+import           Data.Functor                     ((<&>))
 import           Data.Type.Bool                   (Not)
 import           GHC.TypeError                    (Assert, ErrorMessage (Text), TypeError)
 -- cereal
@@ -21,7 +22,7 @@ class ABITypeable a => ABITypeCodec a where
   default abiDecoder :: forall. ( Assert (Not (IsABICoreType a))
                                   (TypeError (Text "abiDecoder must be defined for a core type"))
                                 , ABITypeCodec (ABITypeDerivedOf a)) => S.Get a
-  abiDecoder = abiDecoder >>= pure . abiFromCoreType
+  abiDecoder = abiDecoder <&> abiFromCoreType
 
   abiEncoder :: forall. S.Putter a
   default abiEncoder :: forall. ( Assert (Not (IsABICoreType a))

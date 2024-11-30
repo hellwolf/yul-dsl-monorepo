@@ -1,6 +1,5 @@
-{-# LANGUAGE AllowAmbiguousTypes    #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE LinearTypes            #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE LinearTypes         #-}
 {-|
 Copyright   : (c) 2023-2024 Miao, ZhiCheng
 License     : LGPL-3

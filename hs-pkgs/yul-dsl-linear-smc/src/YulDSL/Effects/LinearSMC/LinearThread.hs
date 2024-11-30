@@ -30,7 +30,7 @@ instance Consumable (YulMonadCtx) where
 type YulMonad s va vb a = LVM s YulMonadCtx va vb a
 
 runYulMonad :: forall r va vb a. (forall s. YulMonad s va vb (P'V vb r a)) ⊸ P'V vb r a
-runYulMonad m = let %1 !(ctx', a) = runLVM (MkYulMonadCtx ()) m in lseq ctx' a
+runYulMonad m = let !(ctx', a) = runLVM (MkYulMonadCtx ()) m in lseq ctx' a
 
 -- | Safe operation that lifts a pure yul port to a versioned yul port.
 lift'l :: forall v s r a. YulO2 r a

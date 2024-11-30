@@ -1,7 +1,7 @@
 module ERC20 where
 
-import Prelude.YulDSL
 import qualified Control.LinearVersionedMonad as LVM
+import           Prelude.YulDSL
 
 -- | ERC20 balance storage location for the account.
 -- TODO should use hashing of course.
@@ -36,20 +36,20 @@ erc20_balance_of = fn'l "balanceOf" $ uncurry'l @(ADDR -> U256)
 erc20_transfer = fn'pl "transfer" $ uncurry'pl @(ADDR -> ADDR -> U256 -> BOOL)
   \from'p to'p amount'p -> runYulMonad $ LVM.do
 
-  let %1 !(amount'p1, amount'p2) = dup2'l amount'p
+  let !(amount'p1, amount'p2) = dup2'l amount'p
 
   -- state gen 0
   amount1 <- lift'l amount'p1
   from <- lift'l from'p
-  let %1 !(from1, from2) = dup2'l from
-      %1 balance1before = call'l erc20_balance_of from1
+  let !(from1, from2) = dup2'l from
+      balance1before = call'l erc20_balance_of from1
   u1 <- sput_ (erc20_balance_storage from2) (balance1before - amount1)
 
   -- state gen 1
   to <- lift'l to'p
   amount2 <- lift'l amount'p2
-  let %1 !(to1, to2) = dup2'l (ignore u1 to)
-      %1 balance1before = call'l erc20_balance_of to1
+  let !(to1, to2) = dup2'l (ignore u1 to)
+      balance1before = call'l erc20_balance_of to1
   u2 <- sput_ (erc20_balance_storage to2) (balance1before - amount2)
   fin'emb true (discard u2)
 

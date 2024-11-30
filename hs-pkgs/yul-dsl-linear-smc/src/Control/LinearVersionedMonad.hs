@@ -4,14 +4,13 @@ module Control.LinearVersionedMonad
   ) where
 
 -- base
-import           GHC.TypeLits           (Nat, type (<=))
+import           GHC.TypeLits        (Nat, type (<=))
 -- constraints
-import           Data.Constraint        (Dict)
-import           Data.Constraint.Unsafe (unsafeAxiom)
+import           Data.Constraint     (Dict (Dict), HasDict, withDict)
+import           Data.Constraint.Nat (leTrans)
 -- linear-base
-import           Prelude.Linear         (Consumable (consume), lseq)
-import qualified Unsafe.Linear          as UnsafeLinear
-
+import           Prelude.Linear      (Consumable (consume), flip, lseq)
+import qualified Unsafe.Linear       as UnsafeLinear
 
 -- | Linear-thread Token; this must be guarded and inaccessible outside of this module.
 data LT (v :: Nat) = MkLT
@@ -38,10 +37,9 @@ runLVM ctx m = let !(lp, ctx', a) = unLVM m (MkLT, ctx) in discard_dict lp (ctx'
 -- | Monad bind operator for working with the QualifiedDo syntax.
 (>>=) :: forall s ctx va vb vc a b. ()
       => LVM s ctx va vb a ⊸ (a ⊸ LVM s ctx vb vc b) ⊸ LVM s ctx va vc b
-(MkLVM fa) >>= f = MkLVM \(lt, ctx) -> let !(lp, ctx', a) = fa (MkLT, ctx)
-                                           !(lp', ctx'', a') = unLVM (f a) (lt, ctx')
-                                           lp'' = discard_dict lp (discard_dict lp' unsafeAxiom)
-                                       in  (lp'', ctx'', a')
+(MkLVM fa) >>= f = MkLVM \(lt, ctx) -> let !(alteb, ctx', a) = fa (MkLT, ctx)
+                                           !(bltec, ctx'', a') = unLVM (f a) (lt, ctx')
+                                       in  (Dict \\ leTrans @va @vb @vc \\ alteb \\ bltec, ctx'', a')
 
 -- | Monad discard operator for working with the QualifiedDo syntax.
 (>>) :: forall s ctx va vb vc a b. (Consumable a)
@@ -49,3 +47,12 @@ runLVM ctx m = let !(lp, ctx', a) = unLVM m (MkLT, ctx) in discard_dict lp (ctx'
 ma >> mb = ma >>= (`lseq` mb)
 
 infixl 1 >>=, >>
+
+--
+-- Some internal function
+--
+
+-- | Linear version of (\\) for internal use.
+(\\) :: HasDict c e => (c => r) ⊸ e ⊸ r
+(\\) = flip (UnsafeLinear.toLinear2 (withDict))
+infixl 1 \\

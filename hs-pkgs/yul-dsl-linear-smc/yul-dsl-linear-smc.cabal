@@ -51,9 +51,9 @@ library
                     Data.MPOrd.YulDSL.LinearSMC
                     Data.Num.YulDSL.LinearSMC
                     YulDSL.Effects.LinearSMC.YulPort
+                    YulDSL.Effects.LinearSMC.YulMonad
                     YulDSL.Effects.LinearSMC.LinearYulCat
                     YulDSL.Effects.LinearSMC.LinearFn
-                    YulDSL.Effects.LinearSMC.LinearThread
                     YulDSL.Effects.LinearSMC
                     Prelude.YulDSL
 
@@ -65,6 +65,6 @@ Test-Suite test-yul-dsl-linear-smc
                     -- QuickCheck >=2.13,
                     yul-dsl-linear-smc
   hs-source-dirs:   test
-  other-modules:    FnL_prop
-                    Num_prop
+  other-modules:    Num_prop
+                    LinearFn_prop
   main-is:          Main.hs

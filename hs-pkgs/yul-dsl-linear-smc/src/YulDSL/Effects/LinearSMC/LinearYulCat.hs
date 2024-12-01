@@ -1,14 +1,13 @@
 module YulDSL.Effects.LinearSMC.LinearYulCat
   ( LinearEffect (PureInputVersionedOutput, VersionedInputOutput)
-    -- $linear_cat_defs
-  , YulCat'LVV (..), unYulCat'LVV, YulCat'LPV (..), unYulCat'LPV, YulCat'LPP (..), unYulCat'LPP
-    -- = LinearSMC Conversions
+    -- $yul_port_diagrams
+  , YulCat'LVV (MkYulCat'LVV), YulCat'LPV (MkYulCat'LPV), YulCat'LPP (MkYulCat'LPP)
   , decode'lvv, decode'lpv, encode'lvv
   ) where
 -- base
 import           GHC.TypeLits
 -- linear-base
-import           Control.Category.Linear
+import           Control.Category.Linear          (P, decode, discard, encode, ignore, split)
 import           Prelude.Linear
 import qualified Unsafe.Linear                    as UnsafeLinear
 -- yul-dsl
@@ -27,7 +26,7 @@ data LinearEffect = PureInputVersionedOutput Nat -- ^ Pure input ports, versione
 type instance NonPureEffect (PureInputVersionedOutput vd) = True
 type instance NonPureEffect (VersionedInputOutput vd) = True
 
--- $linear_cat_defs
+-- $yul_port_diagrams
 -- = Yul Port Diagrams
 --
 -- A yul port diagram is a morphism in the yul category represented by one input yul port and one output yul port.
@@ -40,21 +39,12 @@ type instance NonPureEffect (VersionedInputOutput vd) = True
 
 -- | Yul port diagram for versioned input and outputs.
 newtype YulCat'LVV v1 vn r a b = MkYulCat'LVV (P'V v1 r a ⊸ P'V vn r b)
--- | Linearly unwrap a 'YulCat\'LVV'
-unYulCat'LVV :: forall a b r v1 vn. YulO3 a b r => YulCat'LVV v1 vn r a b ⊸ (P'V v1 r a ⊸ P'V vn r b)
-unYulCat'LVV (MkYulCat'LVV c) = c
 
 -- | Yul port diagram for pure input and versioned outputs.
 newtype YulCat'LPV vn r a b = MkYulCat'LPV (P'P r a ⊸ P'V vn r b)
--- | Linearly unwrap a 'YulCat\'LPV'
-unYulCat'LPV :: forall a b r vd. YulO3 a b r => YulCat'LPV vd r a b ⊸ (P'P r a ⊸ P'V vd r b)
-unYulCat'LPV (MkYulCat'LPV c) = c
 
 -- | Yul port diagram for pure input and pure outputs.
 newtype YulCat'LPP r a b = MkYulCat'LPP (P'P r a ⊸ P'P r b)
--- | Linearly unwrap a 'YulCat\'LPP'
-unYulCat'LPP :: forall a b r. YulO3 a b r => YulCat'LPP r a b ⊸ (P'P r a ⊸ P'P r b)
-unYulCat'LPP (MkYulCat'LPP c) = c
 
 decode'lvv :: forall a b vd oe. ( YulO2 a b, VersionedInputOutput vd ~ oe)
            => (forall r. YulObj r => P'V 0 r a ⊸ P'V vd r b)
@@ -102,14 +92,14 @@ instance forall x xs b g v1 vn r a.
     (\xxs ->
         dup2'l xxs
       & \(xxs1, xxs2) -> split (coerce'l @(NP (x:xs)) @(x, NP xs) (h xxs1))
-      & \(x, xs) -> unYulCat'LVV
-                    (uncurryingNP
-                      @g @xs @b
-                      @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r a) @(YulCat'LVV v1 vn r a) @One
-                      (f x)
-                      (MkYulCat'LVV (\a -> ignore (discard a) xs))
-                    )
-                    xxs2
+      & \(x, xs) -> let !(MkYulCat'LVV g) =
+                          (uncurryingNP
+                            @g @xs @b
+                            @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r a) @(YulCat'LVV v1 vn r a) @One
+                            (f x)
+                            (MkYulCat'LVV (\a -> ignore (discard a) xs))
+                          )
+                    in g xxs2
     )
 
 instance forall x v1 vn r a.
@@ -146,14 +136,14 @@ instance forall x xs b g vd r a.
     (\xxs ->
         dup2'l xxs
       & \(xxs1, xxs2) -> split (coerce'l @(NP (x:xs)) @(x, NP xs) (h xxs1))
-      & \(x, xs) -> unYulCat'LPV
-                    (uncurryingNP
-                      @g @xs @b
-                      @(P'P r) @(P'V vd r) @(YulCat'LPP r a) @(YulCat'LPV vd r a) @One
-                      (f x)
-                      (MkYulCat'LPP (\a -> ignore (discard a) xs))
-                    )
-                    xxs2
+      & \(x, xs) -> let !(MkYulCat'LPV g) =
+                          (uncurryingNP
+                           @g @xs @b
+                           @(P'P r) @(P'V vd r) @(YulCat'LPP r a) @(YulCat'LPV vd r a) @One
+                           (f x)
+                           (MkYulCat'LPP (\a -> ignore (discard a) xs))
+                          )
+                    in g xxs2
     )
 
 instance forall x v1 vn r a.

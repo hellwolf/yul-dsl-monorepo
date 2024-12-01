@@ -11,30 +11,11 @@ erc20_balance_storage account =
   & \(account, unit) -> coerce'l (coerce'l account + emb'l (fromInteger @U256 0x42) unit)
 
 -- | ERC20 balance of the account.
-erc20_balance_of = fn'l "balanceOf" $ uncurry'l @(ADDR -> U256)
-  \account -> runYulMonad $
-              sget (erc20_balance_storage account)
+erc20_balance_of = fn'l "balanceOf" $ yulmonad'lv @(ADDR -> U256)
+  \account -> sget (erc20_balance_storage account)
 
--- | ERC20 transfer function (no negative balance check for simplicity).
--- erc20_transfer = fn'pl "transfer" $ uncurry'pl @(ADDR -> ADDR -> U256 -> BOOL)
---   \from'p to'p amount'p -> startLTM $
---   lift'l to'p
---   &+ dis'l
---   -- &- discard amount'p2
---   -- &- dup2'l amount'p
---   -- &  \(amount'p1, amount'p2) -> lift'l amount'p1
---   &- lift'l amount'p
---   &+ \amount -> lift'l from'p
---   &+ \from -> use'l from (call'l erc20_balance_of)
---   &+ \from balance1before -> sput (erc20_balance_storage from) (balance1before - amount)
---   -- &- lift'l to'p
---   -- &+ \to -> lift'l amount'p2
---   -- &+ \amount -> use'l to (call'l erc20_balance_of)
---   -- &+ \to balance2before -> sput (erc20_balance_storage to) (balance2before - amount)
---   &+ fin'emb true
-
-erc20_transfer = fn'pl "transfer" $ uncurry'pl @(ADDR -> ADDR -> U256 -> BOOL)
-  \from'p to'p amount'p -> runYulMonad $ LVM.do
+erc20_transfer = fn'l "transfer" $ yulmonad'lp @(ADDR -> ADDR -> U256 -> BOOL)
+  \from'p to'p amount'p -> LVM.do
 
   let !(amount'p1, amount'p2) = dup2'l amount'p
 

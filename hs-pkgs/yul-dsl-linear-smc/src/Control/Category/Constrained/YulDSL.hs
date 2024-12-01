@@ -12,7 +12,7 @@ Categories required for being a symmetric monoidal category.
 
 -}
 
-module Control.Category.Constrained.YulDSL.LinearSMC () where
+module Control.Category.Constrained.YulDSL () where
 
 -- base
 -- constraints

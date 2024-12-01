@@ -5,17 +5,16 @@ build-type:     Simple
 
 common yol-module-options
     default-language:     GHC2024
-    default-extensions:   LinearTypes
-                          ImpredicativeTypes
+    default-extensions:   NoImplicitPrelude
                           BlockArguments
                           OverloadedStrings
                           UnicodeSyntax
+                          LinearTypes
+                          ImpredicativeTypes
     ghc-options:          -Wall
                           -Wno-name-shadowing
     mixins:               base hiding (Prelude),
-                          base (Prelude as Prelude.Base),
-                          yul-dsl-linear-smc (Prelude.YulDSL as Prelude),
-                          yul-dsl-linear-smc
+                          base (Prelude as Prelude.Base)
     build-depends:        base >= 4.13 && < 666,
                           bytestring >= 0.11,
                           text >= 2.0.2,

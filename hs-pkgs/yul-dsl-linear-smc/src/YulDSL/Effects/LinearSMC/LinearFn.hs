@@ -14,7 +14,8 @@ import qualified Unsafe.Linear                         as UnsafeLinear
 -- yul-dsl
 import           YulDSL.Core
 --
-import qualified Control.LinearVersionedMonad          as LVM
+import qualified Control.LinearlyVersionedMonad        as LVM
+--
 import           YulDSL.Effects.LinearSMC.LinearYulCat
 import           YulDSL.Effects.LinearSMC.YulMonad
 import           YulDSL.Effects.LinearSMC.YulPort
@@ -90,7 +91,7 @@ instance forall x v1 vn r a.
          (P'V v1 r) (YulMonad v1 vn r)
          (YulCat'LVV v1 v1 r a) (YulCat'LVM v1 vn r a) One where
   uncurryingNP x (MkYulCat'LVV h) = MkYulCat'LVM
-    \a -> fin'dis (h a) LVM.>> x
+    \a -> toss (h a) LVM.>> x
 
 instance forall x xs b g v1 vn r a.
          ( YulO5 x (NP xs) b r a
@@ -148,7 +149,7 @@ instance forall x v1 vn r a.
          (P'P r) (YulMonad v1 vn r)
          (YulCat'LPP r a) (YulCat'LPM v1 vn r a) One where
   uncurryingNP x (MkYulCat'LPP h) = MkYulCat'LPM
-    \a -> fin'dis (UnsafeLinear.coerce @_ @(P'V v1 r x) (h a & coerce'l @_ @())) LVM.>> x
+    \a -> toss (UnsafeLinear.coerce @_ @(P'V v1 r x) (h a & coerce'l @_ @())) LVM.>> x
 
 instance forall x xs b g v1 vn r a.
          ( YulO5 x (NP xs) b r a

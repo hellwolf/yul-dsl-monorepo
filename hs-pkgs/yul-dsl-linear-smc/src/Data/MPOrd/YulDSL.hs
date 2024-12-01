@@ -1,26 +1,12 @@
-{-# LANGUAGE FunctionalDependencies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-module Data.MPOrd.YulDSL.LinearSMC where
+module Data.MPOrd.YulDSL where
 
 -- linear-base
 import           Prelude.Linear (Bool (False, True), Consumable, lseq)
 -- yul-dsl
 import           YulDSL.Core
-
-
--- | Multi-parameter equality type class where boolean type is @b@
-class MPEq a b | a -> b where
-  (==) :: forall w. a %w -> a %w -> b
-  (/=) :: forall w. a %w -> a %w -> b
-
--- | Multi-parameter ordering type class where boolean type is @b@
-class MPEq a b => MPOrd a b | a -> b where
-  ( <) :: forall w. a %w -> a %w -> b
-  (<=) :: forall w. a %w -> a %w -> b
-  ( >) :: forall w. a %w -> a %w -> b
-  (>=) :: forall w. a %w -> a %w -> b
-
-infixr 4 <, <=, >, >=, ==, /=
+--
+import           Data.MPOrd
 
 -- | 'MPEq' instance for yul category morphisms.
 instance (YulObj r, YulNum a) => MPEq (YulCat eff r a) (YulCat eff r BOOL) where

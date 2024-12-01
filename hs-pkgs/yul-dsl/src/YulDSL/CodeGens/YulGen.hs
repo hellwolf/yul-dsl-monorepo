@@ -1,4 +1,3 @@
-{-# LANGUAGE GADTs #-}
 {-|
 
 Copyright   : (c) 2023-2024 Miao, ZhiCheng

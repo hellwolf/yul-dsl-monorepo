@@ -273,17 +273,17 @@ instance (YulO2 a r, YulNum a) => Num (YulCat eff r a) where
 
 -- YulNum Ord operations:
 
-(<?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p -> YulCat eff r BOOL
-a  <? b = YulNumCmp (true , false, false) <.< YulProd a b <.< YulDup
-(<=?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
-a <=? b = YulNumCmp (true , true , false) <.< YulProd a b <.< YulDup
-(>?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
-a  >? b = YulNumCmp (false, false, true ) <.< YulProd a b <.< YulDup
-(>=?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+( <? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p -> YulCat eff r BOOL
+a <? b = YulNumCmp (true , false, false) <.< YulProd a b <.< YulDup
+(<=? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+a<=? b = YulNumCmp (true , true , false) <.< YulProd a b <.< YulDup
+( >? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+a >? b = YulNumCmp (false, false, true ) <.< YulProd a b <.< YulDup
+( >=? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
 a >=? b = YulNumCmp (false, true , true ) <.< YulProd a b <.< YulDup
-(==?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+( ==? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
 a ==? b = YulNumCmp (false, true , false) <.< YulProd a b <.< YulDup
-(/=?) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+( /=? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
 a /=? b = YulNumCmp (true , false, true ) <.< YulProd a b <.< YulDup
 
 -- | IfThenElse for enabling rebindable syntax.

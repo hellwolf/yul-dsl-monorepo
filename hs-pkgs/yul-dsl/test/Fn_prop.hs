@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 module Fn_prop where
 
 import           Test.Hspec

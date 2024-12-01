@@ -19,17 +19,18 @@ module Prelude.YulDSL
     -- yul-dsl
   , module YulDSL.Core
     --
-  , module Data.MPOrd.YulDSL.LinearSMC
+  , module Data.MPOrd
   , module YulDSL.Effects.LinearSMC
   ) where
 
 -- linear-base
-import           Prelude.Linear              hiding (Eq (..), Ord (..))
+import           Prelude.Linear            hiding (Eq (..), Ord (..))
 -- linear-smc
 import           Control.Category.Linear
 -- yul-dsl
 import           YulDSL.Core
 --
-import           Data.MPOrd.YulDSL.LinearSMC
-import           Data.Num.YulDSL.LinearSMC   ()
+import           Data.MPOrd
+import           Data.MPOrd.YulDSL         ()
+import           Data.Num.YulDSL.LinearSMC ()
 import           YulDSL.Effects.LinearSMC

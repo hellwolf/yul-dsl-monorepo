@@ -1,6 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-
 module Data.Num.YulDSL.LinearSMC where
 
 -- base

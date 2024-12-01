@@ -26,45 +26,62 @@ tested-with:    GHC==9.10.1
 build-type:     Simple
 
 common basic-options
-    default-language:     GHC2024
-    ghc-options:          -Wall
-                          -Wunused-packages
-    default-extensions:   UnicodeSyntax
-                          BlockArguments
-                          QualifiedDo
-                          ImpredicativeTypes
-                          LinearTypes
-    build-depends:        base >= 4.20.0.0 && < 666
+  default-language:     GHC2024
+  ghc-options:          -Wall
+                        -Wunused-packages
+  default-extensions:   UnicodeSyntax
+                        BlockArguments
+                        QualifiedDo
+                        NoImplicitPrelude
+                        ImpredicativeTypes
+                        LinearTypes
+  build-depends:        base >= 4.20.0.0 && < 666
+
+library internal
+  import:     basic-options
+  visibility: private
+  --
+  hs-source-dirs:  internal-src
+  exposed-modules: Data.MPOrd
+                   Data.LinearContext
+                   Control.LinearlyVersionedMonad
+  build-depends:    constraints >= 0.13,
+                    linear-base >= 0.3.1
 
 library
   import:             basic-options
-  default-extensions: NoImplicitPrelude
-                      TypeFamilies
+  default-extensions: TypeFamilies
                       RequiredTypeArguments
-  hs-source-dirs:     src
+  --
+  hs-source-dirs:   src
+  exposed-modules:    Prelude.YulDSL
+                      -- Instances for YulDSL
+                      Data.MPOrd.YulDSL
+                      Control.Category.Constrained.YulDSL
+                      -- Instances for YulDSL's LinearSMC Effect
+                      YulDSL.Effects.LinearSMC.YulPort
+                      YulDSL.Effects.LinearSMC.YulMonad
+                      YulDSL.Effects.LinearSMC.LinearYulCat
+                      YulDSL.Effects.LinearSMC.LinearFn
+                      YulDSL.Effects.LinearSMC
+                      -- Prelude Curation for LinearSMC
+                      Data.Num.YulDSL.LinearSMC
+  reexported-modules: Control.LinearlyVersionedMonad
   build-depends:    constraints >= 0.13,
                     linear-base >= 0.3.1,
                     linear-smc >= 2.2.3,
-                    yul-dsl
-  exposed-modules:  Control.Category.Constrained.YulDSL.LinearSMC
-                    Control.LinearVersionedMonad
-                    Data.MPOrd.YulDSL.LinearSMC
-                    Data.Num.YulDSL.LinearSMC
-                    YulDSL.Effects.LinearSMC.YulPort
-                    YulDSL.Effects.LinearSMC.YulMonad
-                    YulDSL.Effects.LinearSMC.LinearYulCat
-                    YulDSL.Effects.LinearSMC.LinearFn
-                    YulDSL.Effects.LinearSMC
-                    Prelude.YulDSL
+                    yul-dsl,
+                    internal
 
 Test-Suite test-yul-dsl-linear-smc
   import:           basic-options
   ghc-options:      -Wno-missing-signatures
+  --
   type:             exitcode-stdio-1.0
-  build-depends:    hspec >=2.11,
-                    -- QuickCheck >=2.13,
-                    yul-dsl-linear-smc
   hs-source-dirs:   test
   other-modules:    Num_prop
                     LinearFn_prop
   main-is:          Main.hs
+  build-depends:    hspec >=2.11,
+                    -- QuickCheck >=2.13,
+                    yul-dsl-linear-smc

@@ -1,6 +1,6 @@
 module ERC20 where
 
-import qualified Control.LinearVersionedMonad as LVM
+import qualified Control.LinearlyVersionedMonad as LVM
 import           Prelude.YulDSL
 
 -- | ERC20 balance storage location for the account.
@@ -19,20 +19,18 @@ erc20_transfer = fn'l "transfer" $ yulmonad'lp @(ADDR -> ADDR -> U256 -> BOOL)
 
   let !(amount'p1, amount'p2) = dup2'l amount'p
 
-  -- state gen 0
-  amount1 <- lift'l amount'p1
-  from <- lift'l from'p
-  let !(from1, from2) = dup2'l from
-      balance1before = call'l erc20_balance_of from1
-  u1 <- sput_ (erc20_balance_storage from2) (balance1before - amount1)
+  amount1 <- lift amount'p1 -- TODO: lift N variables a time
+  from <- lift from'p
+  (from, balance1before) <- pass from (pure . call'l erc20_balance_of)
+  sput_ (erc20_balance_storage from) (balance1before - amount1) -- TODO: operator for storage references
 
-  -- state gen 1
-  to <- lift'l to'p
-  amount2 <- lift'l amount'p2
-  let !(to1, to2) = dup2'l (ignore u1 to)
-      balance1before = call'l erc20_balance_of to1
-  u2 <- sput_ (erc20_balance_storage to2) (balance1before - amount2)
-  fin'emb true (discard u2)
+  to <- lift to'p
+  amount2 <- lift amount'p2
+  (to, balance2before) <- pass to (pure . call'l erc20_balance_of)
+  u2 <- sput_ (erc20_balance_storage to) (balance2before - amount2)
+
+  pure $ emb'l true u2 -- the following code bugs out...
+  -- embed true
 
 object = mkYulObject "ERC20" emptyCtor
   [ -- externalFn erc20_balance_of FIXME

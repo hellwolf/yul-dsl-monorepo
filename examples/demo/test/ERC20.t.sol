@@ -16,7 +16,7 @@ contract ERC20ProgramTest is Test {
     token = new ERC20Program();
   }
 
-  function testInit() external {
+  function testTransfer() external {
     ERC20Program token1 = new ERC20Program();
     assertNotEq(address(token1), address(0));
     // TODO: need stunt contract

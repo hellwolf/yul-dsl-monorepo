@@ -1,6 +1,6 @@
 module Basic where
 
-import qualified Control.LinearVersionedMonad as LVM
+import qualified Control.LinearlyVersionedMonad as LVM
 import           Prelude.YulDSL
 
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
@@ -19,9 +19,8 @@ foo2 = fn'l "foo2" $
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
 foo3 = fn'l "foo3" $ yulmonad'lv @(U256 -> U256 -> (BOOL, U256)) \x1 x2 -> LVM.do
   val <- sputAt (constAddr 0xdeadbeef) (x1 + x2)
-  mkUnit val
-         & \(val, u) -> merge (emb'l true u, val)
-                        & fin'with
+  (val, t) <- pass val (pure . emb'l true)
+  pure $ merge (t, val)
 
 -- | "rangeSum" implemented in a value function
 rangeSum'v1 = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV1"

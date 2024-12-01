@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 import           Prelude.Base
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.IO as TIO

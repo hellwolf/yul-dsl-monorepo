@@ -11,12 +11,12 @@ module YulDSL.Effects.LinearSMC.YulPort
 -- linear-base
 import           Prelude.Linear
 -- linear-smc
-import           Control.Category.Constrained.YulDSL.LinearSMC ()
 import           Control.Category.Linear
 -- yul-dsl
 import           YulDSL.Core
 --
-import           Data.MPOrd.YulDSL.LinearSMC
+import           Control.Category.Constrained.YulDSL ()
+import           Data.MPOrd
 
 
 -- $linear_port_defs

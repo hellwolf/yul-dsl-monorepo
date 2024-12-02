@@ -46,6 +46,7 @@ library internal
                    Data.LinearContext
                    Control.LinearlyVersionedMonad
   build-depends:    constraints >= 0.13,
+                    deepseq >= 1.5,
                     linear-base >= 0.3.1
 
 library

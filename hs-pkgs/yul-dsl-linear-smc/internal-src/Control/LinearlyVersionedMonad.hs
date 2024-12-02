@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
 {-|
 
 Copyright   : (c) 2024 Miao, ZhiCheng
@@ -36,10 +37,12 @@ import           GHC.TypeLits           (Nat, type (<=))
 -- constraints
 import           Data.Constraint        (Dict (Dict), HasDict, withDict)
 import           Data.Constraint.Nat    (leTrans)
+-- deepseq
+import           Control.DeepSeq        (rnf)
 -- linear-base
 import qualified Control.Functor.Linear
 import qualified Data.Functor.Linear
-import           Prelude.Linear         (flip, lseq)
+import           Prelude.Linear         (Consumable (consume), flip, lseq)
 import qualified Unsafe.Linear          as UnsafeLinear
 --
 import           Data.LinearContext
@@ -62,7 +65,7 @@ unLVM (MkLVM fa) = fa
 
 -- | Run a linearly versioned monad.
 runLVM :: forall a va vb ctx. ctx ⊸ LVM ctx va vb a ⊸ (ctx, a)
-runLVM ctx m = let !(lp, ctx', a) = unLVM m ctx in discard_dict lp (ctx', a)
+runLVM ctx m = let !(lp, ctx', a) = unLVM m ctx in lseq lp (ctx', a)
 
 -- | Monad bind operator for working with the QualifiedDo syntax.
 --
@@ -130,9 +133,8 @@ instance Control.Functor.Linear.Functor (LVM ctx va vb) where
 -- Some unsafe internal functions for handling proofs
 --
 
--- Discard the constraint proof linearly.
-discard_dict :: Dict p ⊸ a ⊸ a
-discard_dict p = lseq (UnsafeLinear.coerce p :: ())
+instance Consumable (Dict p) where
+  consume = UnsafeLinear.toLinear rnf
 
 -- Linear version of (\\) for internal use.
 (\\) :: HasDict c e => (c => r) ⊸ e ⊸ r

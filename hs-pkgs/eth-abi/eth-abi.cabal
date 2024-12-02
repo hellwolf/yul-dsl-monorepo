@@ -26,6 +26,17 @@ common basic-options
                       RequiredTypeArguments
   build-depends:      base >= 4.20.0.0 && < 666
 
+
+library internal
+  import:     basic-options
+  visibility: private
+  --
+  hs-source-dirs:  internal-src
+  exposed-modules: Data.SimpleNP
+                   Internal.Data.Type.Bool
+                   Internal.Data.Type.List
+  build-depends:   ghc-experimental >= 0.1
+
 library
   import:           basic-options
   hs-source-dirs:   src
@@ -42,22 +53,20 @@ library
                     Ethereum.ContractABI.ExtendedType.SELECTOR
                     Ethereum.ContractABI.ExtendedType.Maybe
                     Ethereum.ContractABI
-  other-modules:    Internal.Data.Type.Bool
-                    Internal.Data.Type.List
-  build-depends:    ghc-experimental >= 0.1.0.0,
-                    bytestring >= 0.11,
-                    template-haskell >= 2.22.0.0,
+  build-depends:    bytestring >= 0.11,
+                    template-haskell >= 2.22,
                     crypton >= 0.32,
-                    memory >= 0.18.0,
-                    cereal
+                    memory >= 0.18,
+                    cereal >= 0.5,
+                    internal
 
 Test-Suite test-eth-abi
   import:           basic-options
   ghc-options:      -Wno-missing-signatures
   type:             exitcode-stdio-1.0
-  build-depends:    eth-abi,
-                    QuickCheck >= 2.15,
-                    hspec >= 2.11
+  build-depends:    QuickCheck >= 2.15,
+                    hspec >= 2.11,
+                    eth-abi
   hs-source-dirs:   test
   other-modules:    INTx_prop
                     NP_test

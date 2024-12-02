@@ -17,7 +17,11 @@ Boolean singleton 'SBool' to work with type-level booleans in addition to the 'D
 module Internal.Data.Type.Bool
   ( SBool (SBool)
   , KnownBool (..)
+  , module Data.Type.Bool
   ) where
+
+
+import           Data.Type.Bool
 
 -- | Boolean type singleton.
 data SBool (s :: Bool) = SBool

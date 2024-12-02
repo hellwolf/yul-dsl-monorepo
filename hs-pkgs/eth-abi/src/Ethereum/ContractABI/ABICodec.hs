@@ -6,12 +6,13 @@ module Ethereum.ContractABI.ABICodec
 
 -- base
 import           Data.Functor                     ((<&>))
-import           Data.Type.Bool                   (Not)
 import           GHC.TypeError                    (Assert, ErrorMessage (Text), TypeError)
 -- cereal
 import qualified Data.Serialize                   as S
 -- bytestring
 import qualified Data.ByteString                  as B
+--
+import           Internal.Data.Type.Bool          (Not)
 --
 import           Ethereum.ContractABI.ABITypeable (ABITypeable (..), IsABICoreType)
 

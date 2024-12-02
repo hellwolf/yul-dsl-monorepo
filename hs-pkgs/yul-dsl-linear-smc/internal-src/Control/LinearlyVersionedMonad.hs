@@ -1,7 +1,7 @@
 {-|
 
 Copyright   : (c) 2024 Miao, ZhiCheng
-License     : MIT
+License     : LGPL-3
 
 Maintainer  : hellwolf@yolc.dev
 Stability   : experimental

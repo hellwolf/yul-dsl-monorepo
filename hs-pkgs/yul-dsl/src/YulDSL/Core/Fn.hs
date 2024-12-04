@@ -19,6 +19,7 @@ module YulDSL.Core.Fn
 import           Ethereum.ContractABI
 --
 import           YulDSL.Core.YulCat
+import           YulDSL.Core.YulCatObj
 
 
 {- * FnCat: yul function type and its aliases -}

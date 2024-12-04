@@ -9,6 +9,7 @@ Stability   : experimental
 
 module YulDSL.Core
   ( module Ethereum.ContractABI
+  , module YulDSL.Core.YulCatObj
   , module YulDSL.Core.YulCat
   , module YulDSL.Core.Fn
   , module YulDSL.Core.YulObject
@@ -18,5 +19,6 @@ module YulDSL.Core
 import           Ethereum.ContractABI
 import           YulDSL.Core.Fn
 import           YulDSL.Core.YulCat
+import           YulDSL.Core.YulCatObj
 import           YulDSL.Core.YulObject
 import           YulDSL.Effects.Pure

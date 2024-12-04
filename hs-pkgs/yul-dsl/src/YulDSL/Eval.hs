@@ -14,13 +14,14 @@ This module provides a system for evaluation of a YulCat morphism semantically.
 module YulDSL.Eval where
 
 -- base
-import           Data.Maybe           (fromJust)
+import           Data.Maybe            (fromJust)
 -- containers
-import qualified Data.Map             as M
+import qualified Data.Map              as M
 -- eth-abi
 import           Ethereum.ContractABI
 --
 import           YulDSL.Core.YulCat
+import           YulDSL.Core.YulCatObj
 
 
 {-# ANN EvalState "HLint: ignore Use newtype instead of data" #-}

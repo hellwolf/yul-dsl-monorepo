@@ -28,11 +28,8 @@ The classification objects in the YulCat symmetrical monoidal category:
   * 'YulNum'
 
 -}
-
 module YulDSL.Core.YulCat
-  ( YulObj (yul_prod_objs), YulO1, YulO2, YulO3, YulO4, YulO5
-  , YulNum
-  , NonPureEffect, IsNonPureEffect
+  ( NonPureEffect, IsNonPureEffect
   , YulCat (..), AnyYulCat (..), (>.>), (<.<)
   , (<?), (<=?), (>?), (>=?), (==?), (/=?)
   , IfThenElse (..)
@@ -44,49 +41,17 @@ import           Data.Char             (ord)
 import           Data.Kind             (Constraint)
 import           GHC.Integer           (xorInteger)
 import           Text.Printf           (printf)
--- constraints
-import           Data.Constraint       (Dict (Dict))
 -- bytestring
 import qualified Data.ByteString.Char8 as B
 -- eth-abi
 import           Ethereum.ContractABI
+--
+import           YulDSL.Core.YulCatObj
 
 
-{- * Objects in the yul category -}
-
--- | All objects in the yul category is simply a 'YulObj'.
-class (ABITypeable a, ABITypeCodec a, Show a) => YulObj a where
-  -- | Possible breakdown of the product object type.
-  yul_prod_objs :: forall b c. a ~ (b, c) => Dict (YulObj b, YulObj c)
-  yul_prod_objs = error "yul_prod_objs should only be implemented by the product of YulObj"
-
-{- ** Enumerate the objects for both core and extended ABI types -}
-
-instance YulObj ADDR
-instance YulObj BOOL
-instance (KnownBool s, ValidINTn n) => YulObj (INTx s n)
-instance YulObj (NP '[])
-instance (YulObj x, YulObj (NP xs)) => YulObj (NP (x:xs))
-instance YulObj ()
-instance (YulObj a1, YulObj a2) => YulObj (a1, a2) where yul_prod_objs = Dict
-
-{- ** Convenient aliases for declaring yul objects -}
-
-type YulO1 a = YulObj a
-type YulO2 a b = (YulObj a, YulObj b)
-type YulO3 a b c = (YulObj a, YulObj b, YulObj c)
-type YulO4 a b c d = (YulObj a, YulObj b, YulObj c, YulObj d)
-type YulO5 a b c d e = (YulObj a, YulObj b, YulObj c, YulObj d, YulObj e)
-
-{- ** Number types -}
-
--- | Number-type objects in the category.
-class (Num a, YulObj a) => YulNum a
-
--- | Integer types.
-instance (KnownBool s, ValidINTn n) => YulNum (INTx s n)
-
-{- * The Cat -}
+------------------------------------------------------------------------------------------------------------------------
+-- The Cat
+------------------------------------------------------------------------------------------------------------------------
 
 -- | An open type family for marking effects non-pure, in order to access some restricted YulCat morphisms.
 type family NonPureEffect (eff :: k) :: Bool
@@ -180,9 +145,13 @@ digestYulCat = printf "%x" . digest_c8 . B.pack . show
         go_digest_c8 (b, bs') = c8 (0 :: Integer) (B.unpack b) `xorInteger`
                                 if B.length bs' == 0 then 0 else digest_c8 bs'
 
-{- * NP Helpers -}
+------------------------------------------------------------------------------------------------------------------------
+-- NP Helpers
+------------------------------------------------------------------------------------------------------------------------
 
-{- ** UncurryingNP instances -}
+--
+-- UncurryingNP instances
+--
 
 -- (x)
 instance forall x r eff.
@@ -203,7 +172,9 @@ instance forall x xs b g r eff.
           x   = xxs' >.> YulExl
           xs  = xxs' >.> YulExr
 
-{- ** CurryingNP instances -}
+--
+-- CurryingNP instances
+--
 
 instance forall b r eff.
          ( YulO2 b r
@@ -293,7 +264,9 @@ class IfThenElse a b where
 instance YulO2 a r => IfThenElse (YulCat eff r BOOL) (YulCat eff r a) where
   ifThenElse c a b = YulITE <.< YulFork c (YulFork a b)
 
-{- INTERNAL FUNCTIONs -}
+--
+-- INTERNAL FUNCTIONs
+--
 
 -- | A 'abi_type_name variant, enclosing name with "@()".
 abi_type_name :: forall a. ABITypeable a => String

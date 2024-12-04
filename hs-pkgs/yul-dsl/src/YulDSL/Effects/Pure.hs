@@ -21,6 +21,7 @@ import           Ethereum.ContractABI
 --
 import           YulDSL.Core.Fn
 import           YulDSL.Core.YulCat
+import           YulDSL.Core.YulCatObj
 
 
 -- $yulCatVal

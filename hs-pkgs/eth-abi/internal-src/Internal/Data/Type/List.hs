@@ -1,3 +1,4 @@
+{-# LANGUAGE UndecidableInstances #-}
 {-|
 
 Copyright   : (c) 2024 Miao, ZhiCheng
@@ -13,22 +14,29 @@ Basic operations on type-level lists.
 
 -}
 module Internal.Data.Type.List
-  ( Head, Tail
-  , type (++)
+  ( Length, Head, Tail, type (++)
   ) where
 
-import           Data.Kind    (Type)
-import           GHC.TypeLits (ErrorMessage (Text), TypeError)
+import           GHC.List     (List)
+import           GHC.TypeLits (ErrorMessage (Text), Nat, TypeError, type (+))
 
 
-type family Head (xs :: [Type]) :: Type where
+type Length :: List k -> Nat
+type family Length xs where
+  Length '[]    = 0
+  Length (_:xs) = 1 + Length xs
+
+type Head :: List k -> k
+type family Head xs where
   Head (a:_) = a
   Head '[] = TypeError (Text "NPHead '[] = _|_")
 
-type family Tail (xs :: [Type]) :: [Type] where
+type Tail :: List k -> List k
+type family Tail xs where
   Tail (_:as) = as
   Tail '[] = '[]
 
-type family (++) (xs :: [Type]) (ys :: [Type]) :: [Type] where
+type (++) :: List k -> List k -> List k
+type family (++) xs ys where
   '[] ++ ys = ys
   (x:xs) ++ ys = x : xs ++ ys

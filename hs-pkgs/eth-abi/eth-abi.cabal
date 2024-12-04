@@ -33,9 +33,12 @@ library internal
   --
   hs-source-dirs:  internal-src
   exposed-modules: Data.SimpleNP
+                   Data.TupleN
                    Internal.Data.Type.Bool
                    Internal.Data.Type.List
-  build-depends:   ghc-experimental >= 0.1
+  build-depends:   ghc-experimental >= 0.1,
+                   template-haskell >= 2.22,
+                   constraints >= 0.13
 
 library
   import:           basic-options

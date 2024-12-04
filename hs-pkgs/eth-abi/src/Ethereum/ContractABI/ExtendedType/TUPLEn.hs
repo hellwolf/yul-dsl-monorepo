@@ -1,10 +1,13 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Ethereum.ContractABI.ExtendedType.TUPLEn where
+module Ethereum.ContractABI.ExtendedType.TUPLEn
+  ( module Data.TupleN
+  ) where
 
 -- ghc-experimental
 -- import           Data.Tuple.Experimental
 -- import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
+import           Data.TupleN
 import           Ethereum.ContractABI.CoreType.NP (NP (..))
 
 {- AUTO GENERATED TupleN for N = [3..64]
@@ -30,20 +33,6 @@ main = do
   mapM (putStrLn . genNPToTUpleNLine) [3..8]
 @
 -}
-
-type family TupleNtoNP t where
-  TupleNtoNP ()  = NP '[]
-  TupleNtoNP (x1, x2) = NP '[x1, x2]
-  TupleNtoNP (x1, x2, x3) = NP '[x1, x2, x3]
-  TupleNtoNP (x1, x2, x3, x4) = NP '[x1, x2, x3, x4]
-  TupleNtoNP (x1) = NP '[x1] -- keep the solo tuple in the end to avoid overlapping type instances
-
-type family NPtoTupleN np where
-  NPtoTupleN (NP '[]) = ()
-  NPtoTupleN (NP '[x1]) = x1
-  NPtoTupleN (NP '[x1,x2]) = (x1,x2)
-  NPtoTupleN (NP '[x1,x2,x3]) = (x1,x2,x3)
-  NPtoTupleN (NP '[x1,x2,x3,x4]) = (x1,x2,x3,x4)
 
 -- instance (ABITypeable a1,ABITypeable a2,ABITypeable a3) =>
 --  ABITypeable (a1,a2,a3) where

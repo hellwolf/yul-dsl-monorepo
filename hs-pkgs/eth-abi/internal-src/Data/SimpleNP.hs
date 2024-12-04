@@ -14,6 +14,8 @@ module Data.SimpleNP
 import           Data.Kind               (Constraint, Type)
 import           Data.List               (intercalate)
 import           GHC.Base                (Multiplicity (..))
+-- constraints
+import           Data.Constraint.Forall  (Forall)
 --
 import           Internal.Data.Type.List
 
@@ -107,11 +109,15 @@ class CurryingNP (xs :: [Type]) b
 -- base instances
 --
 
+type family ConstraintMap (xs :: [Type]) (c :: Type -> Constraint) :: Constraint where
+  ConstraintMap '[]    c = ()
+  ConstraintMap (x:xs) c = (c x, ConstraintMap xs c)
+
 instance Show (NP '[]) where
   show _ = "()"
 
 instance (Show x, Show (NP xs)) => Show (NP (x : xs)) where
-  show xs = "(" ++ intercalate "," (show_any_np (MkAnyNonEmptyNP xs)) ++ ")"
+  show (x :* xs) = "(" ++ show x ++ " :* " ++ show xs ++ ")"
 
 --
 -- Internal
@@ -120,10 +126,10 @@ instance (Show x, Show (NP xs)) => Show (NP (x : xs)) where
 -- Existential wrapper of any 'NP' values.
 data AnyNP (c :: Type -> Constraint) where
   MkAnyEmptyNP    :: forall c. AnyNP c
-  MkAnyNonEmptyNP :: forall c x xs. (c x, c (NP xs)) => NP (x:xs) -> AnyNP c
+  MkAnyNonEmptyNP :: forall c x xs. ConstraintMap (x:xs) c => x -> NP xs -> AnyNP c
 
 -- Show a NP as a list of strings.
 show_any_np :: AnyNP Show -> [String]
-show_any_np MkAnyEmptyNP                 = []
-show_any_np (MkAnyNonEmptyNP (x :* Nil)) = [show x]
-show_any_np (MkAnyNonEmptyNP (x :* xs))  = [show x] <> show_any_np (MkAnyNonEmptyNP (xs :* Nil))
+show_any_np MkAnyEmptyNP                    = []
+show_any_np (MkAnyNonEmptyNP x Nil)         = [show x]
+show_any_np (MkAnyNonEmptyNP x (x' :* xs')) = [show x] ++ show_any_np (MkAnyNonEmptyNP x' xs')

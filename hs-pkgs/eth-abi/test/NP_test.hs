@@ -1,6 +1,6 @@
 module NP_test where
 
--- bas
+-- base
 import           Data.Functor.Identity (Identity)
 import           Data.Type.Equality    (type (==))
 -- hspec
@@ -20,6 +20,13 @@ test_tf_ncurry_examples = and
   , toBool' @((CurryNP (NP '[ADDR, ADDR, U256]) BOOL) == (ADDR -> ADDR -> U256 -> BOOL))
   ]
 
+test_tuple_to_np = and
+  [ toBool' @(TupleNtoNP () == NP '[])
+  , toBool' @(TupleNtoNP (Solo U8) == NP '[U8])
+  , toBool' @(TupleNtoNP (U8, U16) == NP '[U8, U16])
+  ]
+
 tests = describe "NP" $ do
   it "LiftFunction examples" test_tf_lift_function_examples
   it "NCurry examples" test_tf_ncurry_examples
+  it "TupleToNP examples" test_tuple_to_np

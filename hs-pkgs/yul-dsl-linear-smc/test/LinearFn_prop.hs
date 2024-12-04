@@ -26,13 +26,15 @@ foo4 = fn'l "foo4" $
   uncurry'lv @(U256 -> U256 -> U256 -> U256 -> U256)
   \x1 x2 x3 x4 -> x1 + x2 + x3 + x4
 
-bar3 = fn'l "bar3" $ yulmonad'lp @(U256 -> U256 -> U256 -> U256) \x1 x2 x3 -> LVM.do
+bar3 = fn'l "bar3" $ yulmonad'lp @(U256 -> U256 -> U256 -> U256)
+  \x1 x2 x3 -> LVM.do
   x1' <- lift x1
   x2' <- lift x2
   x3' <- lift x3
   pure (x1' + x2' + x3')
 
-fooSPut = fn'l "fooSPut" $ yulmonad'lv @(ADDR -> U256 -> ()) \addr val -> LVM.do
+fooSPut = fn'l "fooSPut" $ yulmonad'lv @(ADDR -> U256 -> ())
+  \addr val -> LVM.do
   val' <- sput addr val
   toss val'
 

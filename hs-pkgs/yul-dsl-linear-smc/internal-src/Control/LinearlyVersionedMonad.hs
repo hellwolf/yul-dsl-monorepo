@@ -85,9 +85,9 @@ runLVM ctx m = let !(lp, ctx', a) = unLVM m ctx in lseq lp (ctx', a)
 -- 1) Law of linearly versioned monad: @ ma [va \<= vb] \>>= mb [vb <= vc] ≡ mc [va <= vc] @
 (>>=) :: forall ctx va vb vc a b. ()
       => LVM ctx va vb a ⊸ (a ⊸ LVM ctx vb vc b) ⊸ LVM ctx va vc b
-ma >>= f = MkLVM \ctx -> let !(alteb, ctx', a) = unLVM ma ctx
-                             !(bltec, ctx'', a') = unLVM (f a) ctx'
-                         in  (Dict \\ leTrans @va @vb @vc \\ alteb \\ bltec, ctx'', a')
+ma >>= f = MkLVM \ctx -> let !(aleb, ctx', a) = unLVM ma ctx
+                             !(blec, ctx'', a') = unLVM (f a) ctx'
+                         in  (Dict \\ leTrans @va @vb @vc \\ aleb \\ blec, ctx'', a')
 
 -- | Monad discard operator for working with the QualifiedDo syntax.
 (>>) :: forall ctx va vb vc a b. (ContextualConsumable ctx a)

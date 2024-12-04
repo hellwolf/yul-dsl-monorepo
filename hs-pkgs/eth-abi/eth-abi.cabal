@@ -37,8 +37,7 @@ library internal
                    Internal.Data.Type.Bool
                    Internal.Data.Type.List
   build-depends:   ghc-experimental >= 0.1,
-                   template-haskell >= 2.22,
-                   constraints >= 0.13
+                   template-haskell >= 2.22
 
 library
   import:           basic-options
@@ -69,8 +68,10 @@ Test-Suite test-eth-abi
   type:             exitcode-stdio-1.0
   build-depends:    QuickCheck >= 2.15,
                     hspec >= 2.11,
+                    internal,
                     eth-abi
   hs-source-dirs:   test
-  other-modules:    INTx_prop
-                    NP_test
+  other-modules:    SimpleNP_test
+                    TupleN_test
+                    INTx_prop
   main-is:          Main.hs

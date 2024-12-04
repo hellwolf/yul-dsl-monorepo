@@ -8,7 +8,7 @@ module Ethereum.ContractABI.ExtendedType.TUPLEn
 -- import           Data.Tuple.Experimental
 -- import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
 import           Data.TupleN
-import           Ethereum.ContractABI.CoreType.NP (NP (..))
+-- import           Ethereum.ContractABI.CoreType.NP (NP (..))
 
 {- AUTO GENERATED TupleN for N = [3..64]
 

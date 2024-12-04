@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-
 {-|
 
 Copyright   : (c) 2024 Miao, ZhiCheng

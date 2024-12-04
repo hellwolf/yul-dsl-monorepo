@@ -19,15 +19,17 @@ erc20_transfer = fn'l "transfer" $ yulmonad'lp @(ADDR -> ADDR -> U256 -> BOOL)
 
   let !(amount'p1, amount'p2) = dup2'l amount'p
 
+  -- generate 0 zone:
   amount1 <- lift amount'p1 -- TODO: lift N variables a time
   from <- lift from'p
   (from, balance1before) <- pass from (pure . call'l erc20_balance_of)
   sput_ (erc20_balance_storage from) (balance1before - amount1) -- TODO: operator for storage references
 
+  -- generation 1 zone:
   to <- lift to'p
   amount2 <- lift amount'p2
   (to, balance2before) <- pass to (pure . call'l erc20_balance_of)
-  u2 <- sput_ (erc20_balance_storage to) (balance2before - amount2)
+  u2 <- sput_ (erc20_balance_storage to) (balance2before + amount2)
 
   pure $ emb'l true u2 -- the following code bugs out...
   -- embed true

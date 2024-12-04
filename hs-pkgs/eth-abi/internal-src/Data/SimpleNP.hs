@@ -1,21 +1,38 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE LinearTypes         #-}
+{-|
+
+Copyright   : (c) 2024 Miao, ZhiCheng
+License     : MIT
+
+Maintainer  : hellwolf@yolc.dev
+Stability   : experimental
+Portability : GHC2024
+
+= Description
+
+A simple n-ary product without any type function.
+
+Instead, it comes with a set of type families to work with function signatures that can be converted back and forth
+between their currying forms and uncurrying forms.
+
+Additionally, these type families are multiplicity-polymorphic to function arrows.
+
+-}
 module Data.SimpleNP
   ( Multiplicity (Many, One)
   , NP (Nil, (:*))
   , LiftFunction
   , UncurryNP'Fst, UncurryNP'Snd, UncurryNP'Multiplicity, UncurryNP
-  , CurryNP, CurryingNP'Head, CurryingNP'Tail
+  , CurryNP
+  , CurryingNP'Head, CurryingNP'Tail
   , CurryingNP (curryingNP), UncurryingNP(uncurryingNP)
   , module Internal.Data.Type.List
   ) where
 
 -- base
-import           Data.Kind               (Constraint, Type)
-import           Data.List               (intercalate)
+import           Data.Kind               (Type)
 import           GHC.Base                (Multiplicity (..))
--- constraints
-import           Data.Constraint.Forall  (Forall)
 --
 import           Internal.Data.Type.List
 
@@ -64,6 +81,10 @@ type family CurryNP np b where
   CurryNP (NP (x:xs)) b = x -> CurryNP (NP xs) b
   CurryNP (NP    '[]) b = b
 
+--
+-- Type classes for defining uncurrying/currying functions for NP
+--
+
 -- | The type of the head of arguments of an currying function.
 type family CurryingNP'Head f where
   CurryingNP'Head (a1 %_-> g) = a1
@@ -71,12 +92,8 @@ type family CurryingNP'Head f where
 
 -- | The type of the tail of an currying function.
 type family CurryingNP'Tail f where
-  CurryingNP'Tail (a1 %p-> g) = CurryingNP'Tail g
-  CurryingNP'Tail         (b) = b
-
---
--- Type classes for defining uncurrying/currying functions for NP
---
+  CurryingNP'Tail (_ %_-> g) = g
+  CurryingNP'Tail        (b) = b
 
 -- | Uncurrying a function into a function of @NP xs@ to @b@.
 class UncurryingNP f (xs :: [Type]) b
@@ -109,27 +126,11 @@ class CurryingNP (xs :: [Type]) b
 -- base instances
 --
 
-type family ConstraintMap (xs :: [Type]) (c :: Type -> Constraint) :: Constraint where
-  ConstraintMap '[]    c = ()
-  ConstraintMap (x:xs) c = (c x, ConstraintMap xs c)
+deriving instance Eq (NP ('[]))
+deriving instance (Eq x, Eq (NP xs)) => Eq (NP (x:xs))
 
 instance Show (NP '[]) where
-  show _ = "()"
+  show _ = "Nil"
 
-instance (Show x, Show (NP xs)) => Show (NP (x : xs)) where
+instance (Show x, Show (NP xs)) => Show (NP (x:xs)) where
   show (x :* xs) = "(" ++ show x ++ " :* " ++ show xs ++ ")"
-
---
--- Internal
---
-
--- Existential wrapper of any 'NP' values.
-data AnyNP (c :: Type -> Constraint) where
-  MkAnyEmptyNP    :: forall c. AnyNP c
-  MkAnyNonEmptyNP :: forall c x xs. ConstraintMap (x:xs) c => x -> NP xs -> AnyNP c
-
--- Show a NP as a list of strings.
-show_any_np :: AnyNP Show -> [String]
-show_any_np MkAnyEmptyNP                    = []
-show_any_np (MkAnyNonEmptyNP x Nil)         = [show x]
-show_any_np (MkAnyNonEmptyNP x (x' :* xs')) = [show x] ++ show_any_np (MkAnyNonEmptyNP x' xs')

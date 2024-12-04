@@ -42,8 +42,11 @@ import           Control.DeepSeq        (rnf)
 -- linear-base
 import qualified Control.Functor.Linear
 import qualified Data.Functor.Linear
-import           Prelude.Linear         (Consumable (consume), flip, lseq)
+import           Prelude.Linear         (Consumable (consume), flip, lseq, type (~))
 import qualified Unsafe.Linear          as UnsafeLinear
+-- eth-abi
+import           Data.SimpleNP          (NP)
+import           Data.TupleN
 --
 import           Data.LinearContext
 
@@ -102,16 +105,30 @@ infixl 1 >>=, >>
 --
 -- These combinators should be reexported by the contextualized LVM.
 
+-- | Lift a value in to the linearly versioned data.
 pure :: forall ctx v a. a ⊸ LVM ctx v v a
 pure a = MkLVM \ctx -> (Dict, ctx, a)
 
 -- | Pass the copied data to the next process, then pass both the original data and the result to the next stage.
-pass :: forall ctx va vb a b. (ContextualDupable ctx a)
+passN :: forall ctx va vb tpl b.
+         ( ContextualDupable ctx (TupleNtoNP (tpl))
+         , NPtoTupleN (TupleNtoNP tpl) ~ tpl
+         , FromTupleNtoNP tpl
+         , FromNPtoTupleN (TupleNtoNP tpl)
+         )
+      => tpl ⊸ (tpl ⊸ LVM ctx va vb b) ⊸ LVM ctx va vb (tpl, b)
+passN tpl mb = MkLVM \ctx ->
+  let !np = fromTupleNPtoNP tpl
+      !(ctx', (np1, np2)) = contextualDup ctx np
+      !tpl1 = fromNPtoTupleN np1
+      !tpl2 = fromNPtoTupleN np2
+      !(alteb, ctx'', b) = unLVM (mb tpl1) ctx'
+  in (alteb, ctx'', (tpl2, b))
+
+-- | Similar to 'passN' but for a single value.
+pass :: forall ctx va vb a b. (ContextualDupable ctx (NP '[a]))
      => a ⊸ (a ⊸ LVM ctx va vb b) ⊸ LVM ctx va vb (a, b)
-pass a mb = MkLVM \ctx ->
-  let !(ctx', (a1, a2)) = contextualDup ctx a
-      !(alteb, ctx'', b) = unLVM (mb a1) ctx'
-  in (alteb, ctx'', (a2, b))
+pass a mb = passN (MkSolo a) (\(MkSolo a') -> mb a') >>= un_solo
 
 -- | Process with provided data without creating a copy of the data.
 with :: forall ctx va vb a b. ()
@@ -140,3 +157,6 @@ instance Consumable (Dict p) where
 (\\) :: HasDict c e => (c => r) ⊸ e ⊸ r
 (\\) = flip (UnsafeLinear.toLinear2 (withDict))
 infixl 1 \\
+
+un_solo :: (Solo a, b) ⊸ LVM ctx v v (a, b)
+un_solo (MkSolo a, b) = MkLVM \ctx -> (Dict, ctx, (a, b))

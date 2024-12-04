@@ -55,6 +55,8 @@ library
                     Ethereum.ContractABI.ExtendedType.SELECTOR
                     Ethereum.ContractABI.ExtendedType.Maybe
                     Ethereum.ContractABI
+  reexported-modules: Data.SimpleNP,
+                      Data.TupleN
   build-depends:    bytestring >= 0.11,
                     template-haskell >= 2.22,
                     crypton >= 0.32,

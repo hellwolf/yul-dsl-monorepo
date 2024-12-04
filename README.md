@@ -140,7 +140,7 @@ TODOs & Future Plans
     - [ ] FUNC
     - [ ] Maybe
     - [ ] STRING
-    - [ ] Tuple, TUPLEn
+    - [ ] TUPLEn
     - [ ] STRUCT with named fields
   - ABITypeCodec
     - [ ]  Compatibility with the solidity abi-spec

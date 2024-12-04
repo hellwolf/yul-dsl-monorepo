@@ -12,10 +12,17 @@ import           Ethereum.ContractABI
 
 default (U256)
 
-test_tuple_to_np = and
+test_tf_tuple_to_np = and
   [ toBool' @(TupleNtoNP () == NP '[])
   , toBool' @(TupleNtoNP (Solo U8) == NP '[U8])
   , toBool' @(TupleNtoNP (U8, U16) == NP '[U8, U16])
+  ]
+
+test_tf_np_to_tuple = and
+  [ toBool' @(NPtoTupleN (NP '[]) == ())
+  , toBool' @(NPtoTupleN (NP '[U8]) == Solo U8)
+  , toBool' @(NPtoTupleN (NP '[U8, U16]) == (U8, U16))
+  , toBool' @(NPtoTupleN (NP '[U8, U16, U32]) == (U8, U16, U32))
   ]
 
 test_from_tuple_to_np = and
@@ -29,7 +36,7 @@ test_from_tuple_to_np = and
 
 test_from_np_to_tuple = and
   [ fromNPtoTupleN Nil == ()
-  , fromNPtoTupleN ("nihao" :* Nil) == "nihao"
+  , fromNPtoTupleN ("nihao" :* Nil) == (MkSolo "nihao")
   , fromNPtoTupleN (1 :* 2 :* Nil) == (1, 2)
   , fromNPtoTupleN (1 :* 2 :* Nil) /= (2, 1)
   , fromNPtoTupleN (1 :* 2 :* ("konijiwa" :* Nil) :* Nil) == (1, 2, "konijiwa" :* Nil)
@@ -37,6 +44,7 @@ test_from_np_to_tuple = and
   ]
 
 tests = describe "TupleN tests" $ do
-  it "TupleToNP examples" test_tuple_to_np
-  it "fromTupleNPToNP examples" test_from_tuple_to_np
+  it "TupleNtoNP examples" test_tf_tuple_to_np
+  it "NPtoTupleN examples" test_tf_np_to_tuple
+  it "fromTupleNPtoNP examples" test_from_tuple_to_np
   it "fromNPtoTupleN examples" test_from_np_to_tuple

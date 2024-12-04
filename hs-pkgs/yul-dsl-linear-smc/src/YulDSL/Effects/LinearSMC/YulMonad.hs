@@ -14,7 +14,7 @@ import           Data.Constraint.Unsafe           (unsafeAxiom)
 -- linear-base
 import           Control.Category.Linear          (discard, encode, ignore, merge, mkUnit)
 import qualified Control.Functor.Linear
-import           Prelude.Linear                   (lseq, (&))
+import           Prelude.Linear                   ((&))
 import qualified Unsafe.Linear                    as UnsafeLinear
 -- yul-dsl
 import           YulDSL.Core
@@ -95,7 +95,3 @@ instance YulO2 r a => ContextualConsumable (YulMonadCtx r) (P'x eff r a) where
 
 instance YulO2 r a => ContextualDupable (YulMonadCtx r) (P'x eff r a) where
   contextualDup ctx x = (ctx, dup2'l x)
-
-
-instance YulO1 r => ContextualConsumable (YulMonadCtx r) () where
-  contextualConsume (MkYulMonadCtx ud) x = MkYulMonadCtx (lseq x ud)

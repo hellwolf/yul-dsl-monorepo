@@ -74,7 +74,7 @@ liftN :: forall v r tpl'p tpl'v.
          )
       => tpl'p ⊸ YulMonad v v r tpl'v
 liftN tpl'p = LVM.do
-  np'v :: TupleNtoNP tpl'v <- lift (fromTupleNPtoNP tpl'p)
+  np'v :: TupleNtoNP tpl'v <- lift (fromTupleNtoNP tpl'p)
   pure (fromNPtoTupleN np'v)
 
 --------------------------------------------------------------------------------

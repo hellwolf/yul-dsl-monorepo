@@ -2,16 +2,18 @@ cabal-version:  3.0
 name:           yul-dsl
 version:        0.1.0.0
 category:       Language
-synopsis:       A DSL for Solidity/Yul
-description:    YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
+synopsis:       YulDSL - An EDSL targets Solidity\/Yul
+description:    YulDSL provides an embedded domain-specific language (EDSL) called 'YulDSL' in Haskell that targets
+                olidiy\/Yul code.
 
-                Additionally, the package uses a technique called "evaluating linear functions to symmetric monoidal
-                categories (Jean-Philippe Berntardy and Arnaud Spiwack)" to provide an ergonomic linear functions
-                (nicknamed "lolipop" functions, hence the project name) programming environment for the 'YulDSL'.
+                It is a DSL that bases itself on category theory, which makes it possible to have different front ends
+                that all target to YulDSL.
 
-                Furthermore, the 'YulDSL' has its portable artifact form (WORK-IN-PROGRESS), which opens the door for
-                other frontends (a visual programming interface or other principled programming languages) to produce
-                and share 'YulDSL' as portable modules with each other.
+                One such working front end is YulDSL\/Haskell (package: yul-dsl-linear-smc).
+
+                Furthermore, in the future, 'YulDSL' can be serialized into a portable artifact, thereby enabling
+                various front ends, such as a visual programming interface or other YulDSL-supported programming
+                languages to produce and share 'YulDSL' as portable modules with each other.
 
 license:        LGPL-3.0-or-later
 license-file:   LGPL-3.0-LICENSE

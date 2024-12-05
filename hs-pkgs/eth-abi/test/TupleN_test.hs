@@ -26,12 +26,12 @@ test_tf_np_to_tuple = and
   ]
 
 test_from_tuple_to_np = and
-  [ fromTupleNPtoNP () == Nil
-  , fromTupleNPtoNP (MkSolo "hi") == "hi" :* Nil
-  , fromTupleNPtoNP (1, 2) == 1 :* 2 :* Nil
-  , fromTupleNPtoNP (1, 2) /= 2 :* 1 :* Nil
-  , fromTupleNPtoNP (1, 2, ("hello" :* Nil)) == 1 :* 2 :* ("hello" :* Nil) :* Nil
-  , fromTupleNPtoNP (1, 2, 3) /= 3 :* 2 :* 1 :* Nil
+  [ fromTupleNtoNP () == Nil
+  , fromTupleNtoNP (MkSolo "hi") == "hi" :* Nil
+  , fromTupleNtoNP (1, 2) == 1 :* 2 :* Nil
+  , fromTupleNtoNP (1, 2) /= 2 :* 1 :* Nil
+  , fromTupleNtoNP (1, 2, ("hello" :* Nil)) == 1 :* 2 :* ("hello" :* Nil) :* Nil
+  , fromTupleNtoNP (1, 2, 3) /= 3 :* 2 :* 1 :* Nil
   ]
 
 test_from_np_to_tuple = and
@@ -46,5 +46,5 @@ test_from_np_to_tuple = and
 tests = describe "TupleN tests" $ do
   it "TupleNtoNP examples" test_tf_tuple_to_np
   it "NPtoTupleN examples" test_tf_np_to_tuple
-  it "fromTupleNPtoNP examples" test_from_tuple_to_np
+  it "fromTupleNtoNP examples" test_from_tuple_to_np
   it "fromNPtoTupleN examples" test_from_np_to_tuple

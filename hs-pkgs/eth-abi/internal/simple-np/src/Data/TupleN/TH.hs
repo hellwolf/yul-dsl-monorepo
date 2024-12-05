@@ -8,19 +8,14 @@ Maintainer  : hellwolf@yolc.dev
 Stability   : experimental
 Portability : GHC2024
 
-= Description
-
-This module contains template haskell generated code to work with n-ary tuples. It includes type families to convert
-between the TupleN types and their isomorphic SimpleNP type, and functions that actually convert between their values.
-
-It supports up to 64-ary tuple.
+The template haskell code for TupleN and NP utilities.
 
 -}
 module Data.TupleN.TH
   ( -- | Define TupleNtoNP closed type family using template haskell.
     TupleNtoNP
   -- | Convert a TupleN to its corresponding NP.
-  , FromTupleNtoNP (fromTupleNPtoNP)
+  , FromTupleNtoNP (fromTupleNtoNP)
   -- | Define NPtoTupleN closed type family using template haskell.
   , NPtoTupleN
   -- | Convert a NP to its corresponding tupleN.
@@ -58,11 +53,11 @@ do
   -- class FromTupleNPtoNP a where
   clsInstsDec <- do
     clsName <- TH.newName "FromTupleNtoNP"
-    fnName <- TH.newName "fromTupleNPtoNP"
+    fnName <- TH.newName "fromTupleNtoNP"
     clsArg <- TH.newName "a"
     pArg <- TH.newName "p" -- multiplicity
     cls <- TH.classD (pure []) clsName [TH.plainTV clsArg] []
-           -- fromTupleNPtoNP :: forall. a -> TupleNtoNP a
+           -- fromTupleNtoNP :: forall. a -> TupleNtoNP a
            [TH.sigD fnName (TH.mulArrowT `TH.appT` TH.varT pArg `TH.appT`
                             TH.varT clsArg `TH.appT`
                             (TH.conT tfName `TH.appT` TH.varT clsArg))]

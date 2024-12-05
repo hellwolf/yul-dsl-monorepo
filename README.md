@@ -168,7 +168,6 @@ TODOs & Future Plans
   - CodeGen core:
     - [ ] Fn autoId (instead of using yulCatDigest.)
 - yul-dsl-linear-smc
-  - [ ] YulMonad operations.
   - [ ] Complete the Num classes
   - [ ] Prelude curation
 - yol-suite

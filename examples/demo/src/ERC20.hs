@@ -17,13 +17,13 @@ erc20_balance_of = fn'l "balanceOf" $ yulmonad'lv @(ADDR -> U256)
 erc20_transfer = fn'l "transfer" $ yulmonad'lp @(ADDR -> ADDR -> U256 -> BOOL)
   \from'p to'p amount'p -> LVM.do
 
-  -- generate 0 zone: update sender balance
+  -- data generate 0 block: update sender balance
   amount'p <- pass_ amount'p \amount'p -> LVM.do
     (amount, from) <- liftN (amount'p, from'p)
     (from, balance1before) <- pass from (pure . call'l erc20_balance_of)
     sput_ (erc20_balance_storage from) (balance1before - amount) -- TODO: operator for storage references
 
-  -- generation 1 zone: update receiver balance
+  -- data generation 1 block: update receiver balance
   u2 <- with amount'p \amount'p -> LVM.do
     (amount, to) <- liftN (amount'p, to'p)
     (to, balance2before) <- pass to (pure . call'l erc20_balance_of)

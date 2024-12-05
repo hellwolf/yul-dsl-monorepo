@@ -2,16 +2,17 @@ Cabal-Version:  3.0
 name:           yul-dsl-linear-smc
 version:        0.1.0.0
 category:       Language
-synopsis:       Embedding YulDSL in Haskell Using Linear Types
-description:    YulDSL provides an eDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
+synopsis:       YulDSL\/Haskell - Embedding YulDSL in Haskell Using Linear Types
+description:    YulDSL is an EDSL targets Solidity\/Yul, and this package is one of its front ends called YulDSL\/Haskell
+                which embeds YulDSL in Haskell.
 
-                Additionally, the package uses a technique called "evaluating linear functions to symmetric monoidal
+                The front end uses a technique called "evaluating linear functions to symmetric monoidal
                 categories (Jean-Philippe Bernardy and Arnaud Spiwack)" to provide an ergonomic linear functions
-                (nicknamed "lolipop" functions, hence the project name) programming environment for the 'YulDSL'.
+                programming environment for the 'YulDSL'.
 
-                Furthermore, the 'YulDSL' has its portable artifact form (WORK-IN-PROGRESS), which opens the door for
-                other frontends (a visual programming interface or other principled programming languages) to produce
-                and share 'YulDSL' as portable modules with each other.
+                The front end also provides a new type of linear safety using linearly versioned monad, where all data
+                effects are linearly versioned and tracked as types, which aims to eliminates a class of program safety
+                issues arises from using out of date data obtained from side effects.
 
 license:        LGPL-3.0-or-later
 license-file:   LGPL-3.0-LICENSE

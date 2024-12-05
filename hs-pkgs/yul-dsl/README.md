@@ -1,7 +1,7 @@
 YulDSL - A DSL For Solidity/YUl
 ===============================
 
-YulDSL provides an embedded domain-specific language (EDSL) called 'YulDSL' that models Solidiy/Yul code in Haskell.
+YulDSL provides an embedded domain-specific language (EDSL) called 'YulDSL' in Haskell that targets Solidiy/Yul code.
 
 Motivation
 ----------
@@ -26,7 +26,7 @@ Motivation
   embarked on a journey to create an EDSL in Haskell for such a purpose.
 
 A DSL Based On Category Theory
-========================
+==============================
 
 The signature design choice for YulDSL is to base itself on [category
 theory](https://ncatlab.org/nlab/show/category+theory). In contrast to ones that base themselves on stack machines or
@@ -50,7 +50,7 @@ compile simply typed lambda calculus as Haskell code to the cartesian closed cat
 symmetric monoidal categories (SMC).
 
 YulDSL/Haskell
-===========
+==============
 
 YulDSL currently supports symmetric monoidal categories (SMC). Due to SMC's correspondence with linear types, according
 the work referenced above, "YulDSL/Haskell" utilizes the theory and makes it a safe programming experience for the

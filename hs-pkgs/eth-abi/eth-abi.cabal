@@ -45,6 +45,7 @@ library
                       Ethereum.ContractABI
   other-modules:      Internal.Data.Type.Bool
   reexported-modules: Data.SimpleNP,
+                      Data.TupleN.TH,
                       Data.TupleN
   build-depends:      bytestring >= 0.11,
                       template-haskell >= 2.22,

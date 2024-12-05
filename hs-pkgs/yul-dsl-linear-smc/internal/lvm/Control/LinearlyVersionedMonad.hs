@@ -61,7 +61,7 @@ unLVM (MkLVM fa) = fa
 runLVM :: forall a va vb ctx. ctx ⊸ LVM ctx va vb a ⊸ (ctx, a)
 runLVM ctx m = let !(lp, ctx', a) = unLVM m ctx in lseq lp (ctx', a)
 
--- | Monad bind operator for working with the QualifiedDo syntax.
+-- | Monad bind operator for 'LVM', working with the QualifiedDo syntax.
 --
 -- _Law of Monad_
 --
@@ -83,11 +83,12 @@ ma >>= f = MkLVM \ctx -> let !(aleb, ctx', a) = unLVM ma ctx
                              !(blec, ctx'', a') = unLVM (f a) ctx'
                          in  (Dict \\ leTrans @va @vb @vc \\ aleb \\ blec, ctx'', a')
 
+-- | Reverse monad bind operator for 'LVM'.
 (=<<) :: forall ctx va vb vc a b. ()
       => (a ⊸ LVM ctx vb vc b) ⊸ LVM ctx va vb a ⊸ LVM ctx va vc b
 (=<<) = flip (>>=)
 
--- | Monad discard operator for working with the QualifiedDo syntax.
+-- | Monad bind & discard operator, working with the QualifiedDo syntax.
 (>>) :: forall ctx va vb vc a b. (ContextualConsumable ctx a)
      => LVM ctx va vb a ⊸ LVM ctx vb vc b ⊸ LVM ctx va vc b
 ma >> mb = ma >>= \a -> MkLVM \ctx -> let !(bltec, ctx', b) = unLVM mb ctx

@@ -26,43 +26,44 @@ common basic-options
                       RequiredTypeArguments
   build-depends:      base >= 4.20.0.0 && < 666
 
+library
+  import:           basic-options
+  --
+  hs-source-dirs:     src
+  exposed-modules:    Ethereum.ContractABI.ABICoreType
+                      Ethereum.ContractABI.ABITypeable
+                      Ethereum.ContractABI.ABICodec
+                      Ethereum.ContractABI.CoreType.NP
+                      Ethereum.ContractABI.CoreType.BOOL
+                      Ethereum.ContractABI.CoreType.ADDR
+                      Ethereum.ContractABI.CoreType.INTx
+                      Ethereum.ContractABI.CoreType.BYTESn
+                      Ethereum.ContractABI.ABITypeCoercible
+                      Ethereum.ContractABI.ExtendedType.TUPLEn
+                      Ethereum.ContractABI.ExtendedType.SELECTOR
+                      Ethereum.ContractABI.ExtendedType.Maybe
+                      Ethereum.ContractABI
+  other-modules:      Internal.Data.Type.Bool
+  reexported-modules: Data.SimpleNP,
+                      Data.TupleN
+  build-depends:      bytestring >= 0.11,
+                      template-haskell >= 2.22,
+                      crypton >= 0.32,
+                      memory >= 0.18,
+                      cereal >= 0.5,
+                      simple-np
 
-library internal
+library simple-np
   import:     basic-options
   visibility: private
   --
-  hs-source-dirs:  internal-src
+  hs-source-dirs:  ./internal/simple-np/src
   exposed-modules: Data.SimpleNP
+                   Data.TupleN.TH
                    Data.TupleN
-                   Internal.Data.Type.Bool
                    Internal.Data.Type.List
   build-depends:   ghc-experimental >= 0.1,
                    template-haskell >= 2.22
-
-library
-  import:           basic-options
-  hs-source-dirs:   src
-  exposed-modules:  Ethereum.ContractABI.ABICoreType
-                    Ethereum.ContractABI.ABITypeable
-                    Ethereum.ContractABI.ABICodec
-                    Ethereum.ContractABI.CoreType.NP
-                    Ethereum.ContractABI.CoreType.BOOL
-                    Ethereum.ContractABI.CoreType.ADDR
-                    Ethereum.ContractABI.CoreType.INTx
-                    Ethereum.ContractABI.CoreType.BYTESn
-                    Ethereum.ContractABI.ABITypeCoercible
-                    Ethereum.ContractABI.ExtendedType.TUPLEn
-                    Ethereum.ContractABI.ExtendedType.SELECTOR
-                    Ethereum.ContractABI.ExtendedType.Maybe
-                    Ethereum.ContractABI
-  reexported-modules: Data.SimpleNP,
-                      Data.TupleN
-  build-depends:    bytestring >= 0.11,
-                    template-haskell >= 2.22,
-                    crypton >= 0.32,
-                    memory >= 0.18,
-                    cereal >= 0.5,
-                    internal
 
 Test-Suite test-eth-abi
   import:           basic-options
@@ -70,7 +71,7 @@ Test-Suite test-eth-abi
   type:             exitcode-stdio-1.0
   build-depends:    QuickCheck >= 2.15,
                     hspec >= 2.11,
-                    internal,
+                    simple-np,
                     eth-abi
   hs-source-dirs:   test
   other-modules:    SimpleNP_test

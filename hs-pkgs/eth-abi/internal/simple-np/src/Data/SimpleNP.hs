@@ -40,7 +40,7 @@ import           Internal.Data.Type.List
 -- | N-ary product without a type function comparing to its homonym in the "sop" package.
 data NP :: [Type] -> Type where
   Nil  :: NP '[]
-  (:*) :: x -> NP xs -> NP (x : xs)
+  (:*) :: x %1-> NP xs %1-> NP (x : xs)
 infixr 5 :*
 
 --

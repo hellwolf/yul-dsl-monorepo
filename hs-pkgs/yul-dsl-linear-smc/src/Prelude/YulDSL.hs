@@ -24,13 +24,14 @@ module Prelude.YulDSL
   ) where
 
 -- linear-base
-import           Prelude.Linear            hiding (Eq (..), Ord (..))
+import           Prelude.Linear           hiding (Eq (..), Ord (..))
 -- linear-smc
 import           Control.Category.Linear
 -- yul-dsl
 import           YulDSL.Core
+-- yul-dsl orphaned instances
+import           Data.MPOrd.YulDSL        ()
+import           Data.Num.YulDSL          ()
 --
 import           Data.MPOrd
-import           Data.MPOrd.YulDSL         ()
-import           Data.Num.YulDSL.LinearSMC ()
 import           YulDSL.Effects.LinearSMC

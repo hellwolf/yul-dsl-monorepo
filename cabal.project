@@ -7,5 +7,7 @@ packages:
   hs-pkgs/yol-suite/testsuite
   examples/demo
 
+multi-repl: true
+
 package linear-smc
   ghc-options: -Wno-all

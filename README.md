@@ -168,8 +168,7 @@ TODOs & Future Plans
   - CodeGen core:
     - [ ] Fn autoId (instead of using yulCatDigest.)
 - yul-dsl-linear-smc
-  - [ ] `P'L (v :: Nat) r a` and `YulCat'L`, linear-safety with data generation versioning tag "v".
-  - [ ] All operations: `emb'l, use'l, dis'l, dup'l`
+  - [ ] YulMonad operations.
   - [ ] Complete the Num classes
   - [ ] Prelude curation
 - yol-suite

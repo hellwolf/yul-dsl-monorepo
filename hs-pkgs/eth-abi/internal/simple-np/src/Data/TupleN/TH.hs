@@ -16,10 +16,9 @@ between the TupleN types and their isomorphic SimpleNP type, and functions that 
 It supports up to 64-ary tuple.
 
 -}
-module Data.TupleN
-  ( Solo (MkSolo)
-  -- | Define TupleNtoNP closed type family using template haskell.
-  , TupleNtoNP
+module Data.TupleN.TH
+  ( -- | Define TupleNtoNP closed type family using template haskell.
+    TupleNtoNP
   -- | Convert a TupleN to its corresponding NP.
   , FromTupleNtoNP (fromTupleNPtoNP)
   -- | Define NPtoTupleN closed type family using template haskell.
@@ -29,18 +28,16 @@ module Data.TupleN
   ) where
 
 -- base
-import           Control.Monad           (replicateM)
--- ghc-experimental
-import           Data.Tuple.Experimental (Solo (MkSolo))
+import           Control.Monad       (replicateM)
 -- template-haskell
-import qualified Language.Haskell.TH     as TH
+import qualified Language.Haskell.TH as TH
 --
 import           Data.SimpleNP
 
 
 do
   let tuple_n_t xs = foldl' TH.appT (TH.tupleT (length xs)) (map TH.varT xs)
-  let promoted_list_t xs = foldr (TH.appT . TH.appT TH.promotedConsT) TH.promotedNilT (map TH.varT xs)
+  let promoted_list_t = foldr (TH.appT . TH.appT TH.promotedConsT . TH.varT) TH.promotedNilT
   tfName <- TH.newName "TupleNtoNP"
   -- type family TupleNtoNP t where
   --   TupleNtoNP () = NP '[]
@@ -63,9 +60,12 @@ do
     clsName <- TH.newName "FromTupleNtoNP"
     fnName <- TH.newName "fromTupleNPtoNP"
     clsArg <- TH.newName "a"
+    pArg <- TH.newName "p" -- multiplicity
     cls <- TH.classD (pure []) clsName [TH.plainTV clsArg] []
            -- fromTupleNPtoNP :: forall. a -> TupleNtoNP a
-           [TH.sigD fnName (TH.arrowT `TH.appT` TH.varT clsArg `TH.appT` (TH.conT tfName `TH.appT` TH.varT clsArg))]
+           [TH.sigD fnName (TH.mulArrowT `TH.appT` TH.varT pArg `TH.appT`
+                            TH.varT clsArg `TH.appT`
+                            (TH.conT tfName `TH.appT` TH.varT clsArg))]
     insts <- mapM (\n -> do
                       xs <- replicateM n (TH.newName "x")
                       TH.instanceD (pure [])
@@ -74,19 +74,19 @@ do
                                           [TH.tupP (map TH.varP xs)]
                                           (TH.normalB $
                                             foldr
-                                            (\a b -> TH.infixE (Just a) (TH.conE '(:*)) (Just b))
+                                            ((\a b -> TH.infixE (Just a) (TH.conE '(:*)) (Just b)) . TH.varE)
                                             (TH.conE 'Nil)
-                                            (map TH.varE xs))
+                                            xs)
                                           []
                                         ]
                         ]
                  ) [0..64]
-    pure $ [ cls ] ++ insts
-  pure $ [ tfDec ] ++ clsInstsDec
+    pure $ cls : insts
+  pure $ tfDec : clsInstsDec
 
 do
   let tuple_n_t xs = foldl' TH.appT (TH.tupleT (length xs)) (map TH.varT xs)
-  let promoted_list_t xs = foldr (TH.appT . TH.appT TH.promotedConsT) TH.promotedNilT (map TH.varT xs)
+  let promoted_list_t = foldr (TH.appT . TH.appT TH.promotedConsT . TH.varT) TH.promotedNilT
   tfName <- TH.newName "NPtoTupleN"
   -- type family NPtoTupleN t where
   --   NPtoTupleN (NP '[]) = ()
@@ -104,22 +104,24 @@ do
       --   x
       -- ] ++
       -- Equations for unit, and 2+ tuples
-      ( map (\n -> do
-                xs <- replicateM n (TH.newName "x")
-                TH.tySynEqn Nothing
-                  (TH.conT tfName `TH.appT` (TH.conT ''NP `TH.appT` promoted_list_t xs))
-                  (tuple_n_t xs)
-            ) ([0] <> [1..64])
-      )
+      map (\n -> do
+              xs <- replicateM n (TH.newName "x")
+              TH.tySynEqn Nothing
+                (TH.conT tfName `TH.appT` (TH.conT ''NP `TH.appT` promoted_list_t xs))
+                (tuple_n_t xs)
+          ) ([0..64])
   -- class FromNPtoTupleN a where
   --   fromNPtoTupleN :: forall. a -> NPtoTupleN a
   clsInstsDec <- do
-    let np_p xs = foldr (\a b -> TH.infixP a '(:*) b) (TH.conP 'Nil []) (map TH.varP xs)
+    let np_p = foldr ((\a b -> TH.infixP a '(:*) b) . TH.varP) (TH.conP 'Nil [])
     clsName <- TH.newName "FromNPtoTupleN"
     fnName <- TH.newName "fromNPtoTupleN"
     clsArg <- TH.newName "a"
+    pArg <- TH.newName "p" -- multiplicity
     cls <- TH.classD (pure []) clsName [TH.plainTV clsArg] []
-           [TH.sigD fnName (TH.arrowT `TH.appT` TH.varT clsArg `TH.appT` (TH.conT tfName `TH.appT` TH.varT clsArg))]
+           [TH.sigD fnName (TH.mulArrowT `TH.appT` TH.varT pArg `TH.appT`
+                            TH.varT clsArg `TH.appT`
+                            (TH.conT tfName `TH.appT` TH.varT clsArg))]
     -- special instance for Solo:
     -- fromNPtoTupleN (x :* Nil) = x -- Not: (MkSolo s)
     -- soloInst <- do
@@ -133,6 +135,6 @@ do
                       TH.instanceD (pure [])
                         (TH.conT clsName `TH.appT` (TH.conT ''NP `TH.appT` promoted_list_t xs))
                         [TH.funD fnName [ TH.clause [np_p xs] (TH.normalB $ TH.tupE $ map TH.varE xs) []]]
-                  ) ([0] ++ [1..64])
-    pure $ [ cls ] ++ insts
-  pure $ [ tfDec ] ++ clsInstsDec
+                  ) ([0..64])
+    pure $ cls : insts
+  pure $ tfDec : clsInstsDec

@@ -35,8 +35,7 @@ bar3 = fn'l "bar3" $ yulmonad'lp @(U256 -> U256 -> U256 -> U256)
 
 fooSPut = fn'l "fooSPut" $ yulmonad'lv @(ADDR -> U256 -> ())
   \addr val -> LVM.do
-  val' <- sput addr val
-  toss val'
+  sput_ addr val
 
 call0 = fn'l "call0" $
   uncurry'lv @(() -> U256)

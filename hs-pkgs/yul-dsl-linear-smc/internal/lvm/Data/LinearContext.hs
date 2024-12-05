@@ -1,13 +1,15 @@
-{-# OPTIONS_GHC -Wno-orphans #-}
 module Data.LinearContext
-  ( ContextualConsumable (..)
-  , ContextualDupable (..)
+  ( ContextualConsumable (contextualConsume)
+  , ContextualDupable (contextualDup)
+  , ContextualEmbeddable (contextualEmbed)
+  , ContextualDupableTupleN, contextualDupTupleN
   ) where
 
 -- linear-base
 import           Prelude.Linear (lseq)
 -- eth-abi
 import           Data.SimpleNP  (NP (..))
+import           Data.TupleN
 
 
 -- | Providing a linear context @ctx@ for consuming @a@.
@@ -20,6 +22,10 @@ class ContextualDupable ctx a where
   -- | Duplicate @a@ linearly.
   contextualDup :: ctx ⊸ a ⊸ (ctx, (a, a))
 
+-- | Providing a linear context @ctx@ for embedding a pure value @a@ in @m@.
+class ContextualEmbeddable ctx m a where
+  -- | Consume @a@ linearly.
+  contextualEmbed :: ctx ⊸ a ⊸ (ctx, m a)
 
 instance ContextualConsumable ctx () where
   contextualConsume ctx x = lseq x ctx
@@ -42,3 +48,13 @@ instance ( ContextualDupable ctx x
   contextualDup ctx (x :* xs) = let !(ctx', (x', x'')) = contextualDup ctx x
                                     !(ctx'', (xs', xs'')) = contextualDup ctx' xs
                                 in (ctx'', (x' :* xs', x'' :* xs''))
+
+type ContextualDupableTupleN ctx tpl = ( ConvertibleTupleN tpl
+                                       , ContextualDupable ctx (TupleNtoNP (tpl))
+                                       )
+
+contextualDupTupleN :: forall ctx tpl. ContextualDupableTupleN ctx tpl
+                    => ctx ⊸ tpl ⊸ (ctx, (tpl, tpl))
+contextualDupTupleN ctx tpl = let np = fromTupleNPtoNP tpl
+                                  !(ctx', (np1, np2)) = contextualDup ctx np
+                              in (ctx', (fromNPtoTupleN np1, fromNPtoTupleN np2))

@@ -6,7 +6,6 @@ module YulDSL.Effects.LinearSMC.YulPort
   , emb'l, const'l, dup2'l
     -- $abi_ops
   , coerce'l, cons'l, uncons'l
-    -- $linear_base_instances
   ) where
 -- linear-base
 import           Prelude.Linear
@@ -71,10 +70,11 @@ cons'l x xs = coerce'l (merge (x, xs))
 uncons'l :: forall x xs eff r. YulO3 x (NP xs) r => P'x eff r (NP (x:xs)) ⊸ (P'x eff r x, P'x eff r (NP xs))
 uncons'l = split . coerce'l
 
--- $linear_base_instances
--- = Linear Base Instances
 
--- | 'MPEq' instance for the yul ports.
+--
+-- 'MPEq' instance for the yul ports.
+--
+
 instance (YulObj r, YulNum a) => MPEq (P'x eff r a) (P'x eff r BOOL) where
   a == b = encode (YulNumCmp (false, true , false)) (merge (a, b))
   a /= b = encode (YulNumCmp (true , false, true )) (merge (a, b))
@@ -86,8 +86,24 @@ instance (YulObj r, YulNum a) => MPOrd (P'x eff r a) (P'x eff r BOOL) where
   a  > b = encode (YulNumCmp (false, false, true )) (merge (a, b))
   a >= b = encode (YulNumCmp (false, true , true )) (merge (a, b))
 
--- | 'IfThenElse' instance for the yul ports.
 --
+-- Num instances for (P'V v r)
+--
+
+instance (YulNum a, YulObj r) => Additive (P'V v r a) where
+  a + b = encode YulNumAdd (merge (a, b))
+
+instance (YulNum a, YulObj r) => AddIdentity (P'V v r a) where
+  -- Note: uni-port is forbidden in linear-smc, but linear-base AdditiveGroup requires this instance.
+  zero = error "unit is undefined for linear ports"
+
+instance (YulNum a, YulObj r) => AdditiveGroup (P'V v r a) where
+  negate = encode YulNumNeg
+
+--
+-- 'IfThenElse' instance for the yul ports.
+--
+
 -- FIXME, this should use pattern matching and built-in Bool type; otherwise the linearity of the branches are not
 -- respected.
 instance YulO2 a r => IfThenElse (P'x eff r BOOL) (P'x eff r a) where

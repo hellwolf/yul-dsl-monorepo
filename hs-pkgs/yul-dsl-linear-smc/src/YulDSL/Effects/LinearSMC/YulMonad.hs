@@ -5,7 +5,7 @@ module YulDSL.Effects.LinearSMC.YulMonad
   , Control.Functor.Linear.fmap
   -- * YulMonad Combinator
   -- ** Port Purity
-  , Impurable (lift), liftN
+  , Impurable (impure), impureN
   -- ** Storages
   , sget, sput, sput_, sputAt
   ) where
@@ -48,33 +48,33 @@ runYulMonad u m = let !(ctx', a) = runLVM (MkYulMonadCtx (UnsafeLinear.coerce u)
 --------------------------------------------------------------------------------
 
 class Impurable x'p x'v where
-  -- | Safe operation that lifts a pure yul port to a versioned yul port.
-  lift :: x'p ⊸ YulMonad v v r x'v
+  -- | Safe operation that impures a pure yul port to a versioned yul port.
+  impure :: x'p ⊸ YulMonad v v r x'v
 
 instance forall v r a. Impurable (P'P r a) (P'V v r a) where
-  lift x = pure (UnsafeLinear.coerce x)
+  impure x = pure (UnsafeLinear.coerce x)
 
 instance Impurable (NP '[]) (NP '[]) where
-  lift Nil = pure Nil
+  impure Nil = pure Nil
 
 instance forall x'p x'v xs'p xs'v.
          ( Impurable x'p x'v, Impurable (NP xs'p) (NP xs'v)
          ) => Impurable (NP (x'p:xs'p)) (NP (x'v:xs'v)) where
-  lift (x :* xs) = LVM.do
-    x' <- lift x
-    xs' <- lift xs
+  impure (x :* xs) = LVM.do
+    x' <- impure x
+    xs' <- impure xs
     pure (x' :* xs')
 
-liftN :: forall v r tpl'p tpl'v.
-         ( ConvertibleTupleN tpl'p
-         , ConvertibleTupleN tpl'v
-         -- , TupleNtoNP tpl'p ~ NP (P'P r a:xs)
-         -- , TupleNtoNP tpl'v ~ NP (P'V v r a:xs)
-         , Impurable (TupleNtoNP tpl'p) (TupleNtoNP tpl'v)
-         )
-      => tpl'p ⊸ YulMonad v v r tpl'v
-liftN tpl'p = LVM.do
-  np'v :: TupleNtoNP tpl'v <- lift (fromTupleNtoNP tpl'p)
+impureN :: forall v r tpl'p tpl'v.
+           ( ConvertibleTupleN tpl'p
+           , ConvertibleTupleN tpl'v
+           -- , TupleNtoNP tpl'p ~ NP (P'P r a:xs)
+           -- , TupleNtoNP tpl'v ~ NP (P'V v r a:xs)
+           , Impurable (TupleNtoNP tpl'p) (TupleNtoNP tpl'v)
+           )
+        => tpl'p ⊸ YulMonad v v r tpl'v
+impureN tpl'p = LVM.do
+  np'v :: TupleNtoNP tpl'v <- impure (fromTupleNtoNP tpl'p)
   pure (fromNPtoTupleN np'v)
 
 --------------------------------------------------------------------------------

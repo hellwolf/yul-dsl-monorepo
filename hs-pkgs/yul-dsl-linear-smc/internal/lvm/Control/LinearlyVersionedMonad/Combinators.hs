@@ -33,7 +33,7 @@ import           Data.TupleN                    (ConvertibleTupleN, TupleNtoNP, 
 -- pure
 --------------------------------------------------------------------------------
 
--- | Lift a value in to a LVM.
+-- | Lift a value into a LVM.
 pure :: forall ctx v a. a ⊸ LVM ctx v v a
 pure a = MkLVM (Dict, , a)
 

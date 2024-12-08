@@ -21,6 +21,17 @@ Yolc allows you to write safe code in production, a joyful experience for super 
 
 > Check out these [example codes](#).
 
+> [!TIP]
+>
+> Yolc is a compiler program for "YulDSL/Haskell". YulDSL is a domain-specific language (DSL) based on [category
+> theory](https://category-theory.org/) for [Solidity/Yul](https://soliditylang.org/). YulDSL can be embedded in
+> different languages, with "YulDSL/Haskell" being the first of its kind. Curiously, the name "yolc" sounds similar to
+> "solc", the compiler program for "Solidity/Yul".
+>
+> Do not worry if you don't understand some of these concepts, you can start with Yolc right away and have a rewarding,
+> fun experience writing safer production smart contracts. However, if you do feel adventurous and want to delve into
+> the inner workings of YulDSL, read [here](./hs-pkgs/yul-dsl/README.md).
+
 > [!CAUTION]
 >
 > 🚧 While this project is still work in progress 🚧, the good news is after pausing for the good part of 2024 due to
@@ -29,41 +40,20 @@ Yolc allows you to write safe code in production, a joyful experience for super 
 >
 > Contact me at info@yolc.dev if you are interested in testing this project out soon!
 
-> [!TIP]
->
-> Yolc is a compiler program for "YulDSL/Haskell". YulDSL is a domain-specific language (DSL) based on [category
-> theory](https://ncatlab.org/nlab/show/category+theory) for [Solidity/Yul](https://soliditylang.org/). YulDSL can be
-> embedded in different languages, with "YulDSL/Haskell" being the first of its kind. Curiously, the name "yolc" sounds
-> similar to "solc", the compiler program for "Solidity/Yul".
->
-> Do not worry if you don't understand some of these concepts, you can start with Yolc right away and have a rewarding,
-> fun experience writing safer production smart contracts. However, if you do feel adventurous and want to delve into
-> the inner workings of YulDSL, read [here](./hs-pkgs/yul-dsl/README.md).
-
-Packages
-========
-
-- *eth-abi* - Ethereum contract ABI specification in Haskell
-- [*yul-dsl*](./hs-pkgs/yul-dsl/README.md) - A DSL for Solidity/Yul
-- [*yul-dsl-linear-smc*](./hs-pkgs/yul-dsl-linear-smc/README.md) - Embedding YulDSL in Haskell Using Linear Types
-- [*yol-suite*](./hs-pkgs/yol-suite/README.md) - A Collection of YulDSL Programs for the New Pioneer of Ethereum Smart
-  Contracts Development
-  - **yolc**: the evil twin of "solc"; this is the compiler program for "YulDSL/Haskell".
-  - **attila**: who wields the foundy, forges his path; this is the counter part of the "forge" from
-    [foundry](https://github.com/foundry-rs/foundry).
-  - **drwitch**: who persuades the tyrant, shapes our history; this is the counter part of the "cast" from
-    [foundry](https://github.com/foundry-rs/foundry).
+------------------------------------------------------------------------------------------
 
 Features
 ========
 
-Extensible Type System Compatible with Ethereum Contract ABI Specification
---------------------------------------------------------------------------
+Compatible & Extensible Type System
+-----------------------------------
 
 > [!NOTE]
 >
 > These include [Ethereum contract ABI specification](https://docs.soliditylang.org/en/latest/abi-spec.html)
 > implemented in as *core types*, their *type extensions*, including *dependently typed extensions*.
+
+(TODO move this distracting big table to its own documentation, instead.)
 
 | ABIType Instances   | [ABICoreType]   | Name (Selector Name)                  | Examples               |
 |---------------------|-----------------|---------------------------------------|------------------------|
@@ -95,18 +85,14 @@ Extensible Type System Compatible with Ethereum Contract ABI Specification
 | ARRAY'd a l         | [ARRAY' a]      | Length-indexed arrays                 | TODO                   |
 | STRING'd v          | [BYTES']        | Dependent strings                     | TODO                   |
 
-Pure Effect
------------
+Expressive Pure Functions
+-------------------------
+
+**Haskell Native Syntax**
 
 TODO.
 
-Linear Effect
--------------
-
-TODO.
-
-Function Definition & Currying
-------------------------------
+**Currying Function Definition**
 
 ```haskell
 -- define a pure value function
@@ -118,7 +104,37 @@ call3 = fn @(Maybe U8 -> Maybe U8) "call3"
   \a -> call foo3 a a a
 ```
 
---------------------------------------------------
+**Pattern Matching**
+
+TODO.
+
+Linear Safety For Side Effects
+------------------------------
+
+TODO.
+
+Foundry Integration
+-------------------
+
+TODO.
+
+------------------------------------------------------------------------------------------
+
+Packages
+========
+
+- *eth-abi* - Ethereum contract ABI specification in Haskell
+- [*yul-dsl*](./hs-pkgs/yul-dsl/README.md) - A DSL for Solidity/Yul
+- [*yul-dsl-linear-smc*](./hs-pkgs/yul-dsl-linear-smc/README.md) - Embedding YulDSL in Haskell Using Linear Types
+- [*yol-suite*](./hs-pkgs/yol-suite/README.md) - A Collection of YulDSL Programs for the New Pioneer of Ethereum Smart
+  Contracts Development
+  - **yolc**: the evil twin of "solc"; this is the compiler program for "YulDSL/Haskell".
+  - **attila**: who wields the foundy, forges his path; this is the counter part of the "forge" from
+    [foundry](https://github.com/foundry-rs/foundry).
+  - **drwitch**: who persuades the tyrant, shapes our history; this is the counter part of the "cast" from
+    [foundry](https://github.com/foundry-rs/foundry).
+
+------------------------------------------------------------------------------------------
 
 TODOs & Future Plans
 ====================
@@ -129,30 +145,24 @@ TODOs & Future Plans
 
 **TODOs for 0.1.0.0**
 
+Headline Features
+
 - eth-abi
-  - CoreTypes:
-    - BYTESn
-      - [ ] all supported operations
-    - [ ] BYTES
+  - CoreType:
     - [ ] ARRAY
   - ExtendedTypes:
     - [ ] REF
-    - [ ] FUNC
     - [ ] Maybe
-    - [ ] STRING
     - [ ] TUPLEn
-    - [ ] STRUCT with named fields
-  - ABITypeCodec
-    - [ ]  Compatibility with the solidity abi-spec
 - yul-dsl
   - Value primitives:
-    - [ ] `YulAbi{Enc,Dec}`, contracts ABI serialization.
+    - [ ] `YulNum (Maybe a)`, safe numerical operations.
     - [ ] `YulCast`, casting values between value types.
   - Control flow primitives:
     - [ ] `YulMap`, tight loop over an array.
     - [ ] `YulLen`, array length.
-    - [ ] `YulNum (Maybe a)`, safe numerical operations.
-  - Non pure operations:
+    - [ ] `YulPat`, pattern matching infrastructure.
+  - Non pure primitives:
     - [ ] `YulSet, YulSPut`, storage operations.
     - [ ] `YulCall`, external function calls.
   - Utilities
@@ -165,43 +175,59 @@ TODOs & Future Plans
   - Object builder:
     - [ ] dispatcher builder with full dispatcher calldata codec support.
     - [ ] constructor support.
-  - CodeGen core:
-    - [ ] Fn autoId (instead of using yulCatDigest.)
 - yul-dsl-linear-smc
   - [ ] Complete the Num classes
   - [ ] Prelude curation
 - yol-suite
   - Software distributions:
-    - [ ] github dev console
-    - [ ] yolc.dev playground
     - [ ] Nix flake
+    - [ ] Rudimentary github dev console
 - yolc
+  - Cabal build system integration
+    - [ ] better YOLSuite build sharing.
   - Project Builder
-    - Manifest Builder:
-      - [x] Single-file output mode.
-      - [ ] Interface file generation.
-      - [ ] Better error messages.
+  - Contract verification support:
+    - [ ] Basic stunt contract generator.
+  - CLI
+    - [ ] Better error messages.
+
+**TODOs for 0.2.0.0**
+
+- eth-abi
+  - CoreType
+    - [ ] BYTESn, additional operations
+    - [ ] BYTES
+  - ExtendedType
+    - [ ] STRING
+    - [ ] FUNC
+    - [ ] STRUCT with named fields
+  - ABITypeCodec
+    - [ ]  Compatibility with the solidity abi-spec
+- yul-dsl
+  - Pure value primitives:
+    - [ ] `YulAbi{Enc,Dec}`, contracts ABI serialization.
+  - CodeGen core:
+    - [ ] Fn autoId (instead of using yulCatDigest.)
+- yol-suite
+  - Software distributions:
+    - [ ] better github dev console
+    - [ ] yolc.dev playground
+- yolc
+  - Project builder
+    - [ ] Interface file generator.
+    - Contract size strategy:
+      - [ ] Manual logic split & dispatching,
+      - [ ] Auto logic split.
     - Deployment types:
-      - [x] Singleton contract.
-      - [ ] Factory contract.
+      - [ ] Factory contract,
       - [ ] Shared library.
-    - Upgradability patterns:
-      - [ ] Grandfatherly upgradable.
-      - [ ] Full upgradable.
-      - [ ] Simple library template.
-    - Contract verification support:
-      - [ ] Stunt contract generator.
-      - [ ] Multi-files output mode
-  - CLI: `yolc [options] yol_module_spec...`
-    - Build Pipeline:
-      - [ ] Better YOLSuite build sharing.
-    - Output modes:
-      - [x] Show output mode.
-      - [x] Yul output mode.
-    - Compiler Modes:
-      - [x] `symbol   :: FnCat a b`, fnMode
-      - [x] `object   :: YulObject`, objectMode
-      - [x] `manifest :: Manifest`, projectMode
+    - Upgradability:
+      - [ ] Singleton upgradability,
+      - [ ] Beacon Upgradability.
+  - Contract verification support
+    - [ ] Full stunt contract generator.
+  - CLI
+    - [ ] Use 'THSH' to mix shell scripting and publish its haskell binary.
 - attila
   - Test Pipeline: `attila test`
     - [ ] QuickCheck integration using Eval monad.
@@ -209,10 +235,11 @@ TODOs & Future Plans
   - Deployment Pipeline: `attila deploy`
     - [ ] Deploy the program (program is an unit of deployment.)
     - [ ] Etherscan verification pipeline.
-- drwitch (not planned for the first release)
+- drwitch
+  - ...
 
-**Feature Versions**
+**Big Features In Research**
 
-- Generate diagrams using Haskell diagrams package.
-- Liquid Haskell integration.
+- Liquid haskell integration.
+- Dependently extended types.
 - Portable YulDSL artifact for non-Haskell language embedding and cross-languages modules.

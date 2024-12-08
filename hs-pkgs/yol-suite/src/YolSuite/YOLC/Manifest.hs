@@ -8,8 +8,8 @@ data DeploymentType = SingletonContract
                     deriving Show
 
 data Upgradability = NonUpgradable
-                   | GrandfatherlyUpgradable
-                   | FullUpgradable
+                   | SingletonUpgradability
+                   | BeaconUpgradability
                    deriving Show
 
 data BuildUnit = MkBuildUnit { mainObject        :: YulObject

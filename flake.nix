@@ -4,11 +4,20 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    solc = {
+      url = "github:hellwolf/solc.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { nixpkgs, flake-utils, ... }: (flake-utils.lib.eachDefaultSystem (system:
+  outputs = { nixpkgs, flake-utils, solc, ... }: (flake-utils.lib.eachDefaultSystem (system:
     let
-      pkgs = import nixpkgs { inherit system; };
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [
+          solc.overlay
+        ];
+      };
       commonDevInputs = with pkgs; [
         jq
         shellcheck
@@ -22,6 +31,8 @@
         buildInputs = with pkgs; commonDevInputs ++ [
           # local dev tooling
           nodePackages.nodemon
+          # solc
+          solc_0_8_28
           # haskell tooling
           cabal-install
           haskell.compiler.ghc910

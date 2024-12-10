@@ -20,12 +20,7 @@ Further more, the 'YulCat' is instantiated as a "Symmetric Monoidal Category" (S
 for compiling linearly-typed functions in Haskell directly to the 'YulCat', that is believed to greatly enhance the
 ergonomics of programming in 'YulCat'.
 
-YulCat is designed to be a category. The objects in this category are instances of @ABIType@.
-
-The classification objects in the YulCat symmetrical monoidal category:
-
-  * 'YulObj'
-  * 'YulNum'
+YulCat is designed to be a category. The objects in this category are instances of 'YulCatObj'.
 
 -}
 module YulDSL.Core.YulCat
@@ -60,7 +55,7 @@ type family NonPureEffect (eff :: k) :: Bool
 type IsNonPureEffect :: k -> Constraint
 type IsNonPureEffect eff = NonPureEffect eff ~ True
 
--- | A GADT-style DSL of Yul that constructs morphisms between objects (YulObj) of the "Yul Category".
+-- | A GADT-style DSL of Yul that constructs morphisms between objects (YulCatObj) of the "Yul Category".
 --
 --  Note: - The inhabitants of this are actually morphisms of the Yul category. "Cat" is just a nice sounding moniker,
 --  while the actual category is "Yul Category".
@@ -112,8 +107,8 @@ data YulCat (eff :: k) a b where
   YulNumCmp :: forall eff a. YulNum a => (BOOL, BOOL, BOOL) -> YulCat eff (a, a) BOOL
 
   -- * Contract ABI Serialization
-  -- YulAbiEnc :: YulObj a => YulCat a BYTES
-  -- YulAbiDec :: YulObj a => YulCat BYTES (Maybe a)
+  -- YulAbiEnc :: YulO1 a => YulCat a BYTES
+  -- YulAbiDec :: YulO2 a => YulCat BYTES (Maybe a)
 
   -- Storage Primitives
   --
@@ -244,17 +239,17 @@ instance (YulO2 a r, YulNum a) => Num (YulCat eff r a) where
 
 -- YulNum Ord operations:
 
-( <? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p -> YulCat eff r BOOL
+( <? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p -> YulCat eff r BOOL
 a <? b = YulNumCmp (true , false, false) <.< YulProd a b <.< YulDup
-(<=? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+(<=? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
 a<=? b = YulNumCmp (true , true , false) <.< YulProd a b <.< YulDup
-( >? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+( >? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
 a >? b = YulNumCmp (false, false, true ) <.< YulProd a b <.< YulDup
-( >=? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+( >=? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
 a >=? b = YulNumCmp (false, true , true ) <.< YulProd a b <.< YulDup
-( ==? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+( ==? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
 a ==? b = YulNumCmp (false, true , false) <.< YulProd a b <.< YulDup
-( /=? ) :: forall eff a r p. (YulObj r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+( /=? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
 a /=? b = YulNumCmp (true , false, true ) <.< YulProd a b <.< YulDup
 
 -- | IfThenElse for enabling rebindable syntax.

@@ -9,12 +9,12 @@ import           YulDSL.Core
 import           Data.MPOrd
 
 -- | 'MPEq' instance for yul category morphisms.
-instance (YulObj r, YulNum a) => MPEq (YulCat eff r a) (YulCat eff r BOOL) where
+instance (YulO1 r, YulNum a) => MPEq (YulCat eff r a) (YulCat eff r BOOL) where
   (==) = (==?)
   (/=) = (/=?)
 
 -- | 'MPOrd' instance for yul category morphisms.
-instance (YulObj r, YulNum a) => MPOrd (YulCat eff r a) (YulCat eff r BOOL) where
+instance (YulO1 r, YulNum a) => MPOrd (YulCat eff r a) (YulCat eff r BOOL) where
   ( <) = ( <?)
   (<=) = (<=?)
   ( >) = ( >?)

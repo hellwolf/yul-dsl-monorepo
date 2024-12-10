@@ -33,7 +33,7 @@ class LinearFnKind (ie :: PortEffect) (oe :: PortEffect) (fe :: LinearEffect) | 
           , UncurryNP'Snd f ~ b
           )
        => String
-       -> (forall r. YulObj r => P'x ie r (NP xs) ⊸ P'x oe r b)
+       -> (forall r. YulO1 r => P'x ie r (NP xs) ⊸ P'x oe r b)
        -> Fn fe (CurryNP (NP xs) b)
 
 instance forall vd. LinearFnKind (VersionedPort 0) (VersionedPort vd) (VersionedInputOutput vd) where

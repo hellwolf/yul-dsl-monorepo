@@ -41,7 +41,6 @@ library
                       Ethereum.ContractABI.ABITypeCoercible
                       Ethereum.ContractABI.ExtendedType.TUPLEn
                       Ethereum.ContractABI.ExtendedType.SELECTOR
-                      Ethereum.ContractABI.ExtendedType.Maybe
                       Ethereum.ContractABI
   other-modules:      Internal.Data.Type.Bool
   reexported-modules: Data.SimpleNP,

@@ -8,7 +8,7 @@ import           Ethereum.ContractABI
 import           YulDSL.Core
 
 
-disFn :: YulObj a => PureFn (a -> ())
+disFn :: YulO1 a => PureFn (a -> ())
 disFn = MkFn (MkFnCat "disFn" YulDis)
 
 simple_id = MkFnCat @MkPure @U256 @U256 "simple_id" YulId

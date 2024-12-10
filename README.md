@@ -151,22 +151,21 @@ Headline Features
   - CoreType:
     - [ ] ARRAY
   - ExtendedTypes:
-    - [ ] REF
-    - [ ] Maybe
     - [ ] TUPLEn
+    - [ ] REF
 - yul-dsl
   - Value primitives:
     - [ ] `YulNum (Maybe a)`, safe numerical operations.
     - [ ] `YulCast`, casting values between value types.
+  - ADT & pattern matching infrastructure:
+    - Maybe a
   - Control flow primitives:
-    - [ ] `YulMap`, tight loop over an array.
+    - [ ] `YulMapArray`, tight loop over an array.
     - [ ] `YulLen`, array length.
-    - [ ] `YulPat`, pattern matching infrastructure.
   - Non pure primitives:
     - [ ] `YulSet, YulSPut`, storage operations.
     - [ ] `YulCall`, external function calls.
   - Utilities
-    - [-] Show instance
     - [ ] Pattern matching using type synonyms for `YumNum a => (Maybe a)`
   - Evaluator
     - [ ] Support all `YulDSL` data constructors.
@@ -242,4 +241,4 @@ Headline Features
 
 - Liquid haskell integration.
 - Dependently extended types.
-- Portable YulDSL artifact for non-Haskell language embedding and cross-languages modules.
+        - Portable YulDSL artifact for non-Haskell language embedding and cross-languages modules.

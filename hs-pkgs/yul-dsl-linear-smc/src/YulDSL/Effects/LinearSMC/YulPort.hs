@@ -75,12 +75,12 @@ uncons'l = split . coerce'l
 -- 'MPEq' instance for the yul ports.
 --
 
-instance (YulObj r, YulNum a) => MPEq (P'x eff r a) (P'x eff r BOOL) where
+instance (YulO1 r, YulNum a) => MPEq (P'x eff r a) (P'x eff r BOOL) where
   a == b = encode (YulNumCmp (false, true , false)) (merge (a, b))
   a /= b = encode (YulNumCmp (true , false, true )) (merge (a, b))
 
 -- | 'MPOrd' instance for the yul ports.
-instance (YulObj r, YulNum a) => MPOrd (P'x eff r a) (P'x eff r BOOL) where
+instance (YulO1 r, YulNum a) => MPOrd (P'x eff r a) (P'x eff r BOOL) where
   a  < b = encode (YulNumCmp (true , false, false)) (merge (a, b))
   a <= b = encode (YulNumCmp (true , true , false)) (merge (a, b))
   a  > b = encode (YulNumCmp (false, false, true )) (merge (a, b))
@@ -90,14 +90,14 @@ instance (YulObj r, YulNum a) => MPOrd (P'x eff r a) (P'x eff r BOOL) where
 -- Num instances for (P'V v r)
 --
 
-instance (YulNum a, YulObj r) => Additive (P'V v r a) where
+instance (YulNum a, YulO1 r) => Additive (P'V v r a) where
   a + b = encode YulNumAdd (merge (a, b))
 
-instance (YulNum a, YulObj r) => AddIdentity (P'V v r a) where
+instance (YulNum a, YulO1 r) => AddIdentity (P'V v r a) where
   -- Note: uni-port is forbidden in linear-smc, but linear-base AdditiveGroup requires this instance.
   zero = error "unit is undefined for linear ports"
 
-instance (YulNum a, YulObj r) => AdditiveGroup (P'V v r a) where
+instance (YulNum a, YulO1 r) => AdditiveGroup (P'V v r a) where
   negate = encode YulNumNeg
 
 --

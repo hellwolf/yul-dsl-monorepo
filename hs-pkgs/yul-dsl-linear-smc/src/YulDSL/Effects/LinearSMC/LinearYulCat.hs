@@ -47,19 +47,19 @@ newtype YulCat'LPV vn r a b = MkYulCat'LPV (P'P r a ⊸ P'V vn r b)
 newtype YulCat'LPP r a b = MkYulCat'LPP (P'P r a ⊸ P'P r b)
 
 decode'lvv :: forall a b vd oe. ( YulO2 a b, VersionedInputOutput vd ~ oe)
-           => (forall r. YulObj r => P'V 0 r a ⊸ P'V vd r b)
+           => (forall r. YulO1 r => P'V 0 r a ⊸ P'V vd r b)
            -> YulCat oe a b
 decode'lvv f = decode (h f) -- an intermediate function to fight the multiplicity hell
-  where h :: (forall r. YulObj r => P'V 0 r a ⊸ P'V vn r b)
-          ⊸ (forall r. YulObj r => P (YulCat oe) r a ⊸ P (YulCat oe) r b)
+  where h :: (forall r. YulO1 r => P'V 0 r a ⊸ P'V vn r b)
+          ⊸ (forall r. YulO1 r => P (YulCat oe) r a ⊸ P (YulCat oe) r b)
         h = UnsafeLinear.coerce {- using Unsafe coerce to convert effect after type-checking -}
 
 decode'lpv :: forall a b vd oe. ( YulO2 a b, PureInputVersionedOutput vd ~ oe )
-           => (forall r. YulObj r => P'P r a ⊸ P'V vd r b)
+           => (forall r. YulO1 r => P'P r a ⊸ P'V vd r b)
            -> YulCat oe a b
 decode'lpv f = decode (h f) -- an intermediate function to fight the multiplicity hell
-  where h :: (forall r. YulObj r => P'P r a ⊸ P'V vd r b)
-          ⊸ (forall r. YulObj r => P (YulCat oe) r a ⊸ P (YulCat oe) r b)
+  where h :: (forall r. YulO1 r => P'P r a ⊸ P'V vd r b)
+          ⊸ (forall r. YulO1 r => P (YulCat oe) r a ⊸ P (YulCat oe) r b)
         h = UnsafeLinear.coerce {- using Unsafe coerce to convert effect after type-checking -}
 
 encode'lvv :: forall a b r vd v1. YulO3 a b r

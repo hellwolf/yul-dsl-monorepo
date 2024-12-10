@@ -71,7 +71,7 @@ uncurry'p :: forall f xs b m.
              , LiftFunction b m m Many ~ m b
              )
           => LiftFunction f m m Many -- ^ uncurrying function type
-          -> YulCat'P (NP xs) b -- ^ result type, or its short form @m b@
+          -> YulCat'P (NP xs) b      -- ^ result type, or its short form @m b@
 uncurry'p f = uncurryingNP @f @xs @b @m @m @m @m f YulId
 
 -- | Create a `PureFn` given a function id and a pure categorical value @NP xs ↝ b@
@@ -82,7 +82,7 @@ fn'p :: forall f xs b.
         , UncurryNP'Snd f ~ b
         )
      => String                     -- ^ the function id
-     -> YulCat'P (NP xs) b    -- ^ the pure yul categorical value of @NP xs ↝ b@
+     -> YulCat'P (NP xs) b         -- ^ the pure yul categorical value of @NP xs ↝ b@
      -> PureFn (CurryNP (NP xs) b) -- ^ a 'PureFn' of function type @f@
 fn'p fid cat'l = MkFn (MkFnCat fid cat'l)
 
@@ -120,5 +120,5 @@ call'p (MkFn f) = curryingNP @xs @b @m @m @m @Many
                   (\xs -> xs >.> YulJump (fnId f) (fnCat f))
 
 -- | Embed a pure yul-categorical value.
-emb'p :: forall r a. YulO2 r a => a -> YulCat MkPure r a
+emb'p :: forall a r. YulO2 r a => a -> YulCat'P r a
 emb'p = YulEmbed

@@ -38,7 +38,10 @@ library
   default-extensions: TypeFamilies
   --
   hs-source-dirs:   src
-  exposed-modules:  YulDSL.Core.YulCatObj
+  exposed-modules:  YulDSL.Core.YulCatObj.ContractABI
+                    YulDSL.Core.YulCatObj.YulNum
+                    YulDSL.Core.YulCatObj.Maybe
+                    YulDSL.Core.YulCatObj
                     YulDSL.Core.YulCat
                     YulDSL.Core.Fn
                     YulDSL.Core.YulObject

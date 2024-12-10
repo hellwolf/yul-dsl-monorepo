@@ -1,56 +1,67 @@
 module Fn_prop where
 
+-- base
+import           Data.Functor         ((<&>))
+-- hspec, quickcheck
 import           Test.Hspec
--- import           Test.QuickCheck
-
+import           Test.QuickCheck
+--
 import           Ethereum.ContractABI
 --
 import           YulDSL.Core
+import           YulDSL.Eval
+--
+import           TestCommon           ()
 
 
-disFn :: YulO1 a => PureFn (a -> ())
-disFn = MkFn (MkFnCat "disFn" YulDis)
+dis_any :: forall a. YulO1 a => PureFn (a -> ())
+dis_any = fn "" \_ -> emb'p ()
 
-simple_id = MkFnCat @MkPure @U256 @U256 "simple_id" YulId
+uncurry_fn0 :: PureFn (U256)
+uncurry_fn0 = fn @(U256) "" (emb'p 42)
 
-simple_coerce = MkFnCat "simple_coerce" $ YulCoerce @MkPure @U256 @U256
-
-foo0 :: PureFn (U8)
-foo0 = fn @(U8) "" (emb'p 42)
-
-foo1 :: PureFn (U8 -> U8)
-foo1 = fn @(U8 -> U8) ""
-       \a -> a + a
-
-foo2 = fn @(U8 -> U8 -> U8) ""
-       \a b -> a + b
-
-foo3 = fn @(U8 -> U8 -> U8 -> U8) ""
-       \a b c -> a + b + c
-
-foo4 = fn @(U8 -> U8 -> U8 -> U8 -> U8) ""
-       \a b c d -> a + b + c + d
-
-bar = fn'p "" $ uncurry'p @(U256 -> U256)
+uncurry_fn1 :: PureFn (U256 -> U256)
+uncurry_fn1 = fn ""
   \a -> a + a
 
-call'p0 = fn @(U8) ""
-  do call'p foo0
+uncurry_fn2 = fn @(U256 -> U256 -> U256) ""
+  \a b -> a + b
 
-call'p1 = fn @(U8 -> U8) ""
-  \a -> call'p foo1 a
+uncurry_fn3 = fn @(U256 -> U256 -> U256 -> U256) ""
+  \a b c -> a + b + c
 
-call'p2 = fn @(U8 -> U8) ""
-  \a -> call'p foo2 a a
+uncurry_fn4 = fn @(U256 -> U256 -> U256 -> U256 -> U256) ""
+  \a b c d -> a + b + c + d
 
-call'p3 = fn @(U8 -> U8) ""
-  \a -> call'p foo3 a a a
+call_fn0 = fn @(U256) ""
+  do call'p uncurry_fn0
 
-call'p4 = fn @(U8 -> U8) ""
-  \a -> call'p foo4 a a a a
+call_fn1 = fn @(U256 -> U256) ""
+  \a -> call'p uncurry_fn1 a
 
-test_simple_fn = True
+call_fn2 = fn @(U256 -> U256) ""
+  \a -> call'p uncurry_fn2 a a
+
+call_fn3 = fn @(U256 -> U256) ""
+  \a -> call'p uncurry_fn3 a a a
+
+call_fn4 = fn @(U256 -> U256) ""
+  \a -> call'p uncurry_fn4 a a a a
+
+test_simple_fn :: Gen Bool
+test_simple_fn = chooseInteger (0, toInteger (maxBound @U32)) <&>
+  (\x -> and
+    [ evalFn call_fn1 (x :* Nil) == x + x
+    , evalFn call_fn2 (x :* Nil) == x + x
+    , evalFn call_fn3 (x :* Nil) == x + x + x
+    , evalFn call_fn4 (x :* Nil) == x + x + x + x
+    ]
+  ) . fromInteger
+
+
+-- maybe_num_fn2 = fn @(Maybe U256 -> Maybe U256 -> Maybe U256) ""
+--   \a b -> a + b
 
 tests = describe "YulDSL.Core.Fn" $ do
   describe "fn: pure function builder" $ do
-    it "simple fn definitions" test_simple_fn
+    it "simple fn definitions" $ property test_simple_fn

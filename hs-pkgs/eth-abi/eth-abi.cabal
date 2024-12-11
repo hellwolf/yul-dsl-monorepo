@@ -32,7 +32,7 @@ library
   hs-source-dirs:     src
   exposed-modules:    Ethereum.ContractABI.ABICoreType
                       Ethereum.ContractABI.ABITypeable
-                      Ethereum.ContractABI.ABICodec
+                      Ethereum.ContractABI.ABITypeCodec
                       Ethereum.ContractABI.CoreType.NP
                       Ethereum.ContractABI.CoreType.BOOL
                       Ethereum.ContractABI.CoreType.ADDR

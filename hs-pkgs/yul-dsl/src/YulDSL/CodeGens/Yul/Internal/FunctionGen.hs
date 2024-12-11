@@ -32,6 +32,8 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
   wrap_let_vars = \case Nothing -> id; Just vars -> \body -> ind (vars <> " {") <> body <> ind "}"
   -- go functions
   go :: forall a b. YulO2 a b => YulCat eff a b -> CGState CGOutput
+  go (YulDerivedOf)     = ret_vars vals_a
+  go (YulDerivedFrom)   = ret_vars vals_a
   go (YulCoerce)        = ret_vars vals_a
   go (YulSplit)         = ret_vars vals_a
   go (YulId)            = ret_vars vals_a

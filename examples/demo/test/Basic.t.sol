@@ -26,7 +26,7 @@ contract BasicProgramTest is Test {
     assertEq(result, 2 * uint256(x));
   }
 
-  function testFoo2(uint128 x1, uint128 x2) external {
+  function _disable_testFoo2(uint128 x1, uint128 x2) external {
     uint256 result = _p.foo2(x1, x2);
     assertEq(result, uint256(x1) + uint256(x2) * 2);
   }

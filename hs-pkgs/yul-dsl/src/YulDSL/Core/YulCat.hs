@@ -25,10 +25,10 @@ YulCat is designed to be a category. The objects in this category are instances 
 -}
 module YulDSL.Core.YulCat
   ( NonPureEffect, IsNonPureEffect
-  , YulCat (..), AnyYulCat (..), (>.>), (<.<)
+  , YulCat (..), AnyYulCat (..), (>.>), (<.<), digestYulCat
   , (<?), (<=?), (>?), (>=?), (==?), (/=?)
-  , IfThenElse (..)
-  , digestYulCat,
+  , IfThenElse (ifThenElse)
+  , PatternMatchable (match)
   ) where
 
 -- base
@@ -42,6 +42,7 @@ import qualified Data.ByteString.Char8 as B
 import           Ethereum.ContractABI
 --
 import           YulDSL.Core.YulCatObj
+import           YulDSL.Core.YulNum
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -61,6 +62,9 @@ type IsNonPureEffect eff = NonPureEffect eff ~ True
 --  while the actual category is "Yul Category".
 data YulCat (eff :: k) a b where
   -- Type-level Operations (Zero Runtime Cost)
+  -- | Convert between extended Yul objects.
+  YulDerivedOf   :: forall eff a b. (YulO2 a b, b ~ ABITypeDerivedOf a) => YulCat eff a b
+  YulDerivedFrom :: forall eff b a. (YulO2 a b, b ~ ABITypeDerivedOf a) => YulCat eff b a
   -- | Convert between coercible Yul objects.
   YulCoerce :: forall eff a b. (YulO2 a b, ABITypeCoercible a b) => YulCat eff a b
   -- | Split the head and tail of a n-ary product where n >= 1.
@@ -92,7 +96,7 @@ data YulCat (eff :: k) a b where
   -- YulVal Primitives
   --
   -- | Embed a constant value.
-  YulEmbed :: forall eff a b. YulO2 a b => a -> YulCat eff b a
+  YulEmbed :: forall eff a b. YulO2 a b => a %1 -> YulCat eff b a
   -- * Boolean Operations
   YulNot :: YulCat eff BOOL BOOL
   YulAnd :: YulCat eff (BOOL, BOOL) BOOL
@@ -104,7 +108,7 @@ data YulCat (eff :: k) a b where
   YulNumSig :: forall eff a. YulNum a => YulCat eff a a
   YulNumNeg :: forall eff a. YulNum a => YulCat eff a a
   -- * Number comparison with a three-way boolean-switches (LT, EQ, GT).
-  YulNumCmp :: forall eff a. YulNum a => (BOOL, BOOL, BOOL) -> YulCat eff (a, a) BOOL
+  YulNumCmp :: forall eff a. YulNum a => (BOOL, BOOL, BOOL) %1 -> YulCat eff (a, a) BOOL
 
   -- * Contract ABI Serialization
   -- YulAbiEnc :: YulO1 a => YulCat a BYTES
@@ -175,7 +179,7 @@ instance forall b r eff.
          ( YulO2 b r
          , LiftFunction b (YulCat eff r) (YulCat eff r) Many ~ YulCat eff r b
          ) => CurryingNP '[] b (YulCat eff r) (YulCat eff r) (YulCat eff r) Many where
-  curryingNP cb = cb (YulDis >.> YulCoerce)
+  curryingNP cb = cb (YulDis >.> YulDerivedOf)
 
 instance forall x xs b r eff.
          ( YulO5 x (NP xs) b (NP (x:xs)) r
@@ -194,6 +198,8 @@ instance forall x xs b r eff.
 --   * It is deliberately done so for compactness of the string representation of the 'YulCat'.
 --   * It is meant also for strong equality checking of 'YulCat' used in yul object building.
 instance Show (YulCat eff a b) where
+  show (YulDerivedOf)      = "cdo" <> abi_type_name @a <> abi_type_name @b
+  show (YulDerivedFrom)    = "cdf" <> abi_type_name @a <> abi_type_name @b
   show (YulCoerce)         = "coe" <> abi_type_name @a <> abi_type_name @b
   show (YulId)             = "id"
   show (YulSplit)          = "▿" <> abi_type_name @a
@@ -229,27 +235,20 @@ instance Show AnyYulCat where
 -- Prelude Customization Helpers
 ------------------------------------------------------------------------------------------------------------------------
 
-instance (YulO2 a r, YulNum a) => Num (YulCat eff r a) where
-  a + b = YulNumAdd <.< YulProd a b <.< YulDup
-  a * b = YulNumMul <.< YulProd a b <.< YulDup
-  abs = YulComp YulNumAbs
-  signum = YulComp YulNumSig
-  fromInteger = YulEmbed . fromInteger
-  negate a = YulNumNeg <.< a
-
 -- YulNum Ord operations:
 
-( <? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p -> YulCat eff r BOOL
-a <? b = YulNumCmp (true , false, false) <.< YulProd a b <.< YulDup
-(<=? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
-a<=? b = YulNumCmp (true , true , false) <.< YulProd a b <.< YulDup
-( >? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
-a >? b = YulNumCmp (false, false, true ) <.< YulProd a b <.< YulDup
-( >=? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
+( <?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+(<=?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+( >?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+(>=?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+(==?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+(/=?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+
+a <?  b = YulNumCmp (true , false, false) <.< YulProd a b <.< YulDup
+a <=? b = YulNumCmp (true , true , false) <.< YulProd a b <.< YulDup
+a >?  b = YulNumCmp (false, false, true ) <.< YulProd a b <.< YulDup
 a >=? b = YulNumCmp (false, true , true ) <.< YulProd a b <.< YulDup
-( ==? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
 a ==? b = YulNumCmp (false, true , false) <.< YulProd a b <.< YulDup
-( /=? ) :: forall eff a r p. (YulO1 r, YulNum a) => YulCat eff r a %p-> YulCat eff r a %p-> YulCat eff r BOOL
 a /=? b = YulNumCmp (true , false, true ) <.< YulProd a b <.< YulDup
 
 -- | IfThenElse for enabling rebindable syntax.
@@ -259,10 +258,13 @@ class IfThenElse a b where
 instance YulO2 a r => IfThenElse (YulCat eff r BOOL) (YulCat eff r a) where
   ifThenElse c a b = YulITE <.< YulFork c (YulFork a b)
 
---
--- INTERNAL FUNCTIONs
---
+class YulO1 a => PatternMatchable f a where
+  match :: forall eff r b. YulO2 r b => YulCat eff r (f a) -> (f (YulCat eff r a) -> YulCat eff r b) -> YulCat eff r b
 
--- | A 'abi_type_name variant, enclosing name with "@()".
+------------------------------------------------------------------------------------------------------------------------
+-- INTERNAL FUNCTIONs
+------------------------------------------------------------------------------------------------------------------------
+
+-- A 'abi_type_name variant, enclosing name with "@()".
 abi_type_name :: forall a. ABITypeable a => String
 abi_type_name = "@" ++ abiTypeCompactName @a

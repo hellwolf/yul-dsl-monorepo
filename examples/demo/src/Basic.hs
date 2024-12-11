@@ -4,17 +4,16 @@ import qualified Control.LinearlyVersionedMonad as LVM
 import           Prelude.YulDSL
 
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
-foo1 = fn'l "foo1" $
-  uncurry'lv @(U256 -> U256) \x ->
-  dup2'l x & \(x, x') -> x + x'
+foo1 = fn @(U256 -> U256) "foo1" $
+  \x -> x + x
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns true.
 --
 --   Note: you can create any number of "unit" signals by adding '()' to the input list.
-foo2 = fn'l "foo2" $
-  uncurry'lv @(U256 -> U256 -> U256)
-  \x1 x2 -> dup2'l x2 &
-  \(x2, x2') -> x1 + (x2 + x2')
+-- foo2 = fn @(Maybe U256 -> Maybe U256 -> U256) "foo2" $
+--   \x1 x2 -> match (x1 + x2) \case
+--     Just r  -> r
+--     Nothing -> 0
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
 foo3 = fn'l "foo3" $ yulmonad'lv @(U256 -> U256 -> (BOOL, U256)) \x1 x2 -> LVM.do
@@ -52,7 +51,7 @@ rangeSum'v2 = go
 
 object = mkYulObject "Basic" emptyCtor
          [ externalFn foo1
-         , externalFn foo2
+         -- , externalFn foo2
            -- staticFn   foo3 -- FIXME this should not be possible with permission tag
          , staticFn rangeSum'l
          , staticFn rangeSum'v1

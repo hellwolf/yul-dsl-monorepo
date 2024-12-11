@@ -18,12 +18,12 @@ module Ethereum.ContractABI.CoreType.NP
   ) where
 
 -- cereal
-import qualified Data.Serialize                   as S
+import qualified Data.Serialize                    as S
 --
 import           Data.SimpleNP
 --
-import           Ethereum.ContractABI.ABICodec    (ABITypeCodec (..))
-import           Ethereum.ContractABI.ABITypeable (ABITypeable (..))
+import           Ethereum.ContractABI.ABITypeable  (ABITypeable (..))
+import           Ethereum.ContractABI.ABITypeCodec (ABITypeCodec (..))
 
 
 --

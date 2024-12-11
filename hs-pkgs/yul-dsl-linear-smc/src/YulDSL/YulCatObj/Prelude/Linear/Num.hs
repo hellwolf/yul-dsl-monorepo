@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
-module Data.Num.YulDSL where
+module YulDSL.YulCatObj.Prelude.Linear.Num where
 
 -- base
 import qualified Prelude        as Prelude.Base
@@ -20,9 +20,6 @@ instance FromInteger Integer where
 instance (KnownBool s, ValidINTn n) => FromInteger (INTx s n) where
   fromInteger = UnsafeLinear.toLinear Prelude.Base.fromInteger
 
-instance (KnownBool s, ValidINTn n) => FromInteger (Maybe (INTx s n)) where
-  fromInteger = UnsafeLinear.toLinear Prelude.Base.fromInteger
-
 --
 --  Num instances for (YulCat r a)
 --
@@ -35,3 +32,5 @@ instance (YulO1 r, YulNum a) => AddIdentity (YulCat eff r a) where
 
 instance (YulO1 r, YulNum a) => AdditiveGroup (YulCat eff r a) where
   negate a = YulNumNeg <.< a
+instance (YulO1 r, KnownBool s, ValidINTn n) => FromInteger (YulCat eff r (INTx s n)) where
+  fromInteger x = YulEmbed (fromInteger x)

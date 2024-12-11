@@ -1,5 +1,5 @@
 {-# LANGUAGE DefaultSignatures #-}
-module Ethereum.ContractABI.ABICodec
+module Ethereum.ContractABI.ABITypeCodec
   ( ABITypeCodec (abiEncoder, abiDecoder)
   , abiEncode, abiDecode
   ) where

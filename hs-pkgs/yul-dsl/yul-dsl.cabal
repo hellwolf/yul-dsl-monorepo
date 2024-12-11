@@ -38,14 +38,14 @@ library
   default-extensions: TypeFamilies
   --
   hs-source-dirs:   src
-  exposed-modules:  YulDSL.Core.YulCatObj.ContractABI
-                    YulDSL.Core.YulCatObj.YulNum
-                    YulDSL.Core.YulCatObj.Maybe
-                    YulDSL.Core.YulCatObj
+  exposed-modules:  YulDSL.Core.YulCatObj
+                    YulDSL.Core.YulNum
                     YulDSL.Core.YulCat
                     YulDSL.Core.Fn
                     YulDSL.Core.YulObject
                     YulDSL.Core
+                    YulDSL.YulCatObj.Prelude.Base.Maybe
+                    YulDSL.YulCatObj.Prelude.Base.Num
                     YulDSL.Effects.Pure
                     YulDSL.Eval
                     YulDSL.CodeGens.YulGen

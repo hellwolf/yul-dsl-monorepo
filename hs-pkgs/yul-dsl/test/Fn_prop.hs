@@ -48,6 +48,11 @@ call_fn3 = fn @(U256 -> U256) ""
 call_fn4 = fn @(U256 -> U256) ""
   \a -> call'p uncurry_fn4 a a a a
 
+maybe_num_fn2 = fn @(Maybe U8 -> Maybe U8 -> U8) ""
+  \a b -> match (a + b) \case
+    Just x -> x
+    Nothing -> 0
+
 test_simple_fn :: Gen Bool
 test_simple_fn = chooseInteger (0, toInteger (maxBound @U32)) <&>
   (\x -> and
@@ -58,10 +63,12 @@ test_simple_fn = chooseInteger (0, toInteger (maxBound @U32)) <&>
     ]
   ) . fromInteger
 
-
--- maybe_num_fn2 = fn @(Maybe U256 -> Maybe U256 -> Maybe U256) ""
---   \a b -> a + b
+test_maybe_fn :: Bool
+test_maybe_fn = and
+  [ evalFn maybe_num_fn2 (Just 42 :* Just 69 :* Nil) == 111
+  , evalFn maybe_num_fn2 (Just 255 :* Just 255 :* Nil) == 0
+  ]
 
 tests = describe "YulDSL.Core.Fn" $ do
-  describe "fn: pure function builder" $ do
-    it "simple fn definitions" $ property test_simple_fn
+  it "simple fn" $ property test_simple_fn
+  it "pattern matching with Maybe" $ property test_maybe_fn

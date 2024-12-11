@@ -45,6 +45,8 @@ library
   --
   hs-source-dirs:     src
   exposed-modules:    Prelude.YulDSL
+                      -- Additional YulCatObj
+                      YulDSL.YulCatObj.Prelude.Linear.Num
                       -- YulDSL's LinearSMC Effect
                       YulDSL.Effects.LinearSMC.YulPort
                       YulDSL.Effects.LinearSMC.YulMonad
@@ -56,7 +58,6 @@ library
                       -- Prelude curation
                       Data.MPOrd
                       Data.MPOrd.YulDSL
-                      Data.Num.YulDSL
   reexported-modules: Data.LinearContext,
                       Control.LinearlyVersionedMonad,
                       Control.LinearlyVersionedMonad.Combinators

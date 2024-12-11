@@ -4,6 +4,7 @@ module YulDSL.Effects.LinearSMC.LinearFn
   ( LinearEffect (PureInputVersionedOutput, VersionedInputOutput)
   , fn'l, uncurry'lv, uncurry'lp, yulmonad'lv, yulmonad'lp
   , call'l
+--  , match'l
   ) where
 -- base
 import           GHC.TypeLits                          (type (+))
@@ -212,3 +213,13 @@ call'l (MkFn f) x =
        curryingNP
        @xs @b @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r ()) @One
        (\(MkYulCat'LVV fxs) -> encode'lvv (YulJump (fnId f) (fnCat f)) (cons'l x' (fxs (discard x''))))
+
+--
+-- pattern matching
+--
+
+-- match'l :: forall f a b r ie oe. ( YulO3 r a b, PatternMatchable f a)
+--         => (forall r. P'V ie r () ⊸ P'V ie r (f a)) ⊸ (f (P'V ie r a) ⊸ P'V oe r b) ⊸ P'V oe r b
+-- match'l p'l f = match p \cs -> fmap _ cs
+--   where p :: YulCat (VersionedInputOutput vd) () (f a)
+--         p = decode'lvv p'l

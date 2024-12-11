@@ -12,9 +12,9 @@ import           Control.Monad                      (forM)
 -- template-haskell
 import qualified Language.Haskell.TH                as TH
 --
-import           Ethereum.ContractABI.ABICodec
 import           Ethereum.ContractABI.ABICoreType
 import           Ethereum.ContractABI.ABITypeable
+import           Ethereum.ContractABI.ABITypeCodec
 import           Ethereum.ContractABI.CoreType.INTx
 
 -- | BYTESn is a new type of INTx, which has its own name in function selectors.
@@ -26,6 +26,8 @@ instance forall n. (ValidINTn n) => ABITypeable (BYTESn n) where
   abiTypeInfo = [BYTESn' (natSing @n)]
 
 deriving newtype instance forall n. (ValidINTn n) => ABITypeCodec (BYTESn n)
+
+deriving newtype instance forall n. (ValidINTn n) => Show (BYTESn n)
 
 {- * Assorted Fixed-Precision Integer Aliases -}
 

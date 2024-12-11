@@ -20,8 +20,8 @@ test_coerce_uint256_unit_prod a = toInteger a == toInteger b
 test_coerce_two_vals_unit_hlist :: forall p q. (p ~ I128, q ~ BOOL) => p -> q -> Bool
 test_coerce_two_vals_unit_hlist a b = a == a' && b == b' &&
                                       a == a'' && b == b''
-  where (a', b') = evalYulCat (YulCoerce @MkPure @(NP [p, q]) @(p, q)) (a :* b :* Nil)
-        (a'' :* b'' :* Nil) = evalYulCat (YulCoerce @MkPure @(p, q) @(NP [p, q])) (a, b)
+  where (a', b') = evalYulCat (YulDerivedFrom @MkPure @(NP [p, q]) @(p, q)) (a :* b :* Nil)
+        (a'' :* b'' :* Nil) = evalYulCat (YulDerivedOf @MkPure @(p, q) @(NP [p, q])) (a, b)
 --
 test_coerce_commutative :: forall p q r. (p ~ ADDR, q ~ U32, r ~ BOOL) => p -> q -> r -> Bool
 test_coerce_commutative a b c = a == a' && b == b' && c == c' &&

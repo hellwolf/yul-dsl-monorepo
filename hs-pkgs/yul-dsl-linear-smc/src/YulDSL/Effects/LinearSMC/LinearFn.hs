@@ -4,10 +4,11 @@ module YulDSL.Effects.LinearSMC.LinearFn
   ( LinearEffect (PureInputVersionedOutput, VersionedInputOutput)
   , fn'l, uncurry'lv, uncurry'lp, yulmonad'lv, yulmonad'lp
   , call'l
---  , match'l
+  , match'l
   ) where
 -- base
 import           GHC.TypeLits                          (type (+))
+import qualified Prelude                               as BasePrelude
 -- linear-base
 import           Control.Category.Linear               (discard, ignore, mkUnit, split)
 import           Prelude.Linear
@@ -218,8 +219,20 @@ call'l (MkFn f) x =
 -- pattern matching
 --
 
--- match'l :: forall f a b r ie oe. ( YulO3 r a b, PatternMatchable f a)
---         => (forall r. P'V ie r () ⊸ P'V ie r (f a)) ⊸ (f (P'V ie r a) ⊸ P'V oe r b) ⊸ P'V oe r b
--- match'l p'l f = match p \cs -> fmap _ cs
---   where p :: YulCat (VersionedInputOutput vd) () (f a)
---         p = decode'lvv p'l
+match'l :: forall p r a b va vd.
+           ( YulO4 r a b (p a)
+           , BasePrelude.Functor p
+           , PatternMatchable p a)
+        => P'V va r (p a)
+        ⊸ (forall r1. YulO1 r1 => p (P'V va r1 (p a) ⊸ P'V va r1 a) ⊸ (P'V 0 r1 (p a) ⊸ P'V vd r1 b))
+        -> P'V (va + vd) r b
+match'l p f = let c = match (YulId :: YulCat (VersionedInputOutput 0) (p a) (p a))
+                      \cs -> UnsafeLinear.coerce
+                             @(YulCat (VersionedInputOutput vd) (p a) b)
+                             @(YulCat (VersionedInputOutput 0) (p a) b)
+                             (decode'lvv (f (BasePrelude.fmap encode'lvv cs)))
+                  c' = UnsafeLinear.coerce
+                       @(YulCat (VersionedInputOutput 0) (p a) b)
+                       @(YulCat (VersionedInputOutput vd) (p a) b)
+                       c
+              in encode'lvv c' p

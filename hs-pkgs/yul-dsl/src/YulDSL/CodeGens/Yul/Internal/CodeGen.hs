@@ -169,5 +169,8 @@ abi_type_count_vars :: forall a. ABITypeable a => Int
 abi_type_count_vars = length (abiTypeInfo @a)
 
 gen_assert :: HasCallStack => Bool -> a -> a
-gen_assert False _ = error "codegen assertion!"
-gen_assert _     x = x
+gen_assert = gen_assert_msg "codegen assertion!"
+
+gen_assert_msg :: HasCallStack => String -> Bool -> a -> a
+gen_assert_msg msg False _ = error msg
+gen_assert_msg _     _ x   = x

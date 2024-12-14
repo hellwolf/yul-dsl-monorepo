@@ -46,17 +46,17 @@ newtype YulCat'LPV vn r a b = MkYulCat'LPV (P'P r a ⊸ P'V vn r b)
 -- | Yul port diagram for pure input and pure outputs.
 newtype YulCat'LPP r a b = MkYulCat'LPP (P'P r a ⊸ P'P r b)
 
-decode'lvv :: forall a b vd oe. ( YulO2 a b, VersionedInputOutput vd ~ oe)
+decode'lvv :: forall a b vd. YulO2 a b
            => (forall r. YulO1 r => P'V 0 r a ⊸ P'V vd r b)
-           -> YulCat oe a b
+           -> YulCat (VersionedInputOutput vd) a b
 decode'lvv f = decode (h f) -- an intermediate function to fight the multiplicity hell
   where h :: (forall r. YulO1 r => P'V 0 r a ⊸ P'V vn r b)
           ⊸ (forall r. YulO1 r => P (YulCat oe) r a ⊸ P (YulCat oe) r b)
         h = UnsafeLinear.coerce {- using Unsafe coerce to convert effect after type-checking -}
 
-decode'lpv :: forall a b vd oe. ( YulO2 a b, PureInputVersionedOutput vd ~ oe )
+decode'lpv :: forall a b vd. YulO2 a b
            => (forall r. YulO1 r => P'P r a ⊸ P'V vd r b)
-           -> YulCat oe a b
+           -> YulCat (PureInputVersionedOutput vd) a b
 decode'lpv f = decode (h f) -- an intermediate function to fight the multiplicity hell
   where h :: (forall r. YulO1 r => P'P r a ⊸ P'V vd r b)
           ⊸ (forall r. YulO1 r => P (YulCat oe) r a ⊸ P (YulCat oe) r b)

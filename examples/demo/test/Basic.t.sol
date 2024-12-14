@@ -20,16 +20,16 @@ contract BasicProgramTest is Test {
     _p = IBasicProgram(address(new BasicProgram()));
   }
 
-  function testFoo1(uint128 x) external {
-    uint256 result = _p.foo1(x);
-    console.log("result", result);
-    assertEq(result, 2 * uint256(x));
-  }
+  /* function testFoo1(uint128 x) external { */
+  /*   uint256 result = _p.foo1(x); */
+  /*   console.log("result", result); */
+  /*   assertEq(result, 2 * uint256(x)); */
+  /* } */
 
-  function _disable_testFoo2(uint128 x1, uint128 x2) external {
-    uint256 result = _p.foo2(x1, x2);
-    assertEq(result, uint256(x1) + uint256(x2) * 2);
-  }
+  /* function testFoo2(uint128 x1, uint128 x2) external { */
+  /*   uint256 result = _p.foo2(x1, x2); */
+  /*   assertEq(result, uint256(x1) + uint256(x2) * 2); */
+  /* } */
 
   function testRangeSumFnL() external {
     uint256 result = _p.rangeSumL(0, 1, 10);

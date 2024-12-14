@@ -259,7 +259,8 @@ instance YulO2 a r => IfThenElse (YulCat eff r BOOL) (YulCat eff r a) where
   ifThenElse c a b = YulITE <.< YulFork c (YulFork a b)
 
 class YulO1 a => PatternMatchable f a where
-  match :: forall eff r b. YulO2 r b => YulCat eff r (f a) -> (f (YulCat eff r a) -> YulCat eff r b) -> YulCat eff r b
+  match :: forall eff r b. YulO2 r b
+        => YulCat eff r (f a) -> (f (YulCat eff r a) -> YulCat eff r b) -> YulCat eff r b
 
 ------------------------------------------------------------------------------------------------------------------------
 -- INTERNAL FUNCTIONs

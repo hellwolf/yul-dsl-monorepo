@@ -110,7 +110,8 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
            , [ValExpr $  T.pack cid <> "(" <> vals_to_code vals_a <> ")"])
   -- code block for if-then-else statement
   go_ite :: forall a. YulO1 a => Proxy a -> CGState CGOutput
-  go_ite _ = let nouts = abi_type_count_vars @a in gen_assert (length vals_a == 1 + 2 * nouts)
+  go_ite _ = let nouts = abi_type_count_vars @a
+             in gen_assert_msg ("vals_a len: "<> show (length vals_a)) (length vals_a == 1 + 2 * nouts)
     (do vars_b <- map LetVar <$> mk_let_vars (Proxy @a)
         return ( mk_code' "ite" (Proxy @(BOOL, (a, a))) (Proxy @a) $
                  ind ("switch " <> val_to_code (vals_a !! 0)) <>

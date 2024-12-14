@@ -26,6 +26,12 @@ foo4 = fn'l "foo4" $
   uncurry'lv @(U256 -> U256 -> U256 -> U256 -> U256)
   \x1 x2 x3 x4 -> x1 + x2 + x3 + x4
 
+maybe_fn = fn'l "maybe_fn" $
+  uncurry'lv @(Maybe (U256) -> U256)
+  \x -> match'l x \case
+    Just g -> \v -> g v
+    Nothing -> emb'l 0
+
 bar3 = fn'l "bar3" $ yulmonad'lp @(U256 -> U256 -> U256 -> U256)
   \x1 x2 x3 -> LVM.do
   x1' <- impure x1

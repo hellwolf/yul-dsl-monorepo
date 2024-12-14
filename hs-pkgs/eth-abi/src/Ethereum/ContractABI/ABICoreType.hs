@@ -78,7 +78,7 @@ instance Eq ABICoreType where
 -- | Canonical names for the core types used for computing the function selectors.
 abiCoreTypeCanonName :: ABICoreType -> String
 abiCoreTypeCanonName BOOL'       = "bool"
-abiCoreTypeCanonName (INTx' s n) = if toBool s then "int" else "uint" <> show (natVal n * 8)
+abiCoreTypeCanonName (INTx' s n) = (if toBool s then "int" else "uint") <> show (natVal n * 8)
 abiCoreTypeCanonName ADDR'       = "address"
 abiCoreTypeCanonName (BYTESn' n) = "bytes" ++ show (natVal n)
 abiCoreTypeCanonName BYTES'      = "bytes"
@@ -87,7 +87,7 @@ abiCoreTypeCanonName (ARRAY' a)  = abiCoreTypeCanonName a ++ "[]"
 -- | Compact but unambiguous names for the core types..
 abiCoreTypeCompactName :: ABICoreType -> String
 abiCoreTypeCompactName BOOL'       = "b"
-abiCoreTypeCompactName (INTx' s n) = if toBool s then "i" else "u" <> show (natVal n)
+abiCoreTypeCompactName (INTx' s n) = (if toBool s then "i" else "u") <> show (natVal n)
 abiCoreTypeCompactName ADDR'       = "a"
 abiCoreTypeCompactName (BYTESn' n) = "B" ++ show (natVal n)
 abiCoreTypeCompactName BYTES'      = "Bs"

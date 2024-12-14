@@ -16,7 +16,5 @@ instance Arbitrary ADDR where
 
 deriving newtype instance Arbitrary BOOL
 
--- deriving instance Arbitrary BYTES
-
-instance (KnownBool s, ValidINTn n) => Arbitrary (INTx s n) where
+instance ValidINTx s n => Arbitrary (INTx s n) where
   arbitrary = chooseBoundedIntegral (minBound, maxBound)

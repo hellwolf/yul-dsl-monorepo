@@ -39,6 +39,7 @@ import           Internal.Data.Type.Bool (KnownBool, SBool, toBool)
 {- * ABICoreType and their utilities -}
 
 -- | A constraint that restricts what Nat values are valid for 'INTx' and 'BYTESn'.
+--   Note: It is valid from 1 to 32.
 class KnownNat n => ValidINTn n
 
 -- | A top-level splice that declares all the valid INTx n values.

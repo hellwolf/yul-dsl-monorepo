@@ -20,7 +20,7 @@ dis_any = fn "" \_ -> emb'p ()
 uncurry_fn0 :: PureFn (U256)
 uncurry_fn0 = fn @(U256) "" (emb'p 42)
 
-uncurry_fn1 :: PureFn (U256 -> U256)
+uncurry_fn1 :: ValidINTx s n => PureFn (INTx s n -> INTx s n)
 uncurry_fn1 = fn ""
   \a -> a + a
 

@@ -8,4 +8,4 @@ import           YulDSL.Core.YulCatObj
 -- | Number-type objects in the category.
 class (YulCatObj a, Num a, Ord a) => YulNum a
 
-instance (KnownBool s, ValidINTn n) => YulNum (INTx s n)
+instance ValidINTx s n => YulNum (INTx s n)

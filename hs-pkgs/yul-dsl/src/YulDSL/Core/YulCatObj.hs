@@ -21,8 +21,8 @@ type YulO5 a b c d e = (YulCatObj a, YulCatObj b, YulCatObj c, YulCatObj d, YulC
 instance YulCatObj ()
 instance YulCatObj ADDR
 instance YulCatObj BOOL
-instance (KnownBool s, ValidINTn n) => YulCatObj (INTx s n)
-instance (ValidINTn n) => YulCatObj (BYTESn n)
+instance ValidINTx s n => YulCatObj (INTx s n)
+instance ValidINTn n => YulCatObj (BYTESn n)
 instance YulCatObj (NP '[])
 instance (YulCatObj x, YulCatObj (NP xs)) => YulCatObj (NP (x:xs))
 instance (YulCatObj a1, YulCatObj a2) => YulCatObj (a1, a2) where yul_prod_objs = Dict

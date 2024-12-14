@@ -17,7 +17,7 @@ import           YulDSL.Core
 instance FromInteger Integer where
   fromInteger = id
 
-instance (KnownBool s, ValidINTn n) => FromInteger (INTx s n) where
+instance ValidINTx s n => FromInteger (INTx s n) where
   fromInteger = UnsafeLinear.toLinear Prelude.Base.fromInteger
 
 --
@@ -32,5 +32,5 @@ instance (YulO1 r, YulNum a) => AddIdentity (YulCat eff r a) where
 
 instance (YulO1 r, YulNum a) => AdditiveGroup (YulCat eff r a) where
   negate a = YulNumNeg <.< a
-instance (YulO1 r, KnownBool s, ValidINTn n) => FromInteger (YulCat eff r (INTx s n)) where
+instance (YulO1 r, ValidINTx s n) => FromInteger (YulCat eff r (INTx s n)) where
   fromInteger x = YulEmbed (fromInteger x)

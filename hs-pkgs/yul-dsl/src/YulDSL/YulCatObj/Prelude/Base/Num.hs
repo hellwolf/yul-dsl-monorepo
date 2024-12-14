@@ -17,4 +17,4 @@ instance (YulO2 a r, YulNum a) => Num (YulCat eff r a) where
   fromInteger = YulEmbed . fromInteger
   negate a = YulNumNeg <.< a
 
-instance (KnownBool s, ValidINTn n) => YulNum (Maybe (INTx s n))
+instance ValidINTx s n => YulNum (Maybe (INTx s n))

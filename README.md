@@ -158,15 +158,13 @@ Headline Features
     - [ ] `YulNum (Maybe a)`, safe numerical operations.
     - [ ] `YulCast`, casting values between value types.
   - ADT & pattern matching infrastructure:
-    - Maybe a
+    - [ ] Pattern matching for `YumNum a => (Maybe a)`
   - Control flow primitives:
     - [ ] `YulMapArray`, tight loop over an array.
     - [ ] `YulLen`, array length.
   - Non pure primitives:
     - [ ] `YulSet, YulSPut`, storage operations.
     - [ ] `YulCall`, external function calls.
-  - Utilities
-    - [ ] Pattern matching using type synonyms for `YumNum a => (Maybe a)`
   - Evaluator
     - [ ] Support all `YulDSL` data constructors.
   - Function Gen:

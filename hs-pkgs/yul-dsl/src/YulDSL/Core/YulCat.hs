@@ -61,16 +61,19 @@ type IsNonPureEffect eff = NonPureEffect eff ~ True
 --  Note: - The inhabitants of this are actually morphisms of the Yul category. "Cat" is just a nice sounding moniker,
 --  while the actual category is "Yul Category".
 data YulCat (eff :: k) a b where
-  -- Type-level Operations (Zero Runtime Cost)
-  -- | Convert between extended Yul objects.
+  -- Type-level Operations (zero yul code needed)
+  --
+  -- ^ Convert from extended yul object to its core object.
   YulDerivedOf   :: forall eff a b. (YulO2 a b, b ~ ABITypeDerivedOf a) => YulCat eff a b
+  -- ^ Convert from the core yul object to its extended yul object.
   YulDerivedFrom :: forall eff b a. (YulO2 a b, b ~ ABITypeDerivedOf a) => YulCat eff b a
-  -- | Convert between coercible Yul objects.
+  -- ^ Convert between coercible yul objects.
   YulCoerce :: forall eff a b. (YulO2 a b, ABITypeCoercible a b) => YulCat eff a b
-  -- | Split the head and tail of a n-ary product where n >= 1.
+  -- ^ Split the head and tail of a n-ary product where n >= 1.
   YulSplit :: forall eff as. YulO1 (NP as) => YulCat eff (NP as) (Head as, NP (Tail as))
 
   -- SMC Primitives
+  --
   --  Category
   YulId   :: forall eff a.     YulO2 a a   => YulCat eff a a
   YulComp :: forall eff a b c. YulO3 a b c => YulCat eff c b %1 -> YulCat eff a c %1 -> YulCat eff a b
@@ -86,11 +89,11 @@ data YulCat (eff :: k) a b where
 
   -- Control Flow Primitives
   --
-  -- | Call a yul internal function by reference its id.
+  -- ^ Call a yul internal function by reference its id.
   YulJump  :: forall eff a b. YulO2 a b => String -> YulCat eff a b %1 -> YulCat eff a b
-  -- | Call a external function.
+  -- - Call a external function.
   -- YulCall  :: forall a b r. YulO3 a b r => YulCat r (FUNC a b) %1 -> YulCat a b
-  -- | If-then-else.
+  -- ^ If-then-else.
   YulITE   :: forall eff a. YulO1 a => YulCat eff (BOOL, (a, a)) a
 
   -- YulVal Primitives
@@ -110,7 +113,8 @@ data YulCat (eff :: k) a b where
   -- * Number comparison with a three-way boolean-switches (LT, EQ, GT).
   YulNumCmp :: forall eff a. YulNum a => (BOOL, BOOL, BOOL) %1 -> YulCat eff (a, a) BOOL
 
-  -- * Contract ABI Serialization
+  -- Contract ABI Serialization
+  --
   -- YulAbiEnc :: YulO1 a => YulCat a BYTES
   -- YulAbiDec :: YulO2 a => YulCat BYTES (Maybe a)
 

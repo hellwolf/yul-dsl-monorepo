@@ -11,7 +11,13 @@ Yul object builder. Yul object specification can be found from [solidity
 documentation](https://docs.soliditylang.org/en/latest/yul.html#specification-of-yul-object).
 
 -}
-module YulDSL.Core.YulObject where
+module YulDSL.Core.YulObject
+  ( StoragePermission
+  , ScopedFn (ExternalFn, LibraryFn), unScopedFn
+  , externalFn, staticFn, libraryFn
+  , YulObject (..), mkYulObject
+  , emptyCtor
+  ) where
 
 import           Data.List                                  (intercalate)
 -- eth-abi
@@ -35,6 +41,10 @@ data ScopedFn where
   ExternalFn :: forall eff as b. YulO2 (NP as) b => StoragePermission -> SELECTOR -> FnNP eff as b -> ScopedFn
   LibraryFn  :: forall eff as b. YulO2 (NP as) b => FnNP eff as b -> ScopedFn
 
+unScopedFn :: ScopedFn -> AnyFnCat
+unScopedFn (ExternalFn _ _ f) = MkAnyFnCat f
+unScopedFn (LibraryFn f)      = MkAnyFnCat f
+
 externalFn :: forall f as b eff.
               ( YulO2 (NP as) b
               , UncurryNP'Fst f ~ as
@@ -56,18 +66,14 @@ libraryFn :: forall f as b eff.
              ) => Fn eff f -> ScopedFn
 libraryFn (MkFn f) = LibraryFn f
 
+instance Show ScopedFn where
+  show (ExternalFn WritableExternalStorage _ f) = "external "  <> show_fn_spec f <> "\n" <> show (fnCat f)
+  show (ExternalFn ReadonlyExternalStorage _ f) = "static "    <> show_fn_spec f <> "\n" <> show (fnCat f)
+  show (ExternalFn DelegatedStorage _ f)        = "delegated " <> show_fn_spec f <> "\n" <> show (fnCat f)
+  show (LibraryFn f)                            = "internal "  <> show_fn_spec f <> "\n" <> show (fnCat f)
+
 show_fn_spec :: forall as b eff. YulO2 (NP as) b => FnNP eff as b -> String
 show_fn_spec f = "fn " <> fnId f <> "(" <> abiTypeCanonName @(NP as) <> ") -> " <> abiTypeCanonName @b
-
-instance Show ScopedFn where
-  show (ExternalFn WritableExternalStorage _ f) = "external " <> show_fn_spec f <> "\n" <> show (fnCat f)
-  show (ExternalFn ReadonlyExternalStorage _ f) = "static "   <> show_fn_spec f <> "\n" <> show (fnCat f)
-  show (ExternalFn DelegatedStorage _ f)        = "delegated "   <> show_fn_spec f <> "\n" <> show (fnCat f)
-  show (LibraryFn f)                            = "internal " <> show_fn_spec f <> "\n" <> show (fnCat f)
-
-removeScope :: ScopedFn -> AnyFn
-removeScope (ExternalFn _ _ f) = MkAnyFn f
-removeScope (LibraryFn f)      = MkAnyFn f
 
 -- | A Yul Object per spec.
 --

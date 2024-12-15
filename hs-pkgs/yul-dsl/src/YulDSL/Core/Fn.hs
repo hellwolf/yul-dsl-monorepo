@@ -7,12 +7,16 @@ Stability   : experimental
 
 = Description
 
-Function type for a YulCat.
+Function types for YulCat.
 
 -}
 module YulDSL.Core.Fn
-  ( FnCat (MkFnCat), FnNP, Fn (MkFn, unFn), fnId, fnCat
-  , AnyFn (MkAnyFn)
+  ( -- * Raw yul functions.
+    FnCat (MkFnCat, fnId, fnCat)
+    -- * NP-formed yul functions.
+  , FnNP, Fn (MkFn, unFn)
+    -- * Existential type of yul functions.
+  , AnyFnCat (MkAnyFnCat)
   ) where
 
 -- eth-abi
@@ -21,8 +25,6 @@ import           Ethereum.ContractABI
 import           YulDSL.Core.YulCat
 import           YulDSL.Core.YulCatObj
 
-
-{- * FnCat: yul function type and its aliases -}
 
 -- | Yul functions are encoded in their categorical forms.
 data FnCat eff a b where
@@ -33,20 +35,29 @@ data FnCat eff a b where
              }
           -> FnCat eff a b
 
-instance YulO2 a b => Show (FnCat eff a b) where
-  show (MkFnCat fid cat) = "fn " ++ fid ++ ":\n" ++ show cat
-
 -- | Yul functions that have their arguments in 'NP' forms.
 type FnNP eff xs b = FnCat eff (NP xs) b
 
--- | Yul functions that denoted in currying function forms.
+-- | Yul function wrappers that are in currying function forms.
 --
 --   Note: Fn (a1 -> a2 -> ...aN -> b) ~ FnNP (NP [a1,a2...aN]) b
-newtype Fn eff f = MkFn { unFn :: FnNP eff (UncurryNP'Fst f) (UncurryNP'Snd f) }
+data Fn eff f where
+  MkFn :: forall eff f xs b.
+          ( UncurryNP'Fst f ~ xs,
+            UncurryNP'Snd f ~ b,
+            YulO2 (NP xs) b
+          )
+       => { unFn :: FnNP eff (UncurryNP'Fst f) (UncurryNP'Snd f) } -> Fn eff f
 
-{- * AnyFn -}
+-- | Existential type for @FnCat a b@.
+data AnyFnCat where
+  MkAnyFnCat :: forall eff a b. YulO2 a b => (FnCat eff a b) -> AnyFnCat
 
--- | Existential type for any @FnCat a b@.
-data AnyFn = forall eff a b. YulO2 a b => MkAnyFn (FnCat eff a b)
+--
+-- Show instances
+--
 
-deriving instance Show AnyFn
+instance YulO2 a b => Show (FnCat eff a b) where
+  show (MkFnCat fid cat) = "fn " ++ fid ++ ":\n" ++ show cat
+deriving instance Show AnyFnCat
+deriving instance Show (Fn eff f)

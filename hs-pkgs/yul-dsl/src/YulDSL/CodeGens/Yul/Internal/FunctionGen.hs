@@ -12,7 +12,8 @@ import           Data.Typeable                               (Proxy (..))
 --
 import qualified Data.Text.Lazy                              as T
 --
-import qualified Data.Map.Strict                             as M'
+import qualified Data.Map.Strict                             as M
+import qualified Data.Set                                    as S
 --
 import           YulDSL.Core
 --
@@ -32,37 +33,27 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
   wrap_let_vars = \case Nothing -> id; Just vars -> \body -> ind (vars <> " {") <> body <> ind "}"
   -- go functions
   go :: forall a b. YulO2 a b => YulCat eff a b -> CGState CGOutput
-  go (YulDerivedOf)     = ret_vars vals_a
-  go (YulDerivedFrom)   = ret_vars vals_a
-  go (YulCoerce)        = ret_vars vals_a
+  go (YulExtendType)    = ret_vars vals_a
+  go (YulReduceType)    = ret_vars vals_a
+  go (YulCoerceType)    = ret_vars vals_a
   go (YulSplit)         = ret_vars vals_a
+  --
   go (YulId)            = ret_vars vals_a
-  go (YulComp cb ac)  = go_comp cb ac
-  go (YulProd ab cd)  = go_prod ab cd
-  go (YulSwap @_ @m @n)  = ret_vars (swap_vals (Proxy @m) (Proxy @n) vals_a)
-  go (YulFork ab ac)  = go_fork ab ac
-  go (YulExl @_ @mn @m)  = go_extract (Proxy @mn) (Proxy @m) True  {- extractLeft -}
-  go (YulExr @_ @mn @n)  = go_extract (Proxy @mn) (Proxy @n) False {- extractLeft -}
+  go (YulComp cb ac)    = go_comp cb ac
+  go (YulProd ab cd)    = go_prod ab cd
+  go (YulSwap @_ @m @n) = ret_vars (swap_vals (Proxy @m) (Proxy @n) vals_a)
+  go (YulFork ab ac)    = go_fork ab ac
+  go (YulExl @_ @mn @m) = go_extract (Proxy @mn) (Proxy @m) True  {- extractLeft -}
+  go (YulExr @_ @mn @n) = go_extract (Proxy @mn) (Proxy @n) False {- extractLeft -}
   go (YulDis)           = ret_vars (dis_vals (Proxy @a) vals_a)
   go (YulDup)           = go_dup (Proxy @a)
+  --
+  go (YulEmb a)         = ret_vars $ fmap (ValExpr . T.pack) [show a]
+  go (YulITE @_ @m)     = go_ite (Proxy @m)
+  go (YulJmp tgt)       = go_jmp @a @b tgt
+  --
   go (YulSGet)          = ret_expr $ "sload(" <> vals_to_code vals_a <> ")"
   go (YulSPut)          = return (ind ("sstore(" <> vals_to_code vals_a <> ")"), [])
-  go (YulEmbed a)     = ret_vars $ fmap (ValExpr . T.pack) [show a]
-  -- go (YulCall c)        =
-  go (YulJump i c)    = go_jump (Proxy @a) (Proxy @b) i c
-  -- go (YulMap (MkFn n _)) = _
-  -- go (YulFoldl (MkFn n _)) = _
-  -- go (YulCall (MkFn n _)) = _
-  go (YulITE @_ @m)      = go_ite (Proxy @m)
-  go (YulNot)           = ret_expr $ "not(" <> vals_to_code vals_a <> ")"
-  go (YulAnd)           = ret_expr $ "and(" <> vals_to_code vals_a <> ")"
-  go (YulOr)            = ret_expr $ "or(" <> vals_to_code vals_a <> ")"
-  go (YulNumAdd)        = ret_expr $ "add(" <> vals_to_code vals_a <> ")"
-  go (YulNumNeg)        = ret_expr $ "sub(0, " <> vals_to_code vals_a <> ")"
-  go (YulNumCmp @_ @m s) = go_num_cmp s (Proxy @m)
-  go _                = error $
-    -- FIXME remove
-    "do_compile_cat unimpl:" <> abiTypeCompactName @a <> " ~> " <> abiTypeCompactName @b
   go_comp :: forall a b c. YulO3 a b c => YulCat eff c b -> YulCat eff a c -> CGState CGOutput
   go_comp cb ac = do
     (code_ac, vals_c) <- do_compile_cat ind (MkAnyYulCat ac) vals_a
@@ -101,10 +92,16 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
                                       assign_vars_to_vars ind vars_a2 vars_a1
                                     )
            , fmap LetVar (vars_a1 <> vars_a2) )
-  go_jump :: forall a b. YulO2 a b => Proxy a -> Proxy b -> String -> YulCat eff a b -> CGState CGOutput
-  go_jump _ _ cid cat' = do
-    modify (\d@(MkCGStateData { dependant_cats = deps }) -> d {
-               dependant_cats = M'.insert cid (MkAnyYulCat cat') deps
+  go_jmp :: forall a b. YulO2 a b => YulJmpTarget eff a b -> CGState CGOutput
+  go_jmp (UserDefinedYulCat (cid, cat')) = do
+    modify (\d@(MkCGStateData { dependent_cats = deps }) -> d {
+               dependent_cats = M.insert cid (MkAnyYulCat cat') deps
+               })
+    return ( ""
+           , [ValExpr $  T.pack cid <> "(" <> vals_to_code vals_a <> ")"])
+  go_jmp (BuiltInYulJmpTarget (cid, _)) = do
+    modify (\d@(MkCGStateData { builtin_used = builtins }) -> d {
+               builtin_used = S.insert cid builtins
                })
     return ( ""
            , [ValExpr $  T.pack cid <> "(" <> vals_to_code vals_a <> ")"])
@@ -120,17 +117,6 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
                  cbracket1 ind "default"
                  (vals_to_code vars_b <> " := " <> (vals_to_code . drop (1 + nouts)) vals_a)
                , vars_b ))
-  -- code block for compare numbers
-  go_num_cmp :: forall a. YulO1 a => (BOOL, BOOL, BOOL) -> Proxy a -> CGState CGOutput
-  go_num_cmp (BOOL True , BOOL False, BOOL False) _ = go_num_cmp' "lt(" ")" (Proxy @a)
-  go_num_cmp (BOOL True , BOOL True , BOOL False) _ = go_num_cmp' "iszero(gt(" "))" (Proxy @a)
-  go_num_cmp (BOOL False, BOOL True , BOOL False) _ = go_num_cmp' "eq(" ")" (Proxy @a)
-  go_num_cmp (BOOL False, BOOL True , BOOL True ) _ = go_num_cmp' "iszero(lt(" "))" (Proxy @a)
-  go_num_cmp (BOOL False, BOOL False, BOOL True ) _ = go_num_cmp' "gt(" ")" (Proxy @a)
-  go_num_cmp _ _                                    = error "go_num_cmp: invalid boolean-switches combo"
-  go_num_cmp' :: forall a. YulO1 a => Code -> Code -> Proxy a -> CGState CGOutput
-  go_num_cmp' op1 op2 _ = gen_assert (length vals_a == 2) $
-    return ("", [ValExpr $ op1 <> vals_to_code vals_a <> op2 ])
 
 compile_cat :: forall a b eff. (HasCallStack, YulO2 a b) => Indenter -> YulCat eff a b -> ([Var], [Var]) -> CGState Code
 compile_cat ind acat (vars_a, vars_r) = do
@@ -164,8 +150,8 @@ compile_deps :: HasCallStack => Indenter -> (String -> Bool) -> CGState [Code]
 compile_deps ind fidFilter = do
   deps <- fmap (\(i, c) -> case c of (MkAnyYulCat cat) -> MkAnyFnCat (MkFnCat i cat))
           . filter (\(i, _) -> fidFilter i)
-          . M'.toList
-          . dependant_cats
+          . M.toList
+          . dependent_cats
           <$> get
   mapM (compile_one_any_fn ind) deps
 

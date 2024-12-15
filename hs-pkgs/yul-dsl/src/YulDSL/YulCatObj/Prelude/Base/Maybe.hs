@@ -31,10 +31,10 @@ instance (MaybeYulNum a, Show a) => YulCatObj (Maybe a)
 
 instance ( YulO1 a, YulCatObj (ABITypeDerivedOf a), MaybeYulNum a
          ) => PatternMatchable Maybe a where
-  match mfa f = let mfa' = mfa >.> YulDerivedOf >.> YulSplit
+  match mfa f = let mfa' = mfa >.> YulReduceType >.> YulSplit
                     b = mfa' >.> YulExl
                     n = mfa' >.> YulExr
-                        >.> YulCoerce @_ @(NP '[ABITypeDerivedOf a]) @(ABITypeDerivedOf a, NP '[])
+                        >.> YulCoerceType @_ @(NP '[ABITypeDerivedOf a]) @(ABITypeDerivedOf a, NP '[])
                         >.> YulExl @_ @(ABITypeDerivedOf a) @_
-                        >.> YulDerivedFrom
+                        >.> YulExtendType
                 in ifThenElse b (f (Just n)) (f Nothing)

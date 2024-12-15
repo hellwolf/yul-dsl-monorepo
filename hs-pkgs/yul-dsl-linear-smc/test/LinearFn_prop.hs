@@ -27,8 +27,8 @@ foo4 = fn'l "foo4" $
   \x1 x2 x3 x4 -> x1 + x2 + x3 + x4
 
 maybe_fn = fn'l "maybe_fn" $
-  uncurry'lv @(Maybe (U256) -> U256)
-  \x -> match'l x \case
+  uncurry'lv @(Maybe U256 -> U256)
+  \x1 -> match'l x1 \case
     Just g -> \v -> g v
     Nothing -> emb'l 0
 

@@ -66,7 +66,7 @@ encode'lvv :: forall a b r vd v1. YulO3 a b r
            => YulCat (VersionedInputOutput vd) a b
            -> (P'V v1 r a ⊸ P'V (v1 + vd) r b)
 encode'lvv cat x = -- ghc can infer it; annotating for readability and double checking expected types
-  let cat' = UnsafeLinear.coerce @_ @(YulCat (VersionedPort v1) a b) cat
+  let cat' = UnsafeLinear.coerce cat :: YulCat (VersionedPort v1) a b
   in UnsafeLinear.coerce @(P'V v1 r b) @(P'V (v1 + vd) r b)
      (encode cat' x)
 

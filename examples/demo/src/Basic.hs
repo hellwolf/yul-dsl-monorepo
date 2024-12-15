@@ -26,14 +26,14 @@ rangeSum'v1 = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV1"
   \from step until -> let j = from + step
                       in from + if j <= until
                                 then call'p rangeSum'v1 j step until
-                                else emb'p 0
+                                else emb 0
 
 -- | "rangeSum" implemented in a value function, and a locally scoped function
 rangeSum'v2 = go
   where
     go = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV2" \from step until ->
       let j = from + step
-      in from + if j <=? until then call'p go j step until else emb'p 0
+      in from + if j <=? until then call'p go j step until else emb 0
 
 -- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
 --

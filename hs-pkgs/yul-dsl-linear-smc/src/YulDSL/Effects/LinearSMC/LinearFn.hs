@@ -213,7 +213,7 @@ call'l (MkFn f) x =
    dup2'l x & \(x', x'') ->
        curryingNP
        @xs @b @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r ()) @One
-       (\(MkYulCat'LVV fxs) -> encode'lvv (YulJump (fnId f) (fnCat f)) (cons'l x' (fxs (discard x''))))
+       (\(MkYulCat'LVV fxs) -> encode'lvv (YulJmp (UserDefinedYulCat (fnId f, fnCat f))) (cons'l x' (fxs (discard x''))))
 
 --
 -- pattern matching

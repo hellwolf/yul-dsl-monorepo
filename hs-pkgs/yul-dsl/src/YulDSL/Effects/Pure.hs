@@ -13,7 +13,6 @@ module YulDSL.Effects.Pure
   ( Pure (MkPure), PureFn, YulCat'P
   , uncurry'p, fn'p, fn
   , call'p
-  , emb'p
   ) where
 
 -- eth-abi
@@ -117,8 +116,4 @@ call'p :: forall f xs b r m.
        => PureFn f                -- ^ a 'PureFn' of function type @f@
        -> LiftFunction f m m Many -- ^ a currying function type
 call'p (MkFn f) = curryingNP @xs @b @m @m @m @Many
-                  (\xs -> xs >.> YulJump (fnId f) (fnCat f))
-
--- | Embed a pure yul-categorical value.
-emb'p :: forall a r. YulO2 r a => a -> YulCat'P r a
-emb'p = YulEmbed
+                  (\xs -> xs >.> jmpUserDefined (fnId f, fnCat f))

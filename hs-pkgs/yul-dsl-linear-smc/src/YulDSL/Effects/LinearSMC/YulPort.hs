@@ -45,7 +45,7 @@ type P'V v = P'x (VersionedPort v)
 
 -- | Embed a free value to a yul port diagram that discards any input yul ports.
 emb'l :: forall a b eff r. YulO3 a b r => a -> (P'x eff r b ⊸ P'x eff r a)
-emb'l a = encode (YulEmbed a) . discard
+emb'l a = encode (YulEmb a) . discard
 
 -- | Create a constant yul port diagram that discards any input yul ports.
 const'l :: forall a b eff r. (YulO3 a b r) => P'x eff r a ⊸ (P'x eff r b ⊸ P'x eff r a)
@@ -60,7 +60,7 @@ dup2'l = split . copy
 
 -- | Coerce input yul port to an ABI coercible output yul port.
 coerce'l :: forall a b eff r. (YulO3 a b r, ABITypeCoercible a b) => P'x eff r a ⊸ P'x eff r b
-coerce'l = encode YulCoerce
+coerce'l = encode YulCoerceType
 
 -- | Prepend an element to a 'NP'.
 cons'l :: forall x xs eff r. YulO3 x (NP xs) r => P'x eff r x ⊸ P'x eff r (NP xs) ⊸ P'x eff r (NP (x:xs))
@@ -76,29 +76,29 @@ uncons'l = split . coerce'l
 --
 
 instance (YulO1 r, YulNum a) => MPEq (P'x eff r a) (P'x eff r BOOL) where
-  a == b = encode (YulNumCmp (false, true , false)) (merge (a, b))
-  a /= b = encode (YulNumCmp (true , false, true )) (merge (a, b))
+  a == b = encode yulNumEq (merge (a, b))
+  a /= b = encode yulNumNe (merge (a, b))
 
 -- | 'MPOrd' instance for the yul ports.
 instance (YulO1 r, YulNum a) => MPOrd (P'x eff r a) (P'x eff r BOOL) where
-  a  < b = encode (YulNumCmp (true , false, false)) (merge (a, b))
-  a <= b = encode (YulNumCmp (true , true , false)) (merge (a, b))
-  a  > b = encode (YulNumCmp (false, false, true )) (merge (a, b))
-  a >= b = encode (YulNumCmp (false, true , true )) (merge (a, b))
+  a  < b = encode yulNumLt (merge (a, b))
+  a <= b = encode yulNumLe (merge (a, b))
+  a  > b = encode yulNumGt (merge (a, b))
+  a >= b = encode yulNumGe (merge (a, b))
 
 --
 -- Num instances for (P'V v r)
 --
 
 instance (YulNum a, YulO1 r) => Additive (P'V v r a) where
-  a + b = encode YulNumAdd (merge (a, b))
+  a + b = encode (jmpBuiltIn (yulNumAdd @a)) (merge (a, b))
 
 instance (YulNum a, YulO1 r) => AddIdentity (P'V v r a) where
   -- Note: uni-port is forbidden in linear-smc, but linear-base AdditiveGroup requires this instance.
   zero = error "unit is undefined for linear ports"
 
 instance (YulNum a, YulO1 r) => AdditiveGroup (P'V v r a) where
-  negate = encode YulNumNeg
+  negate = encode (jmpBuiltIn (yulNumNeg @a))
 
 --
 -- 'IfThenElse' instance for the yul ports.

@@ -25,12 +25,12 @@ instance ValidINTx s n => FromInteger (INTx s n) where
 --
 
 instance (YulO1 r, YulNum a) => Additive (YulCat eff r a) where
-  a + b = YulNumAdd <.< YulProd a b <.< YulDup
+  a + b = jmpBuiltIn (yulNumAdd @a) <.< YulProd a b <.< YulDup
 
 instance (YulO1 r, YulNum a) => AddIdentity (YulCat eff r a) where
-  zero = YulEmbed (fromIntegral (0 :: Integer))
+  zero = YulEmb (fromIntegral (0 :: Integer))
 
 instance (YulO1 r, YulNum a) => AdditiveGroup (YulCat eff r a) where
-  negate a = YulNumNeg <.< a
+  negate a = jmpBuiltIn (yulNumNeg @a) <.< a
 instance (YulO1 r, ValidINTx s n) => FromInteger (YulCat eff r (INTx s n)) where
-  fromInteger x = YulEmbed (fromInteger x)
+  fromInteger x = YulEmb (fromInteger x)

@@ -40,11 +40,11 @@ initEvalState = MkEvalData { store_map = M.empty
 
 evalYulCat' :: (HasCallStack, YulO2 a b) => YulCat eff a b -> a -> EvalState b
 -- type-level conversions
-evalYulCat' YulDerivedOf   a = pure $ fromJust . abiDecode . abiEncode $ a
-evalYulCat' YulDerivedFrom a = pure $ fromJust . abiDecode . abiEncode $ a
-evalYulCat' YulCoerce      a = pure $ fromJust . abiDecode . abiEncode $ a
--- category
+evalYulCat' YulReduceType a = pure $ fromJust . abiDecode . abiEncode $ a
+evalYulCat' YulExtendType a = pure $ fromJust . abiDecode . abiEncode $ a
+evalYulCat' YulCoerceType a = pure $ fromJust . abiDecode . abiEncode $ a
 evalYulCat' YulSplit  a = pure $ fromJust . abiDecode . abiEncode $ a
+-- category
 evalYulCat' YulId     a = pure a
 evalYulCat' (YulComp n m) a = evalYulCat' m a >>= evalYulCat' n
 -- monoidal category
@@ -63,24 +63,23 @@ evalYulCat' YulExr  (_, b) = pure b
 evalYulCat' YulDis  _  = pure ()
 evalYulCat' YulDup  a  = pure (a, a)
 -- control flow
-evalYulCat' (YulJump _ f) a = evalYulCat' f a
+evalYulCat' (YulJmp (UserDefinedYulCat  (_, f))) a = evalYulCat' f a
+evalYulCat' (YulJmp (BuiltInYulJmpTarget (_, f))) a = pure (f a)
 evalYulCat' YulITE (BOOL a, (b, c)) = pure (if a then b else c)
 -- value primitives
-evalYulCat' (YulEmbed b)  _ = pure b
-evalYulCat' YulNumNeg a = pure (negate a)
-evalYulCat' YulNumAdd (a, b) = pure (a + b)
-evalYulCat' (YulNumCmp switches) (a, b) = pure $ BOOL (f switches (compare a b))
-  where f (BOOL True , BOOL False, BOOL False) o = o == LT
-        f (BOOL True , BOOL True,  BOOL False) o = o /= GT
-        f (BOOL False, BOOL True , BOOL False) o = o == EQ
-        f (BOOL False, BOOL True , BOOL True ) o = o /= LT
-        f (BOOL False, BOOL False, BOOL True ) o = o == GT
-        f _ _                                    = error "YulNumCmp: invalid boolean-switches combo"
+evalYulCat' (YulEmb b)  _ = pure b
+-- evalYulCat' YulNumNeg a = pure (negate a)
+-- evalYulCat' YulNumAdd (a, b) = pure (a + b)
+-- evalYulCat' (YulNumCmp switches) (a, b) = pure $ BOOL (f switches (compare a b))
+--   where f (BOOL True , BOOL False, BOOL False) o = o == LT
+--         f (BOOL True , BOOL True,  BOOL False) o = o /= GT
+--         f (BOOL False, BOOL True , BOOL False) o = o == EQ
+--         f (BOOL False, BOOL True , BOOL True ) o = o /= LT
+--         f (BOOL False, BOOL False, BOOL True ) o = o == GT
+--         f _ _                                    = error "YulNumCmp: invalid boolean-switches combo"
 -- storage primitives
 evalYulCat' YulSGet r = gets $ \s -> fromJust (fromWord =<< M.lookup r (store_map s))
 evalYulCat' YulSPut (r, a) = modify' $ \s -> s { store_map = M.insert r (toWord a) (store_map s) }
--- TODOs:
-evalYulCat' c _ = error ("evalYulCat: " <> show c)
 
 evalYulCat :: YulO2 a b => YulCat eff a b -> a -> b
 evalYulCat s a = evalState (evalYulCat' s a) initEvalState

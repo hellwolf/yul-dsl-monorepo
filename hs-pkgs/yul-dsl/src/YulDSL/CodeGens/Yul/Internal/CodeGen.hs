@@ -12,7 +12,8 @@ import           GHC.Stack                                   (HasCallStack)
 -- text
 import qualified Data.Text.Lazy                              as T
 -- containers
-import qualified Data.Map.Strict                             as M'
+import qualified Data.Map.Strict                             as M
+import qualified Data.Set                                    as S
 --
 import           YulDSL.Core
 --
@@ -92,7 +93,8 @@ snd_vals _ _ vars = gen_assert (ca + cb == length vars) (drop ca vars)
 -- | CodeGen state data.
 data CGStateData = MkCGStateData { var_gen         :: AutoVarGen
                                  , undeclared_vars :: [Var]
-                                 , dependant_cats  :: M'.Map String AnyYulCat -- cat_id -> cat
+                                 , dependent_cats  :: M.Map String AnyYulCat -- cat_id -> cat
+                                 , builtin_used    :: S.Set String
                                  }
 
 type CGState = State CGStateData
@@ -103,7 +105,8 @@ type CGOutput = (Code, [Val])
 init_cg :: CGStateData
 init_cg = MkCGStateData { var_gen = MkAutoVarGen 0
                         , undeclared_vars = []
-                        , dependant_cats = M'.empty
+                        , dependent_cats = M.empty
+                        , builtin_used = S.empty
                         }
 
 reset_var_gen :: CGState ()

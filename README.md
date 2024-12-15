@@ -173,7 +173,7 @@ Headline Features
     - [ ] dispatcher builder with full dispatcher calldata codec support.
     - [ ] constructor support.
 - yul-dsl-linear-smc
-  - [ ] Complete the Num classes
+  - [ ] Complete the Num classes: mul, abs, sig, etc.
   - [ ] Prelude curation
 - yol-suite
   - Software distributions:
@@ -185,8 +185,6 @@ Headline Features
   - Project Builder
   - Contract verification support:
     - [ ] Basic stunt contract generator.
-  - CLI
-    - [ ] Better error messages.
 
 **TODOs for 0.2.0.0**
 

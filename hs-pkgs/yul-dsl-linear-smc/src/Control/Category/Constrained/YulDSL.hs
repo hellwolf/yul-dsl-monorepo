@@ -36,10 +36,10 @@ instance Category (YulCat eff) where
 
 instance Monoidal (YulCat eff) where
   (×)     = YulProd
-  unitor  = YulCoerce
-  unitor' = YulCoerce
-  assoc   = YulCoerce
-  assoc'  = YulCoerce
+  unitor  = YulCoerceType
+  unitor' = YulCoerceType
+  assoc   = YulCoerceType
+  assoc'  = YulCoerceType
   swap    = YulSwap
 
 instance Cartesian (YulCat eff) where

@@ -21,7 +21,7 @@ module YolSuite.YOLC.Builder
 -- base
 import           Control.Monad           (foldM)
 import           Data.Functor            ((<&>))
-import           Data.Maybe              (fromMaybe)
+import           Data.Maybe              (fromJust, fromMaybe)
 import           Data.String             (fromString)
 -- text
 import qualified Data.Text.Lazy          as T
@@ -31,6 +31,7 @@ import           Control.Lens            ((^..), (^?))
 -- aseson
 import           Data.Aeson              (KeyValue ((.=)))
 import qualified Data.Aeson              as Aeson
+import qualified Data.Aeson.Types        as AesonTypes
 -- aeson-lens
 import           Data.Aeson.Lens         (key, values)
 -- system-process
@@ -93,7 +94,9 @@ compile_mo mo = do
                        stringify
                   else Left $
                        foldr
-                       ((<>) . fromMaybe (fromString "(empty error message)") . Aeson.decode . Aeson.encode)
+                       ((<>)
+                         . fromJust . AesonTypes.parseMaybe AesonTypes.parseJSON
+                         . fromMaybe (fromString "(empty error message)"))
                        (fromString "")
                        (map (^? key "formattedMessage") errors)
 

@@ -206,6 +206,9 @@ package linear-smc
   ghc-options: -Wno-all
 EOF
 
+  # install cabal freeze file
+  cp -f "$dist_path"/cabal.project.freeze "$yol_dir"
+
   # instantiate runyol.cabal template
   {
     sed -e "s|__YOL_PKG_NAME__|$pkg_name|g"

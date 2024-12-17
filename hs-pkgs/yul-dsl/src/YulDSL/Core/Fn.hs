@@ -16,7 +16,7 @@ module YulDSL.Core.Fn
     -- * NP-formed yul functions.
   , FnNP, Fn (MkFn, unFn)
     -- * Existential type of yul functions.
-  , AnyFnCat (MkAnyFnCat)
+  , AnyFnCat (MkAnyFnCat), anyFnId
   ) where
 
 -- eth-abi
@@ -49,9 +49,19 @@ data Fn eff f where
           )
        => { unFn :: FnNP eff (UncurryNP'Fst f) (UncurryNP'Snd f) } -> Fn eff f
 
+-- TODO, try this some day:
+-- type Fn eff f = forall xs b.
+--                 ( UncurryNP'Fst f ~ xs,
+--                   UncurryNP'Snd f ~ b,
+--                   YulO2 (NP xs) b
+--                 ) => FnNP eff (UncurryNP'Fst f) (UncurryNP'Snd f)
+
 -- | Existential type for @FnCat a b@.
 data AnyFnCat where
   MkAnyFnCat :: forall eff a b. YulO2 a b => (FnCat eff a b) -> AnyFnCat
+
+anyFnId :: AnyFnCat -> String
+anyFnId (MkAnyFnCat fnCat) = fnId fnCat
 
 --
 -- Show instances
@@ -59,5 +69,7 @@ data AnyFnCat where
 
 instance YulO2 a b => Show (FnCat eff a b) where
   show (MkFnCat fid cat) = "fn " ++ fid ++ ":\n" ++ show cat
+
 deriving instance Show AnyFnCat
+
 deriving instance Show (Fn eff f)

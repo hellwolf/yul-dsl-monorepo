@@ -6,24 +6,25 @@ import           GHC.Stack                                   (HasCallStack)
 import           Control.Monad                               (join)
 import           Data.Function                               ((&))
 import           Data.Functor                                ((<&>))
+import           Data.List                                   (nub)
 import           Data.Maybe                                  (catMaybes)
-import           Data.Typeable                               (Proxy (..))
---
+-- text
 import qualified Data.Text.Lazy                              as T
 --
 import           YulDSL.Core
 --
-import           Data.List                                   (nub)
 import           YulDSL.CodeGens.Yul.Internal.ABICodecGen
 import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
 import           YulDSL.CodeGens.Yul.Internal.CodeGen
 import           YulDSL.CodeGens.Yul.Internal.FunctionGen
 
-compile_fn_dispatcher :: HasCallStack => Indenter -> ScopedFn -> CGState (Maybe (Code, ABICodecGen, ABICodecGen))
+
+compile_fn_dispatcher :: HasCallStack
+                      => Indenter -> ScopedFn -> CGState (Maybe (Code, ABICodecGen, ABICodecGen))
 compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, _)))) (_ :: FnCat eff a b)) = do
-  vars_a <- mk_let_vars (Proxy @a)
-  vars_b <- mk_let_vars (Proxy @b)
-  io_vars <- declare_vars
+  vars_a <- cg_mk_let_vars @a
+  vars_b <- cg_mk_let_vars @b
+  io_vars <- cg_declare_vars
   let ca = ABICodecDispatcher @a
       cb = ABICodecDispatcher @b
   let code = cbracket ind ("case " <> T.pack (show sel)) $ \ ind' ->
@@ -47,7 +48,8 @@ compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, 
 compile_fn_dispatcher _ (ExternalFn _ (SELECTOR (_, Nothing)) _) = pure Nothing
 compile_fn_dispatcher _ (LibraryFn _) = pure Nothing
 
-compile_dispatchers :: HasCallStack => Indenter -> [ScopedFn] -> CGState Code
+compile_dispatchers :: HasCallStack
+                    => Indenter -> [ScopedFn] -> CGState Code
 compile_dispatchers ind fns = cbracket_m ind "/* dispatcher */" $ \ind' -> do
   externalFunctions <- mapM (compile_fn_dispatcher ind') fns
                        <&> catMaybes
@@ -69,7 +71,17 @@ compile_dispatchers ind fns = cbracket_m ind "/* dispatcher */" $ \ind' -> do
     "\n" <>
     code_abicodecs
 
-compile_object :: HasCallStack => Indenter -> YulObject -> CGState Code
+-- | Compile dependencies with a function id filter @fidFilter@.
+compile_deps :: HasCallStack
+             => Indenter -> (String -> Bool) -> CGState [Code]
+compile_deps ind fidFilter = do
+  deps <- fmap (\(i, c) -> case c of (MkAnyYulCat cat) -> MkAnyFnCat (MkFnCat i cat))
+          . filter (\(i, _) -> fidFilter i)
+          <$> cg_list_dependent_cats
+  mapM (\case (MkAnyFnCat f) -> compile_fn ind f) deps
+
+compile_object :: HasCallStack
+               => Indenter -> YulObject -> CGState Code
 compile_object ind (MkYulObject { yulObjectName = oname
                                 , yulObjectCtor = (MkAnyYulCat ctor)
                                 , yulObjectSFns = sfns
@@ -92,16 +104,34 @@ compile_object ind (MkYulObject { yulObjectName = oname
       cbracket_m ind'' "code" $ \ind''' -> do
         -- dispatcher
         code_dispatcher <- compile_dispatchers ind''' sfns
+
         -- exported functions
         code_fns <- mapM (compile_scoped_fn ind''') sfns
+
+        -- dependencies
+        deps_codes <- compile_deps ind (not . (`elem` map (anyFnId . unScopedFn) sfns))
+
+        builtin_codes <- cg_gen_builtin_codes
+
         pure $
           code_dispatcher <>
+
+          ind''' "// exported functions" <>
           T.intercalate "\n" code_fns <>
+          "\n" <>
+
+          ind''' "// dependent functions" <>
+          T.intercalate "\n" deps_codes <>
+          "\n" <>
+
+          ind''' "// builtin functions" <>
+          T.intercalate "\n" builtin_codes <>
+          "\n" <>
+
           -- additional helpers, TODO move the code
           ind''' "" <>
           cbracket1 ind''' "function allocate_unbounded() -> memPtr"
             "memPtr := mload(64)"
-
 
     -- sub objects code
     code_subobjs <- mapM (compile_object ind') subobjs <&> T.intercalate "\n"

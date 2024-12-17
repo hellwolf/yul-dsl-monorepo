@@ -10,10 +10,13 @@ foo1 = fn @(U256 -> U256) "foo1" $
 -- | A function takes two uints and store their sum at a fixed storage location then returns true.
 --
 --   Note: you can create any number of "unit" signals by adding '()' to the input list.
-foo2 = fn @(Maybe U256 -> Maybe U256 -> U256) "foo2" $
-  \x1 x2 -> match (x1 + x2) \case
-    Just r  -> r
-    Nothing -> 0
+-- foo2 = fn @(Maybe U256 -> Maybe U256 -> U256) "foo2" $
+--   \x1 x2 -> match (x1 + x2) \case
+--     Just r  -> r
+--     Nothing -> 0
+
+foo2 = fn @(Maybe U256 -> Maybe U256 -> Maybe U256) "foo2" $
+  \x1 x2 -> x1 + x2
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
 foo3 = fn'l "foo3" $ yulmonad'lv @(U256 -> U256 -> (BOOL, U256)) \x1 x2 -> LVM.do
@@ -51,10 +54,9 @@ rangeSum'l = fn'l "rangeSumL" $
 
 object = mkYulObject "Basic" emptyCtor
          [ externalFn foo1
-         -- , externalFn foo2
+         , externalFn foo2
          , staticFn   foo3 -- FIXME this should not be possible with permission tag
          , staticFn rangeSum'l
          , staticFn rangeSum'v1
          , staticFn rangeSum'v2
-         -- , externalFn rangeSumVFn
          ]

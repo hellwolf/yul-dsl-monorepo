@@ -10,9 +10,10 @@ module YulDSL.CodeGens.Yul.Internal.ABICodecGen
 -- text
 import qualified Data.Text.Lazy                              as T
 --
-import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
-import           YulDSL.CodeGens.Yul.Internal.CodeGen
 import           YulDSL.Core
+--
+import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
+import           YulDSL.CodeGens.Yul.Internal.Variables
 
 
 data ABICodecGen where

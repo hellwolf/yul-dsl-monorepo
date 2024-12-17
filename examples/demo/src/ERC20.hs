@@ -33,6 +33,6 @@ erc20_transfer = fn'l "transfer" $ yulmonad'lp @(ADDR -> ADDR -> U256 -> BOOL)
   -- embed true
 
 object = mkYulObject "ERC20" emptyCtor
-  [ -- externalFn erc20_balance_of FIXME
-   externalFn erc20_transfer
+  [ externalFn erc20_balance_of
+  , externalFn erc20_transfer
   ]

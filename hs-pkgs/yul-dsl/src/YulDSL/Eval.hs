@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-|
 
 Copyright   : (c) 2023-2024 Miao, ZhiCheng

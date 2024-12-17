@@ -7,6 +7,7 @@ import           Ethereum.ContractABI
 --
 import           YulDSL.Core.YulCat
 import           YulDSL.Core.YulCatObj
+import           YulDSL.Core.YulNum
 
 
 type MaybeYulNum a = ( ABITypeable a
@@ -28,6 +29,24 @@ instance MaybeYulNum a => ABITypeable (Maybe a) where
 instance MaybeYulNum a => ABITypeCodec (Maybe a)
 
 instance (MaybeYulNum a, Show a) => YulCatObj (Maybe a)
+
+instance ValidINTx s n => YulNum (Maybe (INTx s n)) where
+  yulNumCmp (True , False, False) = ("lt(_)", BOOL . uncurry (<))
+  yulNumCmp (True , True , False) = ("iszero(gt(_))", BOOL . uncurry (<=))
+  yulNumCmp (False, True , False) = ("eq(_)", BOOL . uncurry (==))
+  yulNumCmp (False, True , True ) = ("iszero(lt(_))", BOOL . uncurry (>=))
+  yulNumCmp (False, False, True ) = ("gt(_)", BOOL . uncurry (>))
+  yulNumCmp  _                    = error "yulNumCmp: invalid boolean-switches combo"
+
+  yulNumAdd = ("__maybe_add_t", uncurry (+))
+
+  yulNumMul = ("__maybe_mul_t", uncurry (*))
+
+  yulNumAbs = ("__maybe_abs_t", abs)
+
+  yulNumSig = ("__maybe_sig_t", signum)
+
+  yulNumNeg = ("__maybe_neg_t", negate)
 
 instance ( YulO1 a, YulCatObj (ABITypeDerivedOf a), MaybeYulNum a
          ) => PatternMatchable Maybe a where

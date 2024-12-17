@@ -16,11 +16,11 @@ class (YulCatObj a, Num a, Ord a) => YulNum a where
   yulNumNeg :: BuiltInYulFunction a a
 
 instance ValidINTx s n => YulNum (INTx s n) where
-  yulNumCmp (True , False, False) = ("lt(_)", BOOL . uncurry (<))
-  yulNumCmp (True , True , False) = ("iszero(gt(_))", BOOL . uncurry (<=))
-  yulNumCmp (False, True , False) = ("eq(_)", BOOL . uncurry (==))
-  yulNumCmp (False, True , True ) = ("iszero(lt(_))", BOOL . uncurry (>=))
-  yulNumCmp (False, False, True ) = ("gt(_)", BOOL . uncurry (>))
+  yulNumCmp (True , False, False) = ("lt", BOOL . uncurry (<))
+  yulNumCmp (True , True , False) = ("le", BOOL . uncurry (<=))
+  yulNumCmp (False, True , False) = ("eq", BOOL . uncurry (==))
+  yulNumCmp (False, True , True ) = ("ge", BOOL . uncurry (>=))
+  yulNumCmp (False, False, True ) = ("gt", BOOL . uncurry (>))
   yulNumCmp  _                    = error "yulNumCmp: invalid boolean-switches combo"
 
   yulNumAdd = ("__checked_add_t", uncurry (+))

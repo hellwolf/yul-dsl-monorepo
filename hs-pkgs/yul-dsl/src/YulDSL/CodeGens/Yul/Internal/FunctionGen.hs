@@ -35,7 +35,10 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
     ) <>
     code <>
     ind ("//dbg: -" <> title)
-  wrap_let_vars = \case Nothing -> id; Just vars -> \body -> ind (vars <> " {") <> body <> ind "}"
+  wrap_let_vars :: Maybe Code -> (Code -> Code)
+  wrap_let_vars = \case
+    Nothing -> id
+    Just vars -> \body -> ind (vars <> " {") <> body <> ind "}"
   -- go functions
   go :: forall a b. YulO2 a b => YulCat eff a b -> CGState CGOutput
   go (YulExtendType)    = ret_vars vals_a
@@ -46,11 +49,11 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
   go (YulId)            = ret_vars vals_a
   go (YulComp cb ac)    = go_comp cb ac
   go (YulProd ab cd)    = go_prod ab cd
-  go (YulSwap @_ @m @n) = ret_vars (swap_vals (Proxy @m) (Proxy @n) vals_a)
+  go (YulSwap @_ @m @n) = ret_vars (swap_vals @m @n vals_a)
   go (YulFork ab ac)    = go_fork ab ac
   go (YulExl @_ @mn @m) = go_extract (Proxy @mn) (Proxy @m) True  {- extractLeft -}
   go (YulExr @_ @mn @n) = go_extract (Proxy @mn) (Proxy @n) False {- extractLeft -}
-  go (YulDis)           = ret_vars (dis_vals (Proxy @a) vals_a)
+  go (YulDis)           = ret_vars (dis_vals @a vals_a)
   go (YulDup)           = go_dup (Proxy @a)
   --
   go (YulEmb a)         = ret_vars $ fmap (ValExpr . T.pack) [show a]
@@ -81,8 +84,8 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
               , if extractLeft then take leftVars vals_a else drop leftVars vals_a)
   go_prod :: forall a b c d. YulO4 a b c d => YulCat eff a b -> YulCat eff c d -> CGState CGOutput
   go_prod ab cd = do
-    (code_ab, vars_b1) <- do_compile_cat ind (MkAnyYulCat ab) (fst_vals (Proxy @a) (Proxy @c) vals_a)
-    (code_cd, vars_b2) <- do_compile_cat ind (MkAnyYulCat cd) (snd_vals (Proxy @a) (Proxy @c) vals_a)
+    (code_ab, vars_b1) <- do_compile_cat ind (MkAnyYulCat ab) (fst_vals @a @c vals_a)
+    (code_cd, vars_b2) <- do_compile_cat ind (MkAnyYulCat cd) (snd_vals @a @c vals_a)
     out_vars <- cg_declare_vars
     return ( mk_code @((a, b), (c, d)) @() "prod" $
              wrap_let_vars out_vars (code_ab <> code_cd)
@@ -98,32 +101,30 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
                                     )
            , fmap LetVar (vars_a1 <> vars_a2) )
   go_jmp :: forall a b. YulO2 a b => YulJmpTarget eff a b -> CGState CGOutput
-  go_jmp (UserDefinedYulCat (depId, depCat)) = do
-    -- modify (\d@(MkCGStateData { dependent_cats = deps }) -> d {
-    --            dependent_cats = Map.insert cid (MkAnyYulCat cat') deps
-    --            })
-    cg_insert_dependent_cat depId (MkAnyYulCat depCat)
-    return ( ""
-           , [ValExpr $  T.pack depId <> "(" <> vals_to_code vals_a <> ")"])
-  go_jmp (BuiltInYulJmpTarget (builtinName, _)) = do
-    -- modify (\d@(MkCGStateData { builtin_used = builtins }) -> d {
-    --            builtin_used = Set.insert cid builtins
-    --            })
-    cg_use_builtin builtinName
-    return ( ""
-           , [ValExpr $  T.pack builtinName <> "(" <> vals_to_code vals_a <> ")"])
+  go_jmp tgt = do
+    fname <- case tgt of
+      (UserDefinedYulCat (depId, depCat))    -> cg_insert_dependent_cat depId (MkAnyYulCat depCat) >> pure depId
+      (BuiltInYulJmpTarget (builtinName, _)) -> cg_use_builtin builtinName >> pure builtinName
+    let callExpr = T.pack fname <> "(" <> vals_to_code vals_a <> ")"
+    if abi_type_count_vars @b == 1
+      then do return ("" , [ValExpr callExpr])
+      else do vars_b <- cg_mk_let_vars @b
+              pure ( mk_code @a @b "jmp" $
+                     ind (vars_to_code vars_b <> " := " <> callExpr)
+                     -- ind callExpr
+                   , fmap LetVar vars_b )
   -- code block for if-then-else statement
   go_ite :: forall a. YulO1 a => Proxy a -> CGState CGOutput
   go_ite _ = let nouts = abi_type_count_vars @a
              in gen_assert_msg ("vals_a len: "<> show (length vals_a)) (length vals_a == 1 + 2 * nouts)
-    (do vars_b <- map LetVar <$> cg_mk_let_vars @a
+    (do vals_b <- map LetVar <$> cg_mk_let_vars @a
         return ( mk_code @(BOOL, (a, a)) @a "ite" $
                  ind ("switch " <> val_to_code (vals_a !! 0)) <>
                  cbracket1 ind "case 1"
-                 (vals_to_code vars_b <> " := " <> (vals_to_code . take nouts . drop 1) vals_a) <>
+                 (vals_to_code vals_b <> " := " <> (vals_to_code . take nouts . drop 1) vals_a) <>
                  cbracket1 ind "default"
-                 (vals_to_code vars_b <> " := " <> (vals_to_code . drop (1 + nouts)) vals_a)
-               , vars_b ))
+                 (vals_to_code vals_b <> " := " <> (vals_to_code . drop (1 + nouts)) vals_a)
+               , vals_b ))
 
 compile_cat :: forall a b eff. (HasCallStack, YulO2 a b)
             => Indenter -> YulCat eff a b -> ([Var], [Var]) -> CGState Code

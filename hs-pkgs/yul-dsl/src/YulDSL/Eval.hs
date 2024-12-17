@@ -69,16 +69,6 @@ evalYulCat' (YulJmp (BuiltInYulJmpTarget (_, f))) a = pure (f a)
 evalYulCat' YulITE (BOOL a, (b, c)) = pure (if a then b else c)
 -- value primitives
 evalYulCat' (YulEmb b)  _ = pure b
--- evalYulCat' YulNumNeg a = pure (negate a)
--- evalYulCat' YulNumAdd (a, b) = pure (a + b)
--- evalYulCat' (YulNumCmp switches) (a, b) = pure $ BOOL (f switches (compare a b))
---   where f (BOOL True , BOOL False, BOOL False) o = o == LT
---         f (BOOL True , BOOL True,  BOOL False) o = o /= GT
---         f (BOOL False, BOOL True , BOOL False) o = o == EQ
---         f (BOOL False, BOOL True , BOOL True ) o = o /= LT
---         f (BOOL False, BOOL False, BOOL True ) o = o == GT
---         f _ _                                    = error "YulNumCmp: invalid boolean-switches combo"
--- storage primitives
 evalYulCat' YulSGet r = gets $ \s -> fromJust (fromWord =<< M.lookup r (store_map s))
 evalYulCat' YulSPut (r, a) = modify' $ \s -> s { store_map = M.insert r (toWord a) (store_map s) }
 

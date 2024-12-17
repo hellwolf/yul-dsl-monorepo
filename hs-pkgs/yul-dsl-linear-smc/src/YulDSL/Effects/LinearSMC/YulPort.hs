@@ -75,12 +75,12 @@ uncons'l = split . coerce'l
 -- 'MPEq' instance for the yul ports.
 --
 
-instance (YulO1 r, YulNum a) => MPEq (P'x eff r a) (P'x eff r BOOL) where
+instance (YulO1 r, YulNumCmp a) => MPEq (P'x eff r a) (P'x eff r BOOL) where
   a == b = encode yulNumEq (merge (a, b))
   a /= b = encode yulNumNe (merge (a, b))
 
 -- | 'MPOrd' instance for the yul ports.
-instance (YulO1 r, YulNum a) => MPOrd (P'x eff r a) (P'x eff r BOOL) where
+instance (YulO1 r, YulNumCmp a) => MPOrd (P'x eff r a) (P'x eff r BOOL) where
   a  < b = encode yulNumLt (merge (a, b))
   a <= b = encode yulNumLe (merge (a, b))
   a  > b = encode yulNumGt (merge (a, b))

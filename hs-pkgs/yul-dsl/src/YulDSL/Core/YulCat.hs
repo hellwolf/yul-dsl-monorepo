@@ -32,7 +32,7 @@ module YulDSL.Core.YulCat
   , yulNumLt, yulNumLe, yulNumGt, yulNumGe, yulNumEq, yulNumNe
   , (<?), (<=?), (>?), (>=?), (==?), (/=?)
   , IfThenElse (ifThenElse)
-  , PatternMatchable (match)
+  , PatternMatchable (pat, match)
   ) where
 
 -- base
@@ -234,12 +234,12 @@ instance Show AnyYulCat where
 
 -- YulNum Ord operations:
 
-yulNumLt :: forall eff a. YulNum a => YulCat eff (a, a) BOOL
-yulNumLe :: forall eff a. YulNum a => YulCat eff (a, a) BOOL
-yulNumGt :: forall eff a. YulNum a => YulCat eff (a, a) BOOL
-yulNumGe :: forall eff a. YulNum a => YulCat eff (a, a) BOOL
-yulNumEq :: forall eff a. YulNum a =>  YulCat eff (a, a) BOOL
-yulNumNe :: forall eff a. YulNum a =>  YulCat eff (a, a) BOOL
+yulNumLt :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
+yulNumLe :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
+yulNumGt :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
+yulNumGe :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
+yulNumEq :: forall eff a. YulNumCmp a =>  YulCat eff (a, a) BOOL
+yulNumNe :: forall eff a. YulNumCmp a =>  YulCat eff (a, a) BOOL
 
 yulNumLt = jmpBuiltIn (yulNumCmp @a (True , False, False))
 yulNumLe = jmpBuiltIn (yulNumCmp @a (True , True , False))
@@ -249,12 +249,12 @@ yulNumEq = jmpBuiltIn (yulNumCmp @a (False, True , False))
 yulNumNe = jmpBuiltIn (yulNumCmp @a (True , False, True ))
 
 
-( <?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
-(<=?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
-( >?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
-(>=?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
-(==?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
-(/=?) :: forall eff a r. (YulO1 r, YulNum a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+( <?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+(<=?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+( >?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+(>=?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+(==?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
+(/=?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
 
 a  <? b = jmpBuiltIn (yulNumCmp @a (True , False, False)) <.< YulProd a b <.< YulDup
 a <=? b = jmpBuiltIn (yulNumCmp @a (True , True , False)) <.< YulProd a b <.< YulDup
@@ -271,6 +271,8 @@ instance YulO2 a r => IfThenElse (YulCat eff r BOOL) (YulCat eff r a) where
   ifThenElse c a b = YulITE <.< YulFork c (YulFork a b)
 
 class YulO1 a => PatternMatchable f a where
+  pat :: forall eff r. YulO1 r
+      => f (YulCat eff r a) -> YulCat eff r (f a)
   match :: forall eff r b. YulO2 r b
         => YulCat eff r (f a) -> (f (YulCat eff r a) -> YulCat eff r b) -> YulCat eff r b
 

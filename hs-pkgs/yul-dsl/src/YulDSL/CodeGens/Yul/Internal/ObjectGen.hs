@@ -38,12 +38,15 @@ compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, 
         ind' ( T.intercalate "," vars_b <> " := " <>
                T.pack fname <> "(" <> T.intercalate "," vars_a <> ")"
              ) <>
-        ind' "let memPos := allocate_unbounded()" <>
+        ind' "let memPos := __allocate_unbounded()" <>
         -- call abi encoder
         ind' ( "let memEnd := " <>
                abi_encoder_name cb <> "(memPos, " <> T.intercalate "," vars_b <> ")"
              ) <>
         ind' "return(memPos, sub(memEnd, memPos))"
+
+  cg_use_builtin "__allocate_unbounded"
+
   pure (Just (code, ca, cb))
 compile_fn_dispatcher _ (ExternalFn _ (SELECTOR (_, Nothing)) _) = pure Nothing
 compile_fn_dispatcher _ (LibraryFn _) = pure Nothing
@@ -125,13 +128,7 @@ compile_object ind (MkYulObject { yulObjectName = oname
           "\n" <>
 
           ind''' "// builtin functions" <>
-          T.intercalate "\n" builtin_codes <>
-          "\n" <>
-
-          -- additional helpers, TODO move the code
-          ind''' "" <>
-          cbracket1 ind''' "function allocate_unbounded() -> memPtr"
-            "memPtr := mload(64)"
+          T.intercalate "\n" builtin_codes
 
     -- sub objects code
     code_subobjs <- mapM (compile_object ind') subobjs <&> T.intercalate "\n"

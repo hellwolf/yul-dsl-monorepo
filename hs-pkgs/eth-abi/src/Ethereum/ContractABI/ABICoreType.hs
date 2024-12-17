@@ -93,6 +93,8 @@ abiCoreTypeCompactName (BYTESn' n) = "B" ++ show (natVal n)
 abiCoreTypeCompactName BYTES'      = "Bs"
 abiCoreTypeCompactName (ARRAY' a)  = "A" ++ abiCoreTypeCompactName a
 
+instance Show ABICoreType where show = abiCoreTypeCanonName
+
 {- * EVM word representations  -}
 
 -- | Raw storage value for ABI value types.

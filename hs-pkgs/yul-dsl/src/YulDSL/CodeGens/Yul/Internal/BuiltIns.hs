@@ -26,7 +26,15 @@ checked_neg = (,) "__checked_neg_t" $
 
 maybe_add :: (String, BuiltInYulGen)
 maybe_add = (,) "__maybe_add_t" $
-  const ("function __maybe_add_t(ta, a, tb, b) -> r { r := add(a, b) }")
+  const ("function __maybe_add_t(ta, a, tb, b) -> tr, r {\n" <>
+         "  tr := true\n" <>
+         "  r := add(a, b)\n" <>
+         "}"
+        )
+
+allocate_unbounded :: (String, BuiltInYulGen)
+allocate_unbounded = (,) "__allocate_unbounded" $
+  const "function __allocate_unbounded() -> memPtr { memPtr := mload(64) }"
 
 default_builtins :: [(String, BuiltInYulGen)]
 default_builtins =
@@ -34,4 +42,5 @@ default_builtins =
   [ checked_add
   , checked_neg
   , maybe_add
+  , allocate_unbounded
   ]

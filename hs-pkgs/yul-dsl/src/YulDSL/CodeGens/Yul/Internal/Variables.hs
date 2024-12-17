@@ -5,7 +5,6 @@ module YulDSL.CodeGens.Yul.Internal.Variables where
 -- base
 import           Data.Char                                   (chr)
 import           Data.Function                               ((&))
-import           Data.Typeable                               (Proxy (..))
 import           GHC.Stack                                   (HasCallStack)
 -- text
 import qualified Data.Text.Lazy                              as T
@@ -16,7 +15,7 @@ import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
 
 
 gen_assert_msg :: HasCallStack => String -> Bool -> a -> a
--- gen_assert_msg msg False _ = error msg
+gen_assert_msg msg False _ = error msg
 gen_assert_msg _     _ x   = x
 
 -- A variable represented by its name.
@@ -56,6 +55,9 @@ gen_vars n = snd $ foldr
 -- is_let_var :: Val -> Bool
 -- is_let_var x = case x of LetVar _ -> True; _ -> False
 
+vars_to_code :: [Var] -> Code
+vars_to_code = T.intercalate ", "
+
 val_to_code :: Val -> Code
 val_to_code x = case x of LetVar c -> c; ValExpr e -> e
 
@@ -65,35 +67,35 @@ vals_to_code = T.intercalate ", " . map val_to_code
 abi_type_count_vars :: forall a. ABITypeable a => Int
 abi_type_count_vars = length (abiTypeInfo @a)
 
-swap_vals :: forall a b. YulO2 a b => Proxy a -> Proxy b -> [Val] -> [Val]
-swap_vals _ _ vars = gen_assert_msg "swap_vals" (ca + cb == length vars)
+swap_vals :: forall a b. YulO2 a b => [Val] -> [Val]
+swap_vals vars = gen_assert_msg "swap_vals" (ca + cb == length vars)
   (let (va, vb) = splitAt ca vars in vb <> va)
   where ca = abi_type_count_vars @a
         cb = abi_type_count_vars @b
 
-dis_vals :: forall a. YulO1 a => Proxy a -> [Val] -> [Val]
-dis_vals _ vars = gen_assert_msg "dis_vals" (ca == length vars) []
+dis_vals :: forall a. YulO1 a => [Val] -> [Val]
+dis_vals vars = gen_assert_msg "dis_vals" (ca == length vars) []
   where ca = abi_type_count_vars @a
 
 -- Extract value expressions of the first type @a@.
-fst_vals :: forall a b. YulO2 a b => Proxy a -> Proxy b -> [Val] -> [Val]
-fst_vals _ _ vars = gen_assert_msg "fst_vals" (ca + cb == length vars) (take ca vars)
+fst_vals :: forall a b. YulO2 a b => [Val] -> [Val]
+fst_vals vars = gen_assert_msg "fst_vals" (ca + cb == length vars) (take ca vars)
   where ca = abi_type_count_vars @a
         cb = abi_type_count_vars @b
 
 -- Extract value expressions of the second type @b@.
-snd_vals :: forall a b. YulO2 a b => Proxy a -> Proxy b -> [Val] -> [Val]
-snd_vals _ _ vars = gen_assert_msg "snd_vals" (ca + cb == length vars) (drop ca vars)
+snd_vals :: forall a b. YulO2 a b => [Val] -> [Val]
+snd_vals vars = gen_assert_msg "snd_vals" (ca + cb == length vars) (drop ca vars)
   where ca = abi_type_count_vars @a
         cb = abi_type_count_vars @b
 
 -- Assigning variables.
-mk_aliases :: Indenter -> [Var] -> [Var] -> Code
+mk_aliases :: HasCallStack => Indenter -> [Var] -> [Var] -> Code
 mk_aliases ind varsTo varsFrom = gen_assert_msg "mk_aliases" (length varsTo == length varsFrom) $
   T.intercalate "" (fmap (\(a,b) -> ind (a <> " := " <> b)) (zip varsTo varsFrom))
 
 -- Assigning expression @vals@ to variables @vars@.
-assign_vars :: Indenter -> [Var] -> [Val] -> Code
+assign_vars :: HasCallStack => Indenter -> [Var] -> [Val] -> Code
 assign_vars ind vars vals = gen_assert_msg "assign_vars" (length vars == length vals) $
   T.intercalate "" (fmap (\(a,b) -> ind (a <> " := " <> b)) (zip vars (fmap val_to_code vals)))
 

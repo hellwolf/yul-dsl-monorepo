@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 import           Prelude.Base
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.IO as TIO
@@ -16,26 +17,21 @@ default (String)
 
 type Result = Either T.Text T.Text
 
-data Compiler = MkCompiler
-  { fnMode      :: forall eff f. YulO2 (NP (UncurryNP'Fst f)) (UncurryNP'Snd f) => Fn eff f -> IO Result
-  , objectMode  :: YulObject -> IO Result
-  , projectMode :: YOLCBuilder.Manifest -> IO Result
-  }
+yul_fn_mode :: forall eff f. YulO2 (NP (UncurryNP'Fst f)) (UncurryNP'Snd f) => Fn eff f -> IO Result
+yul_fn_mode = return . Right . YulCodeGen.compileFn . unFn
 
-yulCompiler :: Compiler
-yulCompiler = MkCompiler
-  { fnMode      = return . Right . YulCodeGen.compileFn . unFn
-  , objectMode  = return . Right . YulCodeGen.compileObject
-  , projectMode = YOLCBuilder.buildManifest
-  }
+yul_object_mode :: YulObject -> IO Result
+yul_object_mode = return . Right . YulCodeGen.compileObject
 
-showCompiler :: Compiler
-showCompiler = let f :: Show a => a -> IO Result
-                   f = return . Right . T.pack . show
-  in MkCompiler f f f
+yul_project_mode :: YOLCBuilder.Manifest -> IO Result
+yul_project_mode = YOLCBuilder.buildManifest
 
-compilers :: [Compiler]
-compilers = [yulCompiler, showCompiler]
+show_fn_mode :: Show a => a -> IO Result
+show_fn_mode = return . Right . T.pack . show
+show_object_mode :: Show a => a -> IO Result
+show_object_mode = show_fn_mode
+show_project_mode :: Show a => a -> IO Result
+show_project_mode = show_fn_mode
 
 handleResult :: Result -> IO ()
 handleResult (Left err) = TIO.hPutStrLn stderr err >> exitFailure

@@ -16,7 +16,7 @@ opt_verbose=; function when_verbose() { [[ -n "$opt_verbose" ]]; }
 is_nix_dist=
 dist_path=
 codegen_name=
-codegen_id=0 # yul, show, plantuml
+show_output_always=
 out_dir="$PWD"/build
 declare -a runyol_extra_opts=(-O0)
 
@@ -26,7 +26,7 @@ yolc, the YulDSL commandline transpiler.
 
 Usage: yolc [options] yol_module_spec...
 
--m [codegen_mode] Valid codegen modes: yul (default), show, plantuml
+-m [codegen_mode] Valid codegen modes: yul (default), show, yul_and_show
 -v                Output more information about what is going on
 -h                Display this help and exit
 
@@ -69,14 +69,11 @@ main() {
       m)
         codegen_name=$OPTARG
         case "$OPTARG" in
-          yul)
-            codegen_id=0
+          yul | show)
             ;;
-          show)
-            codegen_id=1
-            ;;
-          plantuml)
-            codegen_id=2
+          yul_and_show)
+            codegen_name=yul
+            show_output_always=1
             ;;
           *)
             die "Unknown output mode"
@@ -154,26 +151,23 @@ build_yol_module() {
   fi
 
   # parse codegen_mode, cmpl_syms
-  local codegen_mode cmpl_syms yol_dir yol_output_name
+  local codegen_mode cmpl_syms yol_dir
   cmpl_syms=$(echo -n "$rest" | sed -e 's|\s*,\s*| |g')
   if [ -z "$mod_name" ]; then
     mod_name=Project
-    codegen_mode=projectMode
+    codegen_mode=project_mode
     cmpl_syms=manifest
     yol_dir=${pkg_name}
-    yol_output_name=Contracts.sol
+    yol_output_file="${out_dir}/${yol_dir}/contracts/Contracts.sol"
   elif [ -z "$cmpl_syms" ]; then
-    codegen_mode=objectMode # object mode
+    codegen_mode=object_mode # object mode
     cmpl_syms=object
     yol_dir=${pkg_name}.${mod_name}
-    yol_output_name=object.yul
   else
-    codegen_mode=fnMode # fn mode
+    codegen_mode=fn_mode # fn mode
     yol_dir=${pkg_name}.${mod_name}.custom
-    yol_output_name=fn.yul
   fi
-  yol_dir=$out_dir/${yol_dir}
-  yol_output_file="$yol_dir/contracts/$yol_output_name"
+  yol_dir=${out_dir}/${yol_dir}
   mkdir -p "$yol_dir"
   mkdir -p "$yol_dir/contracts"
 
@@ -217,7 +211,7 @@ EOF
   # instantiate RunYol.hs template
   local actions
   actions=$(for i in $cmpl_syms; do
-              echo -n "handleResult =<< $codegen_mode (compilers !! $codegen_id) $i"
+              echo -n "handleResult =<< ${codegen_name}_${codegen_mode} $i"
             done)
   {
     sed -e "s|%YOL_MOD_NAME%|${mod_name}|g" \
@@ -241,13 +235,13 @@ EOF
 
   # run yol
   runyol --project-dir="$yol_dir" \
-         --builddir="$out_dir/yolc" > "${yol_output_file}" || {
-    rm "${yol_output_file}"
+         --builddir="$out_dir/yolc" > "${yol_output_file:-/dev/stdout}" || {
+    [ -f "${yol_output_file}" ] && rm "${yol_output_file}"
     die "=== Failed to build yol module: $mod_spec"
   }
 
   # print output if needed
-  when_verbose || [ "$codegen_id" == 1 ] && cat "${yol_output_file}"
+  when_verbose || [ -n "$show_output_always" ] && [  -f "${yol_output_file}" ] && cat "${yol_output_file}"
 
   when_verbose && {
     debug "=== Done with yol module: $mod_spec"

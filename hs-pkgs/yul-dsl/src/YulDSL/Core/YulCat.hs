@@ -30,7 +30,6 @@ module YulDSL.Core.YulCat
   , (>.>), (<.<), emb, jmpUserDefined, jmpBuiltIn
   , digestYulCat
   , yulNumLt, yulNumLe, yulNumGt, yulNumGe, yulNumEq, yulNumNe
-  , (<?), (<=?), (>?), (>=?), (==?), (/=?)
   , IfThenElse (ifThenElse)
   , PatternMatchable (inCase, match)
   , PatternMatchableYulCat
@@ -46,6 +45,7 @@ import qualified Data.ByteString.Char8    as B
 -- eth-abi
 import           Ethereum.ContractABI
 --
+import           Control.IfThenElse
 import           Control.PatternMatchable
 --
 import           YulDSL.Core.YulCatObj
@@ -118,6 +118,10 @@ data YulCat (eff :: k) a b where
 -- | Existential wrapper of the 'YulCat'.
 data AnyYulCat = forall eff a b. YulO2 a b => MkAnyYulCat (YulCat eff a b)
 
+------------------------------------------------------------------------------------------------------------------------
+-- YulCat Verbial Utilities
+------------------------------------------------------------------------------------------------------------------------
+
 -- | Left to right composition of 'YulCat'.
 (>.>) :: forall eff a b c. YulO3 a b c => YulCat eff a b %1-> YulCat eff b c %1-> YulCat eff a c
 m >.> n = n `YulComp` m
@@ -134,21 +138,36 @@ infixr 1 >.>, <.<
 emb :: forall eff a r. YulO2 r a => a -> YulCat eff r a
 emb = YulEmb
 
+-- | Short-hand for 'YulJmp' to user-defined 'YulCat'.
 jmpUserDefined :: forall eff a b. YulO2 a b => (String, YulCat eff a b) %1-> YulCat eff a b
 jmpUserDefined tgt = YulJmp (UserDefinedYulCat tgt)
 
+-- | Short-hand for 'YulJmp' to built-in target.
 jmpBuiltIn :: forall eff a b. YulO2 a b => BuiltInYulFunction a b %1-> YulCat eff a b
 jmpBuiltIn tgt = YulJmp (BuiltInYulJmpTarget tgt)
 
--- | It's not as scary as it sounds. It produces a fingerprint for the morphism.
-digestYulCat :: YulCat eff a b -> String
-digestYulCat = printf "%x" . digest_c8 . B.pack . show
-  where c8 _ []     = 0
-        c8 n [a]    = (2 ^ n) * toInteger(ord a)
-        c8 n (a:as) =  (2 ^ n) * toInteger(ord a) + c8 (n + 8) as
-        digest_c8 bs = go_digest_c8 (B.splitAt 8 bs)
-        go_digest_c8 (b, bs') = c8 (0 :: Integer) (B.unpack b) `xorInteger`
-                                if B.length bs' == 0 then 0 else digest_c8 bs'
+-- YulNum Ord operations:
+
+yulNumLt :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
+yulNumLe :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
+yulNumGt :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
+yulNumGe :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
+yulNumEq :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
+yulNumNe :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
+
+yulNumLt = jmpBuiltIn (yulNumCmp @a (True , False, False))
+yulNumLe = jmpBuiltIn (yulNumCmp @a (True , True , False))
+yulNumGt = jmpBuiltIn (yulNumCmp @a (False, False, True ))
+yulNumGe = jmpBuiltIn (yulNumCmp @a (False, True , True ))
+yulNumEq = jmpBuiltIn (yulNumCmp @a (False, True , False))
+yulNumNe = jmpBuiltIn (yulNumCmp @a (True , False, True ))
+
+-- ^ 'IfThenElse' instance for 'YulCat' objects.
+instance YulO2 a r => IfThenElse (YulCat eff r BOOL) (YulCat eff r a) where
+  ifThenElse c a b = YulITE <.< YulFork c (YulFork a b)
+
+-- | Type alias of 'PatternMatchable' for 'YulCat' objects.
+type PatternMatchableYulCat eff p a = PatternMatchable (YulCat eff (p a)) (p a) (p (YulCat eff (p a) a)) YulCatObj
 
 ------------------------------------------------------------------------------------------------------------------------
 -- NP Helpers
@@ -231,49 +250,15 @@ instance Show (YulCat eff a b) where
 instance Show AnyYulCat where
   show (MkAnyYulCat c) = show c
 
-------------------------------------------------------------------------------------------------------------------------
--- Prelude Customization Helpers
-------------------------------------------------------------------------------------------------------------------------
-
--- YulNum Ord operations:
-
-yulNumLt :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
-yulNumLe :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
-yulNumGt :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
-yulNumGe :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
-yulNumEq :: forall eff a. YulNumCmp a =>  YulCat eff (a, a) BOOL
-yulNumNe :: forall eff a. YulNumCmp a =>  YulCat eff (a, a) BOOL
-
-yulNumLt = jmpBuiltIn (yulNumCmp @a (True , False, False))
-yulNumLe = jmpBuiltIn (yulNumCmp @a (True , True , False))
-yulNumGt = jmpBuiltIn (yulNumCmp @a (False, False, True ))
-yulNumGe = jmpBuiltIn (yulNumCmp @a (False, True , True ))
-yulNumEq = jmpBuiltIn (yulNumCmp @a (False, True , False))
-yulNumNe = jmpBuiltIn (yulNumCmp @a (True , False, True ))
-
-
-( <?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
-(<=?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
-( >?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
-(>=?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
-(==?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
-(/=?) :: forall eff a r. (YulO1 r, YulNumCmp a) => YulCat eff r a %1-> YulCat eff r a %1-> YulCat eff r BOOL
-
-a  <? b = jmpBuiltIn (yulNumCmp @a (True , False, False)) <.< YulProd a b <.< YulDup
-a <=? b = jmpBuiltIn (yulNumCmp @a (True , True , False)) <.< YulProd a b <.< YulDup
-a  >? b = jmpBuiltIn (yulNumCmp @a (False, False, True )) <.< YulProd a b <.< YulDup
-a >=? b = jmpBuiltIn (yulNumCmp @a (False, True , True )) <.< YulProd a b <.< YulDup
-a ==? b = jmpBuiltIn (yulNumCmp @a (False, True , False)) <.< YulProd a b <.< YulDup
-a /=? b = jmpBuiltIn (yulNumCmp @a (True , False, True )) <.< YulProd a b <.< YulDup
-
--- | IfThenElse for enabling rebindable syntax.
-class IfThenElse a b where
-  ifThenElse :: forall w. a %w -> b %w -> b %w -> b
-
-instance YulO2 a r => IfThenElse (YulCat eff r BOOL) (YulCat eff r a) where
-  ifThenElse c a b = YulITE <.< YulFork c (YulFork a b)
-
-type PatternMatchableYulCat eff p a = PatternMatchable (YulCat eff (p a)) (p a) (p (YulCat eff (p a) a)) YulCatObj
+-- | It's not as scary as it sounds. It produces a fingerprint for the morphism.
+digestYulCat :: YulCat eff a b -> String
+digestYulCat = printf "%x" . digest_c8 . B.pack . show
+  where c8 _ []     = 0
+        c8 n [a]    = (2 ^ n) * toInteger(ord a)
+        c8 n (a:as) =  (2 ^ n) * toInteger(ord a) + c8 (n + 8) as
+        digest_c8 bs = go_digest_c8 (B.splitAt 8 bs)
+        go_digest_c8 (b, bs') = c8 (0 :: Integer) (B.unpack b) `xorInteger`
+                                if B.length bs' == 0 then 0 else digest_c8 bs'
 
 ------------------------------------------------------------------------------------------------------------------------
 -- INTERNAL FUNCTIONs

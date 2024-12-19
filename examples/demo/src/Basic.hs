@@ -33,7 +33,7 @@ rangeSum'v2 = go
   where
     go = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV2" \from step until ->
       let j = from + step
-      in from + if j <=? until then call'p go j step until else emb 0
+      in from + if j <= until then call'p go j step until else emb 0
 
 -- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
 --

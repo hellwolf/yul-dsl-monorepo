@@ -158,12 +158,11 @@ Headline Features
     - [ ] `YulNum (Maybe a)`, safe numerical operations.
     - [ ] `YulCast`, casting values between value types.
   - ADT & pattern matching infrastructure:
-    - [ ] Pattern matching for `YumNum a => (Maybe a)`
+    - [-] Pattern matching for `YumNum a => (Maybe a)`
   - Control flow primitives:
     - [ ] `YulMapArray`, tight loop over an array.
     - [ ] `YulLen`, array length.
   - Non pure primitives:
-    - [ ] `YulSet, YulSPut`, storage operations.
     - [ ] `YulCall`, external function calls.
   - Evaluator
     - [ ] Support all `YulDSL` data constructors.
@@ -171,7 +170,6 @@ Headline Features
     - [ ] Change the logic to delay code gen until inner layer requires it.
   - Object builder:
     - [ ] dispatcher builder with full dispatcher calldata codec support.
-    - [ ] constructor support.
 - yul-dsl-linear-smc
   - [ ] Complete the Num classes: mul, abs, sig, etc.
   - [ ] Prelude curation
@@ -203,6 +201,8 @@ Headline Features
     - [ ] `YulAbi{Enc,Dec}`, contracts ABI serialization.
   - CodeGen core:
     - [ ] Fn autoId (instead of using yulCatDigest.)
+  - Object builder:
+    - [ ] constructor support.
 - yol-suite
   - Software distributions:
     - [ ] better github dev console

@@ -222,7 +222,8 @@ call'l (MkFn f) x =
 match'l :: forall p r a b va vd.
            ( YulO4 r a b (p a)
            , BasePrelude.Functor p
-           , PatternMatchable p a)
+           , PatternMatchableYulCat (VersionedInputOutput 0) p a
+           )
         => P'V va r (p a)
         ⊸ (forall r1. YulO1 r1 => p (P'V va r1 (p a) ⊸ P'V va r1 a) ⊸ (P'V 0 r1 (p a) ⊸ P'V vd r1 b))
         -> P'V (va + vd) r b

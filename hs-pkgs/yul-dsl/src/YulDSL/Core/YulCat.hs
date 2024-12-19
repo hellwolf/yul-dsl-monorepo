@@ -32,18 +32,21 @@ module YulDSL.Core.YulCat
   , yulNumLt, yulNumLe, yulNumGt, yulNumGe, yulNumEq, yulNumNe
   , (<?), (<=?), (>?), (>=?), (==?), (/=?)
   , IfThenElse (ifThenElse)
-  , PatternMatchable (pat, match)
+  , PatternMatchable (inCase, match)
+  , PatternMatchableYulCat
   ) where
 
 -- base
-import           Data.Char             (ord)
-import           Data.Kind             (Constraint)
-import           GHC.Integer           (xorInteger)
-import           Text.Printf           (printf)
+import           Data.Char                (ord)
+import           Data.Kind                (Constraint)
+import           GHC.Integer              (xorInteger)
+import           Text.Printf              (printf)
 -- bytestring
-import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Char8    as B
 -- eth-abi
 import           Ethereum.ContractABI
+--
+import           Control.PatternMatchable
 --
 import           YulDSL.Core.YulCatObj
 import           YulDSL.Core.YulNum
@@ -270,11 +273,7 @@ class IfThenElse a b where
 instance YulO2 a r => IfThenElse (YulCat eff r BOOL) (YulCat eff r a) where
   ifThenElse c a b = YulITE <.< YulFork c (YulFork a b)
 
-class YulO1 a => PatternMatchable f a where
-  pat :: forall eff r. YulO1 r
-      => f (YulCat eff r a) -> YulCat eff r (f a)
-  match :: forall eff r b. YulO2 r b
-        => YulCat eff r (f a) -> (f (YulCat eff r a) -> YulCat eff r b) -> YulCat eff r b
+type PatternMatchableYulCat eff p a = PatternMatchable (YulCat eff (p a)) (p a) (p (YulCat eff (p a) a)) YulCatObj
 
 ------------------------------------------------------------------------------------------------------------------------
 -- INTERNAL FUNCTIONs

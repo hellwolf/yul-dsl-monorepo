@@ -37,9 +37,10 @@ instance ValidINTx s n => YulNum (Maybe (INTx s n)) where
   yulNumSig = ("__maybe_sig_t", signum)
   yulNumNeg = ("__maybe_neg_t", negate)
 
-instance ( YulO1 a, YulCatObj (ABITypeDerivedOf a), MaybeYulNum a
-         ) => PatternMatchable Maybe a where
-  pat = \case
+instance ( YulCat eff r ~ m
+         , YulO2 r a, YulCatObj (ABITypeDerivedOf a), MaybeYulNum a
+         ) => PatternMatchable m (Maybe a) (Maybe (m a)) YulCatObj where
+  inCase = \case
     Just a  -> YulFork (YulEmb true) (a >.> YulReduceType)
                >.> YulReduceType
                >.> YulExtendType -- @_ @(NP [BOOL, ABITypeDerivedOf a]) @(Maybe a)
@@ -47,10 +48,10 @@ instance ( YulO1 a, YulCatObj (ABITypeDerivedOf a), MaybeYulNum a
                >.> YulReduceType
                >.> YulExtendType
 
-  match mfa f = let mfa' = mfa >.> YulReduceType >.> YulSplit
-                    b = mfa' >.> YulExl
-                    n = mfa' >.> YulExr
-                        >.> YulCoerceType @_ @(NP '[ABITypeDerivedOf a]) @(ABITypeDerivedOf a, NP '[])
-                        >.> YulExl @_ @(ABITypeDerivedOf a) @_
-                        >.> YulExtendType
-                in ifThenElse b (f (Just n)) (f Nothing)
+  match mp f = let mp' = mp >.> YulReduceType >.> YulSplit
+                   b   = mp' >.> YulExl
+                   n   = mp' >.> YulExr
+                         >.> YulCoerceType @_ @(NP '[ABITypeDerivedOf a]) @(ABITypeDerivedOf a, NP '[])
+                         >.> YulExl @_ @(ABITypeDerivedOf a) @_
+                         >.> YulExtendType
+                 in ifThenElse b (f (Just n)) (f Nothing)

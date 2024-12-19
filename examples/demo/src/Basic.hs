@@ -13,7 +13,7 @@ maybe_foo2 = fn @(Maybe U32 -> Maybe U32 -> U32) "maybe_foo2" $
     Nothing -> 0
 
 foo2 = fn @(U32 -> U32 -> U32) "foo2" $
-  \x1 x2 -> call'p maybe_foo2 (pat (Just x1)) (pat (Just x2))
+  \x1 x2 -> call'p maybe_foo2 (inCase (Just x1)) (inCase (Just x2))
 
 -- | A function takes two uints and store their sum at a fixed storage location then returns it.
 foo3 = fn'l "foo3" $ yulmonad'lv @(U256 -> U256 -> (BOOL, U256)) \x1 x2 -> LVM.do

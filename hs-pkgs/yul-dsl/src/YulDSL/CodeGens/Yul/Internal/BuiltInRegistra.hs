@@ -18,7 +18,10 @@ instance Eq PrefixKey where
 instance Ord PrefixKey where
   a'@(MkPrefixKey a) <= b'@(MkPrefixKey b) = a' == b' || a <= b
 
-type BuiltInYulGen = String -> T.Text
+type BuiltInName = String
+
+-- A function that returns a builtin's code and dependent built-ins.
+type BuiltInYulGen = BuiltInName -> (T.Text, [BuiltInName])
 
 type BuiltInRegistra = Map.Map PrefixKey BuiltInYulGen
 
@@ -31,7 +34,8 @@ register_builtin prefix gen registra =
   Just (pkey', _) -> if pkey /= pkey' then go
                      else error ("Builtin registra prefix existed: " <> unPrefixKey pkey')
 
-lookup_builtin :: String -> BuiltInRegistra -> T.Text
-lookup_builtin name registra = case Map.lookup (MkPrefixKey name) registra of
+lookup_builtin :: String -> BuiltInRegistra -> (T.Text, [BuiltInName])
+lookup_builtin name registra = case Map.lookupLE (MkPrefixKey name) registra of
   Nothing  -> error ("No builtin found: " <> name)
-  Just gen -> gen name
+  Just (MkPrefixKey prefix, gen) -> if isPrefixOf prefix name then gen name
+                                    else error ("Builtin not found: " <> name)

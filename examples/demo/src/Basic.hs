@@ -4,8 +4,8 @@ import qualified Control.LinearlyVersionedMonad as LVM
 import           Prelude.YulDSL
 
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
-foo1 = fn @(U256 -> U256) "foo1" $
-  \x -> if x > 9000 then 0 else x
+foo1 = fn @(I256 -> I256) "foo1" $
+  \x -> if x > 0 then x + x else 0
 
 maybe_foo2 = fn @(Maybe U32 -> Maybe U32 -> U32) "maybe_foo2" $
   \x1 x2 -> match (x1 + x2) \case

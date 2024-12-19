@@ -1,6 +1,7 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-module YulDSL.YulCatObj.Prelude.Base.Maybe where
+module YulDSL.YulCatObj.Prelude.Base.Maybe () where
 
 -- eth-abi
 import           Ethereum.ContractABI
@@ -31,11 +32,11 @@ instance MaybeYulNum a => ABITypeCodec (Maybe a)
 instance (MaybeYulNum a, Show a) => YulCatObj (Maybe a)
 
 instance ValidINTx s n => YulNum (Maybe (INTx s n)) where
-  yulNumAdd = ("__maybe_add_t", uncurry (+))
-  yulNumMul = ("__maybe_mul_t", uncurry (*))
-  yulNumAbs = ("__maybe_abs_t", abs)
-  yulNumSig = ("__maybe_sig_t", signum)
-  yulNumNeg = ("__maybe_neg_t", negate)
+  yulNumAdd = (mk_builtin_name @(INTx s n) "add", uncurry (+))
+  yulNumMul = (mk_builtin_name @(INTx s n) "mul", uncurry (*))
+  yulNumAbs = (mk_builtin_name @(INTx s n) "abs", abs)
+  yulNumSig = (mk_builtin_name @(INTx s n) "sig", signum)
+  yulNumNeg = (mk_builtin_name @(INTx s n) "neg", negate)
 
 instance ( YulCat eff r ~ m
          , YulO2 r a, YulCatObj (ABITypeDerivedOf a), MaybeYulNum a
@@ -55,3 +56,6 @@ instance ( YulCat eff r ~ m
                          >.> YulExl @_ @(ABITypeDerivedOf a) @_
                          >.> YulExtendType
                  in ifThenElse b (f (Just n)) (f Nothing)
+
+mk_builtin_name :: forall a. ABITypeable a => String -> String
+mk_builtin_name n = "__maybe_" ++ n ++ "_t_" ++ abiTypeCanonName @a

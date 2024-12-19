@@ -94,11 +94,14 @@ compile_mo mo = do
                        stringify
                   else Left $
                        foldr
-                       ((<>)
-                         . fromJust . AesonTypes.parseMaybe AesonTypes.parseJSON
-                         . fromMaybe (fromString "(empty error message)"))
+                       (((<>)
+                          . fromJust . AesonTypes.parseMaybe AesonTypes.parseJSON
+                          . fromMaybe (fromString "(empty error message)")
+                        )
+                        . (^? key "formattedMessage")
+                       )
                        (fromString "")
-                       (map (^? key "formattedMessage") errors)
+                       errors
 
 -- | Compile one build unit.
 build_bu :: BuildUnit -> IO BuildResult

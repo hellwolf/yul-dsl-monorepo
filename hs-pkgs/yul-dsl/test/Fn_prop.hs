@@ -85,7 +85,9 @@ maybe_num_fn2 = fn @(Maybe U8 -> Maybe U8 -> U8) ""
 test_maybe_fn :: Bool
 test_maybe_fn = and
   [ evalFn maybe_num_fn2 (Just 42 :* Just 69 :* Nil) == 111
-  , evalFn maybe_num_fn2 (Just 255 :* Just 255 :* Nil) == 0
+  , evalFn maybe_num_fn2 (Just 255 :* Just 0 :* Nil) == 255
+  , evalFn maybe_num_fn2 (Just 255 :* Just 1 :* Nil) == 0
+  , evalFn maybe_num_fn2 (Just 128 :* Just 128 :* Nil) == 0
   ]
 
 -- | "YulDSL.Core.Fn" tests.

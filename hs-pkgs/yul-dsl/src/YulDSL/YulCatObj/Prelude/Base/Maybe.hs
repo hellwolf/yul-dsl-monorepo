@@ -34,9 +34,9 @@ instance (MaybeYulNum a, Show a) => YulCatObj (Maybe a)
 instance ValidINTx s n => YulNum (Maybe (INTx s n)) where
   yulNumAdd = (mk_builtin_name @(INTx s n) "add", uncurry (+))
   yulNumMul = (mk_builtin_name @(INTx s n) "mul", uncurry (*))
+  yulNumSub = (mk_builtin_name @(INTx s n) "sub", uncurry (-))
   yulNumAbs = (mk_builtin_name @(INTx s n) "abs", abs)
   yulNumSig = (mk_builtin_name @(INTx s n) "sig", signum)
-  yulNumNeg = (mk_builtin_name @(INTx s n) "neg", negate)
 
 instance ( YulCat eff r ~ m
          , YulO2 r a, YulCatObj (ABITypeDerivedOf a), MaybeYulNum a

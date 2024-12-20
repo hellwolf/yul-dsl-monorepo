@@ -82,11 +82,11 @@ instance ValidINTx s n => Num (Maybe (INTx s n)) where
   (Just (INT a)) + (Just (INT b)) = fromInteger (a + b)
   _ + _                           = Nothing
 
+  (Just (INT a)) - (Just (INT b)) = fromInteger (a - b)
+  _ - _                           = Nothing
+
   (Just (INT a)) * (Just (INT b)) = fromInteger (a * b)
   _ * _                           = Nothing
-
-  negate (Just (INT a)) = fromInteger (negate a)
-  negate _              = Nothing
 
   abs (Just (INT a)) = fromInteger (abs a)
   abs _              = Nothing
@@ -123,11 +123,11 @@ instance ValidINTx s n => Bounded (INTx s n) where
 
 instance ValidINTx s n => Num (INTx s n) where
   a + b = fromJust (Just a + Just b)
+  a - b = fromJust (Just a - Just b)
   a * b = fromJust (Just a * Just b)
   abs = fromJust . abs . Just
   signum = fromJust . signum . Just
   fromInteger = fromJust . fromInteger
-  negate = fromJust . negate . Just
 
 instance ValidINTx s n => Real (INTx s n) where
   toRational = toRational . Just

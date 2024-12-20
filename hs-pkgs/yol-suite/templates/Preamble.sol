@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 /**
@@ -64,5 +64,10 @@ abstract contract Proxy {
     fallback() external payable virtual {
         _fallback();
     }
-}
 
+    // NOTE: This is superfluous, but we add it anyway so that solc will stop bitching about it.
+    // Ref: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/4434
+    receive() external payable virtual {
+        _fallback();
+    }
+}

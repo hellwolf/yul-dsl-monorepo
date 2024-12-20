@@ -146,7 +146,7 @@ build_yol_module() {
   if [ -n "$rest" ]; then
     local mod_name
     # separate module name from symbols
-    read -r mod_name rest <<< "$(echo -n "$rest" | sed -nE -e 's|^([.0-9a-zA-Z]+)(\[(.*)\])?$|\1 \3|gp')"
+    read -r mod_name rest <<< "$(echo -n "$rest" | sed -nE -e 's|^([.0-9a-zA-Z_]+)(\[(.*)\])?$|\1 \3|gp')"
     [ -z "$mod_name" ] && die "Module name cannot be extracted: $rest"
   fi
 

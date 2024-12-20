@@ -1,11 +1,11 @@
 module Project where
 
-import qualified ObjectDispatcherTests
+import qualified Num_Tests
 import           YolSuite.YOLC.Manifest
 
 manifest :: Manifest
 manifest = MkManifest
-  { buildUnits = [ MkBuildUnit { mainObject = ObjectDispatcherTests.object
+  { buildUnits = [ MkBuildUnit { mainObject = Num_Tests.object
                                , deploymentType = SingletonContract
                                , upgradabilityMode = NonUpgradable
                                }

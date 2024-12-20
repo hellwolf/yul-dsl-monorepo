@@ -31,6 +31,7 @@ instance (YulO1 r, YulNum a) => AddIdentity (YulCat eff r a) where
   zero = YulEmb (fromIntegral (0 :: Integer))
 
 instance (YulO1 r, YulNum a) => AdditiveGroup (YulCat eff r a) where
-  negate a = jmpBuiltIn (yulNumNeg @a) <.< a
+  a - b = jmpBuiltIn (yulNumSub @a) <.< YulProd a b <.< YulDup
+
 instance (YulO1 r, ValidINTx s n) => FromInteger (YulCat eff r (INTx s n)) where
   fromInteger x = YulEmb (fromInteger x)

@@ -86,8 +86,8 @@ cg_declare_vars = do
 cg_forget_vars :: CGState ()
 cg_forget_vars = modify $ \s -> s { undeclared_vars = [] }
 
-cg_register_builtin :: (String, BuiltInYulGen) -> CGState ()
-cg_register_builtin (prefix, gen) = modify $ \s -> s { builtins = register_builtin prefix gen s.builtins }
+cg_register_builtin :: BuiltInEntry -> CGState ()
+cg_register_builtin builtin = modify $ \s -> s { builtins = register_builtin builtin s.builtins }
 
 cg_list_dependent_cats :: CGState [(String, AnyYulCat)]
 cg_list_dependent_cats = get <&> Map.toList . dependent_cats

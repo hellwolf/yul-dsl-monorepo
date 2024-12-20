@@ -98,7 +98,7 @@ instance (YulNum a, YulO1 r) => AddIdentity (P'V v r a) where
   zero = error "unit is undefined for linear ports"
 
 instance (YulNum a, YulO1 r) => AdditiveGroup (P'V v r a) where
-  negate = encode (jmpBuiltIn (yulNumNeg @a))
+  a - b = encode (jmpBuiltIn (yulNumSub @a)) (merge (a, b))
 
 --
 -- 'IfThenElse' instance for the yul ports.

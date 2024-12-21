@@ -26,7 +26,7 @@ raw_boolean_operators =
 
 cleanup_intn = mk_builtin "__cleanup_t_int" $ \part full ->
   let nbits = read part :: Int
-      i = "0x" <> take (nbits `div` 8 - 1) (repeat 'f')
+      i = show (nbits `div` 8 - 1)
   in (T.unlines
      [ "function " <> T.pack full <> "(value) -> cleaned {"
       , if nbits < 256
@@ -87,7 +87,7 @@ checked_add_intn = mk_builtin "__checked_add_t_int" $ \part full ->
   let part' = T.pack part
       nbits = read part :: Int
       minVal = "0x7f" <> take (nbits `div` 4 - 2) (repeat 'f')
-      maxVal = "0x"   <> take (nbits `div` 4) (repeat 'f') <> "80" <> take (62 - nbits `div` 4) (repeat '0')
+      maxVal = "0x"   <> take (64 - nbits `div` 4) (repeat 'f') <> "80" <> take (nbits `div` 4 - 2) (repeat '0')
   in (T.unlines
        [ "function " <> T.pack full <> "(x, y) -> sum {"
        , "  x := __cleanup_t_int" <> part' <> "(x)"

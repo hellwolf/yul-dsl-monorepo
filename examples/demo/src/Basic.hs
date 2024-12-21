@@ -50,10 +50,10 @@ rangeSum'l = fn'l "rangeSumL" $
                       else emb'l 0 u
 
 object = mkYulObject "Basic" emptyCtor
-         [ externalFn foo1
-         , externalFn foo2
-         , staticFn   foo3
+         [ pureFn   foo1
+         , pureFn   foo2
+         , staticFn foo3
          , staticFn rangeSum'l
-         , staticFn rangeSum'v1
-         , staticFn rangeSum'v2
+         , pureFn   rangeSum'v1
+         , pureFn   rangeSum'v2
          ]

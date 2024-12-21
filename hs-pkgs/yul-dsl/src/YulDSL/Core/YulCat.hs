@@ -24,7 +24,7 @@ YulCat is designed to be a category. The objects in this category are instances 
 
 -}
 module YulDSL.Core.YulCat
-  ( NonPureEffect, IsNonPureEffect
+  ( NonPureEffect, IsPureEffect, IsNonPureEffect
   , YulJmpTarget(UserDefinedYulCat, BuiltInYulJmpTarget)
   , YulCat (..), AnyYulCat (..)
   , (>.>), (<.<), emb, jmpUserDefined, jmpBuiltIn
@@ -39,6 +39,7 @@ module YulDSL.Core.YulCat
 import           Data.Char                (ord)
 import           Data.Kind                (Constraint)
 import           GHC.Integer              (xorInteger)
+import           GHC.TypeError            (Assert, ErrorMessage (Text), TypeError)
 import           Text.Printf              (printf)
 -- bytestring
 import qualified Data.ByteString.Char8    as B
@@ -59,9 +60,15 @@ import           YulDSL.Core.YulNum
 -- | An open type family for marking effects non-pure, in order to access some restricted YulCat morphisms.
 type family NonPureEffect (eff :: k) :: Bool
 
+-- | Test if an effect can be used for pure morphisms.
+type IsPureEffect :: k -> Constraint
+type IsPureEffect eff = Assert (Not (NonPureEffect eff))
+                        (TypeError (Text "pure effect expected"))
+
 -- | Test if an effect can be used for non pure morphisms.
 type IsNonPureEffect :: k -> Constraint
-type IsNonPureEffect eff = NonPureEffect eff ~ True
+type IsNonPureEffect eff = Assert (NonPureEffect eff)
+                           (TypeError (Text "non-pure effect expected"))
 
 -- | Internal jump targets.
 data YulJmpTarget eff a b

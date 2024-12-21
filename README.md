@@ -157,8 +157,6 @@ Headline Features
   - Value primitives:
     - [ ] `YulNum (Maybe a)`, safe numerical operations.
     - [ ] `YulCast`, casting values between value types.
-  - ADT & pattern matching infrastructure:
-    - [-] Pattern matching for `YumNum a => (Maybe a)`
   - Control flow primitives:
     - [ ] `YulMapArray`, tight loop over an array.
     - [ ] `YulLen`, array length.
@@ -209,7 +207,6 @@ Headline Features
     - [ ] yolc.dev playground
 - yolc
   - Project builder
-    - [ ] Interface file generator.
     - Contract size strategy:
       - [ ] Manual logic split & dispatching,
       - [ ] Auto logic split.

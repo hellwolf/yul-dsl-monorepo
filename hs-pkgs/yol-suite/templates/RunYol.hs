@@ -21,7 +21,7 @@ yul_fn_mode :: forall eff f. YulO2 (NP (UncurryNP'Fst f)) (UncurryNP'Snd f) => F
 yul_fn_mode = return . Right . YulCodeGen.compileFn . unFn
 
 yul_object_mode :: YulObject -> IO Result
-yul_object_mode = return . Right . YulCodeGen.compileObject
+yul_object_mode = return . Right . YulCodeGen.compileYulObject
 
 yul_project_mode :: YOLCBuilder.Manifest -> IO Result
 yul_project_mode = YOLCBuilder.buildManifest

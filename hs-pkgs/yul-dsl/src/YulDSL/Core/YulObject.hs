@@ -12,13 +12,14 @@ documentation](https://docs.soliditylang.org/en/latest/yul.html#specification-of
 
 -}
 module YulDSL.Core.YulObject
-  ( StoragePermission
+  ( StoragePermission (..)
   , ScopedFn (ExternalFn, LibraryFn), unScopedFn
-  , externalFn, staticFn, libraryFn
+  , pureFn, externalFn, staticFn, libraryFn
   , YulObject (..), mkYulObject
   , emptyCtor
   ) where
 
+-- base
 import           Data.List                                  (intercalate)
 -- eth-abi
 import           Ethereum.ContractABI.ABITypeable           (abiTypeCanonName)
@@ -33,9 +34,9 @@ import           YulDSL.Effects.Pure
 
 
 -- |  type for the external function call.
-data StoragePermission = ReadonlyExternalStorage
+data StoragePermission = NoStorageAccess
+                       | ReadOnlyExternalStorage
                        | WritableExternalStorage
-                       | DelegatedStorage
 
 data ScopedFn where
   ExternalFn :: forall eff as b. YulO2 (NP as) b => StoragePermission -> SELECTOR -> FnNP eff as b -> ScopedFn
@@ -45,19 +46,29 @@ unScopedFn :: ScopedFn -> AnyFnCat
 unScopedFn (ExternalFn _ _ f) = MkAnyFnCat f
 unScopedFn (LibraryFn f)      = MkAnyFnCat f
 
+pureFn :: forall f as b eff.
+          ( IsPureEffect eff
+          , YulO2 (NP as) b
+          , UncurryNP'Fst f ~ as
+          , UncurryNP'Snd f ~ b
+          ) => Fn eff f -> ScopedFn
+pureFn (MkFn f) = ExternalFn NoStorageAccess (mkTypedSelector @(NP as) (fnId f)) f
+
 externalFn :: forall f as b eff.
-              ( YulO2 (NP as) b
+              ( IsNonPureEffect eff
+              , YulO2 (NP as) b
               , UncurryNP'Fst f ~ as
               , UncurryNP'Snd f ~ b
               ) => Fn eff f -> ScopedFn
 externalFn (MkFn f) = ExternalFn WritableExternalStorage (mkTypedSelector @(NP as) (fnId f)) f
 
 staticFn :: forall f as b eff.
-            ( YulO2 (NP as) b
+            ( IsNonPureEffect eff
+            , YulO2 (NP as) b
             , UncurryNP'Fst f ~ as
             , UncurryNP'Snd f ~ b
             ) => Fn eff f -> ScopedFn
-staticFn (MkFn f) = ExternalFn ReadonlyExternalStorage (mkTypedSelector @(NP as) (fnId f)) f
+staticFn (MkFn f) = ExternalFn ReadOnlyExternalStorage (mkTypedSelector @(NP as) (fnId f)) f
 
 libraryFn :: forall f as b eff.
              ( YulO2 (NP as) b
@@ -67,9 +78,9 @@ libraryFn :: forall f as b eff.
 libraryFn (MkFn f) = LibraryFn f
 
 instance Show ScopedFn where
+  show (ExternalFn NoStorageAccess _ f)         = "pure "  <> show_fn_spec f <> "\n" <> show (fnCat f)
+  show (ExternalFn ReadOnlyExternalStorage _ f) = "view "    <> show_fn_spec f <> "\n" <> show (fnCat f)
   show (ExternalFn WritableExternalStorage _ f) = "external "  <> show_fn_spec f <> "\n" <> show (fnCat f)
-  show (ExternalFn ReadonlyExternalStorage _ f) = "static "    <> show_fn_spec f <> "\n" <> show (fnCat f)
-  show (ExternalFn DelegatedStorage _ f)        = "delegated " <> show_fn_spec f <> "\n" <> show (fnCat f)
   show (LibraryFn f)                            = "internal "  <> show_fn_spec f <> "\n" <> show (fnCat f)
 
 show_fn_spec :: forall as b eff. YulO2 (NP as) b => FnNP eff as b -> String

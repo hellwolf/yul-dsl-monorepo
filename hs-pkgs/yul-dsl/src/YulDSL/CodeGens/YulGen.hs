@@ -13,7 +13,7 @@ Generate solidity/yul code for Fn, YulCat, and YulObject.
 
 module YulDSL.CodeGens.YulGen
   ( compileFn
-  , compileObject
+  , compileYulObject
   ) where
 
 import           YulDSL.Core                                 (FnCat, YulO2, YulObject)
@@ -32,7 +32,7 @@ compileFn fn = gen_code $ do
   compile_fn init_ind fn
 
 -- | Compiling the yul object.
-compileObject :: YulObject -> Code
-compileObject obj = gen_code $ do
+compileYulObject :: YulObject -> Code
+compileYulObject obj = gen_code $ do
   mapM_ cg_register_builtin default_builtins
   compile_object init_ind obj

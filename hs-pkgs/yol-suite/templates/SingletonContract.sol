@@ -20,3 +20,7 @@ contract %pname% is Proxy {
         return LOGIC_ADDRESS;
     }
 }
+
+function create%pname%() returns (%iname%){
+  return %iname%(address(new %pname%()));
+}

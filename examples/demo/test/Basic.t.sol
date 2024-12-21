@@ -2,22 +2,14 @@ pragma solidity ^0.8.20;
 
 import { Test, console2 } from "forge-std/Test.sol";
 
-import { BasicProgram } from "yol-build/Contracts.sol";
+import { IBasicProgram, createBasicProgram } from "yol-build/Contracts.sol";
 
-
-interface IBasicProgram {
-  function foo1(int256 x) external pure returns (int256);
-  function foo2(uint32 x1, uint32 x2) external pure returns (uint256);
-  function rangeSumL(uint256 from, uint256 step, uint256 until) external pure returns (uint256 sum);
-  function rangeSumV1(uint256 from, uint256 step, uint256 until) external pure returns (uint256 sum);
-  function rangeSumV2(uint256 from, uint256 step, uint256 until) external pure returns (uint256 sum);
-}
 
 contract BasicProgramTest is Test {
   IBasicProgram private _p;
 
   constructor () {
-    _p = IBasicProgram(address(new BasicProgram()));
+    _p = createBasicProgram();
   }
 
   function testFoo1(int128 x) external {

@@ -41,7 +41,7 @@ register_builtin (prefix, gen) registra =
   in case Map.lookupLE pkey registra of
   Nothing         -> go
   Just (pkey', _) -> if pkey /= pkey' then go
-                     else error ("Builtin registra prefix existed: " <> unPrefixKey pkey')
+                     else error ("Builtin registra prefix already exists: " <> unPrefixKey pkey')
 
 lookup_builtin :: BuiltInName -> BuiltInRegistra -> (T.Text, [BuiltInName])
 lookup_builtin name registra = case Map.lookupLE (MkPrefixKey name) registra of

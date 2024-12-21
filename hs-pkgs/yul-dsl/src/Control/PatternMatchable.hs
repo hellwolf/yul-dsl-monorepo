@@ -19,7 +19,7 @@ module Control.PatternMatchable (PatternMatchable (inCase, match)) where
 --             {c} {p :: k1}.
 --      (k2 b, PatternMatchable m b c k2, PatternMatchable m p c k2) =>
 --      m p -> m b
-class PatternMatchable m p c k | m -> k, m p -> c where
+class PatternMatchable m p c k | m -> k, m p -> c, c -> m p where
   -- | Create the pattern @m p@ in the case of @c@.
   inCase :: forall. c -> m p
 

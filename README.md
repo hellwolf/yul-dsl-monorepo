@@ -196,7 +196,7 @@ Headline Features
     - [ ]  Compatibility with the solidity abi-spec
 - yul-dsl
   - Pure value primitives:
-    - [ ] `YulAbi{Enc,Dec}`, contracts ABI serialization.
+    - [ ] contracts ABI serialization built-ins.
   - CodeGen core:
     - [ ] Fn autoId (instead of using yulCatDigest.)
   - Object builder:

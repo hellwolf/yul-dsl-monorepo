@@ -1,7 +1,7 @@
 module YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
   ( BuiltInEntry, BuiltInRegistra
   , register_builtin, lookup_builtin
-  , mk_builtin, const_builtin
+  , mk_builtin, const_builtin, const_builtin_with_deps
   ) where
 
 -- base
@@ -46,7 +46,7 @@ register_builtin (prefix, gen) registra =
 lookup_builtin :: BuiltInName -> BuiltInRegistra -> (T.Text, [BuiltInName])
 lookup_builtin name registra = case Map.lookupLE (MkPrefixKey name) registra of
   Nothing  -> error ("No builtin found: " <> name)
-  Just (MkPrefixKey prefix, gen) -> if isPrefixOf prefix name then gen name
+  Just (MkPrefixKey prefix, gen) -> if prefix `isPrefixOf` name then gen name
                                     else error ("Builtin not found: " <> name)
 
 mk_builtin :: BuiltInPrefix
@@ -55,4 +55,7 @@ mk_builtin :: BuiltInPrefix
 mk_builtin prefix g = (prefix, \n -> g (drop (length prefix) n) n)
 
 const_builtin :: BuiltInName -> Code -> BuiltInEntry
-const_builtin name code = (name, const (code, []))
+const_builtin name code = const_builtin_with_deps name code []
+
+const_builtin_with_deps :: BuiltInName -> Code -> [BuiltInName] -> BuiltInEntry
+const_builtin_with_deps name code deps = (name, const (code, deps))

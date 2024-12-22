@@ -80,11 +80,6 @@ abi_decoder_dispatcher_code ans vars ind =
           go ns (slot + 1)
         go [] _ = ""
 
-abi_decoder_stack_code :: ABICoreType -> Var -> Indenter -> T.Text
-abi_decoder_stack_code a ret ind = go a where
-  go (INTx' _ _) = ind (ret <> " := calldataload(offset)")
-  go _           = ind "// TODO abi_decoder_code_final"
-
 abi_encoder_dispatcher_code :: [ABICoreType] -> [Var] -> Indenter -> T.Text
 abi_encoder_dispatcher_code ans vars ind =
   ind ("tail := add(headStart, " <> T.pack (show dataSize) <> ")") <>
@@ -98,7 +93,14 @@ abi_encoder_dispatcher_code ans vars ind =
         go _ _         = ""
         dataSize = length ans * 32
 
+abi_decoder_stack_code :: ABICoreType -> Var -> Indenter -> T.Text
+abi_decoder_stack_code a ret ind = go a where
+  go (INTx' _ _) = ind (ret <> " := calldataload(offset)")
+  go (BOOL')     = ind (ret <> " := calldataload(offset)")
+  go _           = ind "// TODO abi_decoder_code_final"
+
 abi_encoder_stack_code :: ABICoreType -> Var -> Indenter -> T.Text
 abi_encoder_stack_code a var ind = go a where
-  go (INTx' _ _) = ind ("mstore(pos, " <> var <> ")")
+  go (INTx' _ _) = ind ("mstore(pos, " <> var <> ")") -- clean value
+  go (BOOL')     = ind ("mstore(pos, " <> var <> ")")
   go _           = ind "// TODO abi_encoder_code"

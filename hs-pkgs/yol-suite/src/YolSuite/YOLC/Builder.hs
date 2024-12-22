@@ -21,7 +21,7 @@ module YolSuite.YOLC.Builder
 -- base
 import           Data.Either             (partitionEithers)
 import           Data.Functor            ((<&>))
-import           Data.Maybe              (catMaybes, fromJust, fromMaybe)
+import           Data.Maybe              (fromJust, fromMaybe, mapMaybe)
 import           Data.String             (fromString)
 -- text
 import qualified Data.Text.Lazy          as T
@@ -118,7 +118,7 @@ build_interface (MkBuildUnit { mainObject = MkYulObject
      (T.unlines $
       [ "interface " <> T.pack iname <> " {"
       ] ++
-      catMaybes (fmap ifunc_name sfns) ++
+      mapMaybe ifunc_name sfns ++
       [
       "}"
       ])
@@ -138,8 +138,8 @@ build_program (MkBuildUnit { mainObject = mo }) = do
 buildManifest :: Manifest -> IO BuildResult
 buildManifest (MkManifest { buildUnits }) = do
   sections <- sequence (concatMap (\bu -> [build_interface bu, build_program bu]) buildUnits)
-  let (errors, codes) = partitionEithers ([Right project_preamble_template] ++ sections)
-  pure $ if length errors == 0 then Right (T.intercalate "\n" codes)
+  let (errors, codes) = partitionEithers (Right project_preamble_template : sections)
+  pure $ if null errors then Right (T.intercalate "\n" codes)
          else Left (T.intercalate "\n" errors)
 
 --

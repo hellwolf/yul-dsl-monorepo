@@ -45,8 +45,6 @@ compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, 
              ) <>
         ind' "return(memPos, sub(memEnd, memPos))"
 
-  cg_use_builtin "__allocate_unbounded"
-
   pure (Just (code, ca, cb))
 compile_fn_dispatcher _ (ExternalFn _ (SELECTOR (_, Nothing)) _) = pure Nothing
 compile_fn_dispatcher _ (LibraryFn _) = pure Nothing
@@ -65,13 +63,13 @@ compile_dispatchers ind fns = cbracket_m ind "/* dispatcher */" $ \ind' -> do
                        & nub
                        & map (`abi_codec_code` ind')
                        & T.intercalate "\n"
+
+  cg_use_builtin "__dispatcher_dependencies"
+
   pure $
     ind' "switch selector()" <>
     code_cases <>
     ind' "default { revert(0, 0) }" <>
-    cbracket1 ind' "function selector() -> s"
-      "s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)" <>
-    "\n" <>
     code_abicodecs
 
 -- | Compile dependencies with a function id filter @fidFilter@.

@@ -63,7 +63,6 @@ Compatible & Extensible Type System
 | INTx s n            | [INTx' s n]     | Fixed-precision integers (int?/uint?) | -1, 0, 42, 0xffff      |
 | ADDR                | [ADDR']         | Ethereum addresses (address)          | constAddr "#0xABC5..." |
 | BYTESn n            | [BYTESn']       | Binary type of n bytes (bytes?)       |                        |
-| BYTES               | [BYTES']        | Packed byte arrays (bytes)            | TODO                   |
 | ARRAY a             | [ARRAY' a]      | Arrays (T[])                          | TODO                   |
 | FIXx s m n          | [FIX m n]       | Fixed-point decimal numbers (fixed)   | TODO                   |
 | *(extended types)*  |                 |                                       |                        |

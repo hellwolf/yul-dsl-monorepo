@@ -88,8 +88,8 @@ abi_encoder_dispatcher_code ans vars ind =
         go (n:ns) slot = ind (abi_encoder_name (ABICodecStack n) <> "(" <>
                               "add(headStart, " <> T.pack(show (slot * 32)) <> "), " <>
                               vars !! slot <> ")"
-                             ) <>
-          go ns (slot + 1)
+                             )
+                         <> go ns (slot + 1)
         go _ _         = ""
         dataSize = length ans * 32
 

@@ -62,6 +62,7 @@ library
                     YulDSL.CodeGens.Yul.Internal.BuiltIns.Runtime
                     YulDSL.CodeGens.Yul.Internal.BuiltIns.ValueType
                     YulDSL.CodeGens.Yul.Internal.BuiltIns.Arithmetic
+                    YulDSL.CodeGens.Yul.Internal.BuiltIns.ABICodec
                     YulDSL.CodeGens.Yul.Internal.BuiltIns
   build-depends:    eth-abi ^>= 0.1.0.0,
                     constraints >= 0.14,

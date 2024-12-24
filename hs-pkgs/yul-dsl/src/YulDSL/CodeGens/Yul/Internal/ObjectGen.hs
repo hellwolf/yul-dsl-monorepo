@@ -3,36 +3,34 @@ module YulDSL.CodeGens.Yul.Internal.ObjectGen (compile_object) where
 
 import           GHC.Stack                                   (HasCallStack)
 --
-import           Control.Monad                               (join)
-import           Data.Function                               ((&))
 import           Data.Functor                                ((<&>))
-import           Data.List                                   (nub)
 import           Data.Maybe                                  (catMaybes)
 -- text
 import qualified Data.Text.Lazy                              as T
 --
 import           YulDSL.Core
 --
-import           YulDSL.CodeGens.Yul.Internal.ABICodecGen
 import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
 import           YulDSL.CodeGens.Yul.Internal.CodeGen
 import           YulDSL.CodeGens.Yul.Internal.FunctionGen
 
 
 compile_fn_dispatcher :: HasCallStack
-                      => Indenter -> ScopedFn -> CGState (Maybe (Code, ABICodecGen, ABICodecGen))
+                      => Indenter -> ScopedFn -> CGState (Maybe Code)
 compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, _)))) (_ :: FnCat eff a b)) = do
+  let abidec_builtin = "__abienc_dispatcher_" <> abiTypeCompactName @a
+      abienc_builtin = "__abidec_dispatcher_" <> abiTypeCompactName @b
   vars_a <- cg_mk_let_vars @a
   vars_b <- cg_mk_let_vars @b
-  io_vars <- cg_declare_vars
-  let ca = ABICodecDispatcher @a
-      cb = ABICodecDispatcher @b
-  let code = cbracket ind ("case " <> T.pack (show sel)) $ \ ind' ->
-        maybe "" ind' io_vars <>
+  all_vars <- cg_declare_vars
+  cg_use_builtin abidec_builtin
+  cg_use_builtin abienc_builtin
+  pure . Just $ cbracket ind ("case " <> T.pack (show sel)) $ \ ind' ->
+        maybe "" ind' all_vars <>
         -- call abi decoder
         ind' ( T.intercalate "," vars_a <> " := " <>
                -- skip selector and (TODO) check if calldatasize is big enough
-               abi_decoder_name ca <> "(4, calldatasize())"
+               T.pack abidec_builtin <> "(4, calldatasize())"
              ) <>
         -- call the function
         ind' ( T.intercalate "," vars_b <> " := " <>
@@ -41,36 +39,23 @@ compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, 
         ind' "let memPos := __allocate_unbounded()" <>
         -- call abi encoder
         ind' ( "let memEnd := " <>
-               abi_encoder_name cb <> "(memPos, " <> T.intercalate "," vars_b <> ")"
+               T.pack abienc_builtin <> "(memPos, " <> T.intercalate "," vars_b <> ")"
              ) <>
         ind' "return(memPos, sub(memEnd, memPos))"
-
-  pure (Just (code, ca, cb))
-compile_fn_dispatcher _ (ExternalFn _ (SELECTOR (_, Nothing)) _) = pure Nothing
-compile_fn_dispatcher _ (LibraryFn _) = pure Nothing
+compile_fn_dispatcher _ _ = pure Nothing
 
 compile_dispatchers :: HasCallStack
                     => Indenter -> [ScopedFn] -> CGState Code
 compile_dispatchers ind fns = cbracket_m ind "/* dispatcher */" $ \ind' -> do
-  externalFunctions <- mapM (compile_fn_dispatcher ind') fns
-                       <&> catMaybes
-  let code_cases = externalFunctions
-                   & map (\(a, _, _) -> a)
-                   & T.intercalate ""
-      code_abicodecs = externalFunctions
-                       & map (\(_, b, c) -> abi_codec_deps b <> abi_codec_deps c)
-                       & join
-                       & nub
-                       & map (`abi_codec_code` ind')
-                       & T.intercalate "\n"
+  cases <- mapM (compile_fn_dispatcher ind') fns
+           <&> catMaybes
 
   cg_use_builtin "__dispatcher_dependencies"
 
   pure $
     ind' "switch selector()" <>
-    code_cases <>
-    ind' "default { revert(0, 0) }" <>
-    code_abicodecs
+    T.intercalate "" cases <>
+    ind' "default { revert(0, 0) }"
 
 -- | Compile dependencies with a function id filter @fidFilter@.
 compile_deps :: HasCallStack

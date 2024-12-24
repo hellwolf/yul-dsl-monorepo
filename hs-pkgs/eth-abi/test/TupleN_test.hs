@@ -13,16 +13,16 @@ import           Ethereum.ContractABI
 default (U256)
 
 test_tf_tuple_to_np = and
-  [ toBool' @(TupleNtoNP () == NP '[])
-  , toBool' @(TupleNtoNP (Solo U8) == NP '[U8])
-  , toBool' @(TupleNtoNP (U8, U16) == NP '[U8, U16])
+  [ fromBoolKind @(TupleNtoNP () == NP '[])
+  , fromBoolKind @(TupleNtoNP (Solo U8) == NP '[U8])
+  , fromBoolKind @(TupleNtoNP (U8, U16) == NP '[U8, U16])
   ]
 
 test_tf_np_to_tuple = and
-  [ toBool' @(NPtoTupleN (NP '[]) == ())
-  , toBool' @(NPtoTupleN (NP '[U8]) == Solo U8)
-  , toBool' @(NPtoTupleN (NP '[U8, U16]) == (U8, U16))
-  , toBool' @(NPtoTupleN (NP '[U8, U16, U32]) == (U8, U16, U32))
+  [ fromBoolKind @(NPtoTupleN (NP '[]) == ())
+  , fromBoolKind @(NPtoTupleN (NP '[U8]) == Solo U8)
+  , fromBoolKind @(NPtoTupleN (NP '[U8, U16]) == (U8, U16))
+  , fromBoolKind @(NPtoTupleN (NP '[U8, U16, U32]) == (U8, U16, U32))
   ]
 
 test_from_tuple_to_np = and

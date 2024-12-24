@@ -51,7 +51,7 @@ type ValidINTx s n = (KnownBool s, ValidINTn n)
 
 -- | Sign of the INTx type. Use type application on @a@.
 intxSign :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, ValidINTx s n) => Bool
-intxSign = toBool (SBool @s)
+intxSign = fromSBool (boolSing @s)
 
 -- | Number of bits for the INTx type. Use type application on @a@.
 intxNBits :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, ValidINTn n) => Int
@@ -61,7 +61,7 @@ intxNBits = fromEnum (8 * natVal (Proxy @n))
 
 instance forall s n. ValidINTx s n => ABITypeable (INTx s n) where
   type instance ABITypeDerivedOf (INTx s n) = INTx s n
-  abiTypeInfo = [INTx' (SBool @s) (natSing @n)]
+  abiTypeInfo = [INTx' (boolSing @s) (natSing @n)]
 
 instance forall s n. ValidINTx s n => ABITypeCodec (INTx s n) where
   abiEncoder (INT x) = S.put x

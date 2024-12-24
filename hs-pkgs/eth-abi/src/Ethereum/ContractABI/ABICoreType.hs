@@ -17,23 +17,26 @@ contract ABI types to support the entire contract ABI specification.
 module Ethereum.ContractABI.ABICoreType
   ( ABICoreType (..)
   -- for working with INTx, BYTEn
-  , ValidINTn, Nat, natSing, natVal
+  , Nat, natSing, natVal
+  , ValidINTn, withValidINTxType
   -- ABI type names
-  , abiCoreTypeCanonName, abiCoreTypeCompactName
+  , abiCoreTypeCanonName
+  , abiCoreTypeCompactName, decodeAbiCoreTypeCompactName
   -- EVM word representations
   , WORD, word, wordVal, defWord, maxWord, ABIWordValue (toWord, fromWord)
   ) where
 
 -- base
-import           Control.Exception       (assert)
-import           Data.Char               (toUpper)
-import           Data.Coerce             (coerce)
-import           GHC.TypeLits            (KnownNat (natSing), Nat, SNat, fromSNat, natVal)
-import           Numeric                 (showHex)
+import           Control.Exception            (assert)
+import           Data.Char                    (isDigit, toUpper)
+import           Data.Coerce                  (coerce)
+import           GHC.TypeLits                 (KnownNat (natSing), Nat, SNat, fromSNat, natVal, withSomeSNat)
+import           Numeric                      (showHex)
+import qualified Text.ParserCombinators.ReadP as RP
 -- template-haskell
-import qualified Language.Haskell.TH     as TH
+import qualified Language.Haskell.TH          as TH
 --
-import           Internal.Data.Type.Bool (KnownBool, SBool, toBool)
+import           Internal.Data.Type.Bool
 
 
 {- * ABICoreType and their utilities -}
@@ -42,56 +45,93 @@ import           Internal.Data.Type.Bool (KnownBool, SBool, toBool)
 --   Note: It is valid from 1 to 32.
 class KnownNat n => ValidINTn n
 
--- | A top-level splice that declares all the valid INTx n values.
-flip foldMap [1..32] $ \i -> [d| instance ValidINTn $(TH.litT (TH.numTyLit i)) |]
-
 -- | Contract ABI core types.
 data ABICoreType where
   -- ^ Boolean
   BOOL'   :: ABICoreType
   -- ^ Fixed-precision integers
-  INTx'   :: forall s n. (KnownBool s, KnownNat n) => SBool s -> SNat n -> ABICoreType
+  INTx'   :: forall s n. (KnownBool s, ValidINTn n) => SBool s -> SNat n -> ABICoreType
   -- ^ Ethereum addresses
   ADDR'   :: ABICoreType
   -- ^ Fixed-size byte arrays
-  BYTESn' :: forall n. (KnownNat n) => SNat n -> ABICoreType
-  -- ^ Packed byte arrays
-  BYTES'  :: ABICoreType
+  BYTESn' :: forall n. (ValidINTn n) => SNat n -> ABICoreType
   -- ^ Arrays of values of the same ABI core type
   ARRAY'  :: ABICoreType -> ABICoreType
 
 instance Eq ABICoreType where
   BOOL'       == BOOL'         = True
-  (INTx' s n) == (INTx' s' n') = toBool s == toBool s' && fromSNat n == fromSNat n'
+  (INTx' s n) == (INTx' s' n') = fromSBool s == fromSBool s' && fromSNat n == fromSNat n'
   ADDR'       == ADDR'         = True
   (BYTESn' n) == (BYTESn' n')  = fromSNat n == fromSNat n'
-  BYTES'      == BYTES'        = True
   (ARRAY' a)  == (ARRAY' b)    = a == b
   -- not using _ == _ in order to let GHC do exhaustive checks on cases above
   BOOL'       == _             = False
   (INTx' _ _) == _             = False
   ADDR'       == _             = False
   (BYTESn' _) == _             = False
-  BYTES'      == _             = False
   (ARRAY' _)  == _             = False
+
+-- | A top-level splice that declares all the valid INTx n values.
+flip foldMap [1..32] $ \i -> [d| instance ValidINTn $(TH.litT (TH.numTyLit i)) |]
 
 -- | Canonical names for the core types used for computing the function selectors.
 abiCoreTypeCanonName :: ABICoreType -> String
 abiCoreTypeCanonName BOOL'       = "bool"
-abiCoreTypeCanonName (INTx' s n) = (if toBool s then "int" else "uint") <> show (natVal n * 8)
+abiCoreTypeCanonName (INTx' s n) = (if fromSBool s then "int" else "uint") <> show (natVal n * 8)
 abiCoreTypeCanonName ADDR'       = "address"
 abiCoreTypeCanonName (BYTESn' n) = "bytes" ++ show (natVal n)
-abiCoreTypeCanonName BYTES'      = "bytes"
-abiCoreTypeCanonName (ARRAY' a)  = abiCoreTypeCanonName a ++ "[]"
+abiCoreTypeCanonName (ARRAY' a)  = if is_bytes_type a then "bytes" else abiCoreTypeCanonName a ++ "[]"
 
 -- | Compact but unambiguous names for the core types..
 abiCoreTypeCompactName :: ABICoreType -> String
 abiCoreTypeCompactName BOOL'       = "b"
-abiCoreTypeCompactName (INTx' s n) = (if toBool s then "i" else "u") <> show (natVal n)
+abiCoreTypeCompactName (INTx' s n) = (if fromSBool s then "i" else "u") <> show (natVal n)
 abiCoreTypeCompactName ADDR'       = "a"
 abiCoreTypeCompactName (BYTESn' n) = "B" ++ show (natVal n)
-abiCoreTypeCompactName BYTES'      = "Bs"
-abiCoreTypeCompactName (ARRAY' a)  = "A" ++ abiCoreTypeCompactName a
+abiCoreTypeCompactName (ARRAY' a)  = "[" ++ abiCoreTypeCompactName a ++ "]"
+
+withValidINTxType :: Bool -> Integer -> (ABICoreType -> a) -> Maybe a
+withValidINTxType sval nval f =
+  toKnownSBool sval $ \s ->
+  withSomeSNat nval $ \maybeSn -> maybeSn >>=
+  \sn -> let n = fromSNat sn
+             -- using template haskell to generate 32 cases for all @INTx' s n@
+         in f <$> $(TH.caseE (TH.varE 'n) -- case n of
+               -- @$i -> Just INTx' s (natSing @$i)@
+               (map (\i -> TH.match (TH.litP (TH.integerL i))
+                           (TH.normalB $
+                            TH.conE 'Just `TH.appE`
+                             (TH.conE ' INTx' `TH.appE`
+                              (TH.varE 's) `TH.appE`
+                              (TH.varE 'natSing `TH.appTypeE` TH.litT (TH.numTyLit i))))
+                           []) [1..32]
+                -- @_ -> Nothing@
+                ++ [ TH.match TH.wildP (TH.normalB (TH.conE 'Nothing)) [] ]
+               ))
+
+decodeAbiCoreTypeCompactName :: String -> [ABICoreType]
+decodeAbiCoreTypeCompactName part = case results of
+  (rs, ""):[] -> rs
+  []          -> error ("Invalid abiCoreTypeCompactName, no match: " ++ part)
+  xs          -> error ("Invalid abiCoreTypeCompactName, non-unique match: " ++ show xs)
+  where parseOne = do
+          a <- RP.get
+          case a of
+            'b' -> pure BOOL'
+            'i' -> parseINTx True
+            'u' -> parseINTx False
+            'a' -> pure ADDR'
+            '[' -> do
+              a' <- parseOne
+              _ <- RP.char ']'
+              pure (ARRAY' a')
+            _ -> RP.pfail
+        parseINTx s = do
+          digits <- RP.many1 $ RP.satisfy isDigit
+          case withValidINTxType s (read digits) id of
+            Just intx -> pure intx
+            Nothing   -> RP.pfail
+        results = RP.readP_to_S (RP.manyTill parseOne RP.eof) part
 
 instance Show ABICoreType where show = abiCoreTypeCanonName
 
@@ -123,3 +163,12 @@ class Bounded a => ABIWordValue a where
   fromWord :: WORD -> Maybe a
   -- | Convert from a ABI typed value to a storage value.
   toWord   :: a -> WORD
+
+
+--
+-- internal function
+--
+
+is_bytes_type :: ABICoreType -> Bool
+is_bytes_type (ARRAY' (BYTESn' (n :: SNat n))) = if fromSNat n == 1 then True else False
+is_bytes_type _                                = False

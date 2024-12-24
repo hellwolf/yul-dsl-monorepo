@@ -1,5 +1,6 @@
 module YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
-  ( BuiltInEntry, BuiltInRegistra
+  ( BuiltInName, BuiltInPrefix
+  , BuiltInEntry, BuiltInRegistra
   , register_builtin, lookup_builtin
   , mk_builtin, const_builtin, const_builtin_with_deps
   ) where
@@ -27,7 +28,7 @@ instance Ord PrefixKey where
   a'@(MkPrefixKey a) <= b'@(MkPrefixKey b) = a' == b' || a <= b
 
 -- A function that returns a builtin's code and its dependent built-ins.
-type BuiltInYulGen = BuiltInName -> (T.Text, [BuiltInName])
+type BuiltInYulGen = BuiltInName -> (Indenter -> T.Text, [BuiltInName])
 
 -- The registra of builtin yul code generator.
 type BuiltInRegistra = Map.Map PrefixKey BuiltInYulGen
@@ -43,19 +44,21 @@ register_builtin (prefix, gen) registra =
   Just (pkey', _) -> if pkey /= pkey' then go
                      else error ("Builtin registra prefix already exists: " <> unPrefixKey pkey')
 
-lookup_builtin :: BuiltInName -> BuiltInRegistra -> (T.Text, [BuiltInName])
+lookup_builtin :: BuiltInName -> BuiltInRegistra -> (Indenter -> T.Text, [BuiltInName])
 lookup_builtin name registra = case Map.lookupLE (MkPrefixKey name) registra of
   Nothing  -> error ("No builtin found: " <> name)
   Just (MkPrefixKey prefix, gen) -> if prefix `isPrefixOf` name then gen name
                                     else error ("Builtin not found: " <> name)
 
 mk_builtin :: BuiltInPrefix
-           -> (String {- partial name: builtin suffix -} -> BuiltInYulGen)
+           -> (String {- partial name / builtin suffix -} -> BuiltInName -> ([Code], [BuiltInName]))
            -> BuiltInEntry
-mk_builtin prefix g = (prefix, \n -> g (drop (length prefix) n) n)
+mk_builtin prefix g = (prefix, \fullName -> let (codeLines, deps) = g (suffixOf fullName) fullName
+                                            in (\ind -> foldr (T.append . ind) T.empty codeLines, deps))
+  where suffixOf = drop (length prefix)
 
-const_builtin :: BuiltInName -> Code -> BuiltInEntry
-const_builtin name code = const_builtin_with_deps name code []
+const_builtin :: BuiltInName -> [Code] -> BuiltInEntry
+const_builtin name codeLines = mk_builtin name (\_ _ -> (codeLines, []))
 
-const_builtin_with_deps :: BuiltInName -> Code -> [BuiltInName] -> BuiltInEntry
-const_builtin_with_deps name code deps = (name, const (code, deps))
+const_builtin_with_deps :: BuiltInName -> [Code] -> [BuiltInName] -> BuiltInEntry
+const_builtin_with_deps name codeLines deps = mk_builtin name (\_ _ -> (codeLines, deps))

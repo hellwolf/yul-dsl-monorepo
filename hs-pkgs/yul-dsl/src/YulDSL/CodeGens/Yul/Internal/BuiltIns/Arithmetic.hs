@@ -13,8 +13,7 @@ import           YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
 cmp_builtins = mk_builtin "__cmp_" $ \part full ->
   let (op, typ) = break (== '_') part
       cleanf = "__cleanup_t" <> typ
-  in (T.unlines
-       [ "function " <> T.pack full <> "(x, y) -> b {"
+  in ( [ "function " <> T.pack full <> "(x, y) -> b {"
        , "  b := " <> T.pack op <> "(" <> T.pack cleanf <> "(x), " <> T.pack cleanf <> "(y))"
        , "}"
        ]
@@ -26,8 +25,7 @@ append_checked_maybe_variants op@(safeOpPrefix, _) =
   in [ op
      -- checked operator that reverts
      , mk_builtin ("__checked_" <> opname) $ \part full ->
-         (T.unlines
-           [ "function " <> T.pack full <> "(x, y) -> result {"
+         ( [ "function " <> T.pack full <> "(x, y) -> result {"
            , "  let failed := false"
            , "  result, failed := " <> T.pack (safeOpPrefix <> part) <> "(x, y)"
            , "  if eq(failed, true) { panic_error_0x11() }"
@@ -38,8 +36,7 @@ append_checked_maybe_variants op@(safeOpPrefix, _) =
            ])
      -- maybe type wrapped operator
      , mk_builtin ("__maybe_" <> opname) $ \part full ->
-         (T.unlines
-           [ "function " <> T.pack full <> "(tx, x, ty, y) -> t, result {"
+         ( [ "function " <> T.pack full <> "(tx, x, ty, y) -> t, result {"
            , "  t := iszero(or(iszero(tx), iszero(ty)))"
            , "  if eq(t, true) {" -- both Just values
            , "    result, t := " <> T.pack (safeOpPrefix <> part) <> "(x, y)"
@@ -58,8 +55,7 @@ safe_add_uintn = mk_builtin "__safe_add_t_uint" $ \part full ->
   let part' = T.pack part
       nbits = read part :: Int
       maxVal = "0x" <> replicate (nbits `div` 4) 'f'
-  in (T.unlines
-       [ "function " <> T.pack full <> "(x, y) -> sum, failed {"
+  in ( [ "function " <> T.pack full <> "(x, y) -> sum, failed {"
        , "  x := __cleanup_t_uint" <> part' <> "(x)"
        , "  y := __cleanup_t_uint" <> part' <> "(y)"
        , "  sum := add(x, y)"
@@ -76,8 +72,7 @@ safe_add_intn = mk_builtin "__safe_add_t_int" $ \part full ->
       nbits = read part :: Int
       minVal = "0x7f" <> replicate (nbits `div` 4 - 2) 'f'
       maxVal = "0x"   <> replicate (64 - nbits `div` 4) 'f' <> "80" <> replicate (nbits `div` 4 - 2) '0'
-  in (T.unlines
-       [ "function " <> T.pack full <> "(x, y) -> sum, failed {"
+  in ( [ "function " <> T.pack full <> "(x, y) -> sum, failed {"
        , "  x := __cleanup_t_int" <> part' <> "(x)"
        , "  y := __cleanup_t_int" <> part' <> "(y)"
        , "  sum := add(x, y)"
@@ -99,8 +94,7 @@ safe_sub_uintn = mk_builtin "__safe_sub_t_uint" $ \part full ->
   let part' = T.pack part
       nbits = read part :: Int
       maxVal = "0x" <> replicate (nbits `div` 4) 'f'
-  in (T.unlines
-       [ "function " <> T.pack full <> "(x, y) -> diff, failed {"
+  in ( [ "function " <> T.pack full <> "(x, y) -> diff, failed {"
        , "  x := __cleanup_t_uint" <> part' <> "(x)"
        , "  y := __cleanup_t_uint" <> part' <> "(y)"
        , "  diff := sub(x, y)"
@@ -117,8 +111,7 @@ safe_sub_intn = mk_builtin "__safe_sub_t_int" $ \part full ->
       nbits = read part :: Int
       minVal = "0x7f" <> replicate (nbits `div` 4 - 2) 'f'
       maxVal = "0x"   <> replicate (64 - nbits `div` 4) 'f' <> "80" <> replicate (nbits `div` 4 - 2) '0'
-  in (T.unlines
-       [ "function " <> T.pack full <> "(x, y) -> diff, failed {"
+  in ( [ "function " <> T.pack full <> "(x, y) -> diff, failed {"
        , "  x := __cleanup_t_int" <> part' <> "(x)"
        , "  y := __cleanup_t_int" <> part' <> "(y)"
        , "  diff := sub(x, y)"

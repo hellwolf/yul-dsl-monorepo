@@ -100,12 +100,12 @@ cg_use_builtin :: String -> CGState ()
 cg_use_builtin name = modify
   (\d@(MkCGStateData { builtin_used }) -> d { builtin_used = Set.insert name builtin_used })
 
-cg_gen_builtin_codes :: CGState [Code]
-cg_gen_builtin_codes = get >>= \(MkCGStateData{ builtins , builtin_used }) ->
+cg_gen_builtin_codes :: Indenter -> CGState [Code]
+cg_gen_builtin_codes ind = get >>= \(MkCGStateData{ builtins , builtin_used }) ->
   let allBuiltIns = closure (\x -> x : snd (lookup_builtin x builtins)) builtin_used
   in pure $
      filter (not . T.null) $ -- some built-ins are built-in of yul language, hence with empty extra code.
-     map (\x -> fst (lookup_builtin x builtins)) (Set.toList allBuiltIns)
+     map (\x -> fst (lookup_builtin x builtins) ind) (Set.toList allBuiltIns)
   where closure f s0 = go (Set.toList s0) s0
           where go xs s =
                   let xs' = concatMap f xs

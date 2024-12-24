@@ -3,6 +3,8 @@ module Basic where
 import qualified Control.LinearlyVersionedMonad as LVM
 import           Prelude.YulDSL
 
+foo0 = fn @(I256 -> ()) "foo0" $ \_ -> emb ()
+
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
 foo1 = fn @(I256 -> I256) "foo1" $
   \x -> if x > 0 then x + x else 0
@@ -50,7 +52,8 @@ rangeSum'l = fn'l "rangeSumL" $
                       else emb'l 0 u
 
 object = mkYulObject "Basic" emptyCtor
-         [ pureFn   foo1
+         [ -- pureFn foo0 FIXME: bug
+           pureFn   foo1
          , pureFn   foo2
          , staticFn foo3
          , staticFn rangeSum'l

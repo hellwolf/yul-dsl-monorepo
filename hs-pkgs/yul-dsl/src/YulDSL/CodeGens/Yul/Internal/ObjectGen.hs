@@ -18,8 +18,8 @@ import           YulDSL.CodeGens.Yul.Internal.FunctionGen
 compile_fn_dispatcher :: HasCallStack
                       => Indenter -> ScopedFn -> CGState (Maybe Code)
 compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, _)))) (_ :: FnCat eff a b)) = do
-  let abidec_builtin = "__abienc_dispatcher_" <> abiTypeCompactName @a
-      abienc_builtin = "__abidec_dispatcher_" <> abiTypeCompactName @b
+  let abidec_builtin = "__abidec_dispatcher_" <> abiTypeCompactName @a
+      abienc_builtin = "__abienc_dispatcher_" <> abiTypeCompactName @b
   vars_a <- cg_mk_let_vars @a
   vars_b <- cg_mk_let_vars @b
   all_vars <- cg_declare_vars
@@ -97,7 +97,7 @@ compile_object ind (MkYulObject { yulObjectName = oname
         -- dependencies
         deps_codes <- compile_deps ind (not . (`elem` map (anyFnId . unScopedFn) sfns))
 
-        builtin_codes <- cg_gen_builtin_codes
+        builtin_codes <- cg_gen_builtin_codes ind'''
 
         pure $
           code_dispatcher <>

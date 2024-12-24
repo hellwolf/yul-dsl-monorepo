@@ -74,22 +74,7 @@ instance Eq ABICoreType where
 -- | A top-level splice that declares all the valid INTx n values.
 flip foldMap [1..32] $ \i -> [d| instance ValidINTn $(TH.litT (TH.numTyLit i)) |]
 
--- | Canonical names for the core types used for computing the function selectors.
-abiCoreTypeCanonName :: ABICoreType -> String
-abiCoreTypeCanonName BOOL'       = "bool"
-abiCoreTypeCanonName (INTx' s n) = (if fromSBool s then "int" else "uint") <> show (natVal n * 8)
-abiCoreTypeCanonName ADDR'       = "address"
-abiCoreTypeCanonName (BYTESn' n) = "bytes" ++ show (natVal n)
-abiCoreTypeCanonName (ARRAY' a)  = if is_bytes_type a then "bytes" else abiCoreTypeCanonName a ++ "[]"
-
--- | Compact but unambiguous names for the core types..
-abiCoreTypeCompactName :: ABICoreType -> String
-abiCoreTypeCompactName BOOL'       = "b"
-abiCoreTypeCompactName (INTx' s n) = (if fromSBool s then "i" else "u") <> show (natVal n)
-abiCoreTypeCompactName ADDR'       = "a"
-abiCoreTypeCompactName (BYTESn' n) = "B" ++ show (natVal n)
-abiCoreTypeCompactName (ARRAY' a)  = "[" ++ abiCoreTypeCompactName a ++ "]"
-
+-- | Work with the INTx type information corresponding to signedness and data size during runtime.
 withValidINTxType :: Bool -> Integer -> (ABICoreType -> a) -> Maybe a
 withValidINTxType sval nval f =
   toKnownSBool sval $ \s ->
@@ -109,11 +94,28 @@ withValidINTxType sval nval f =
                 ++ [ TH.match TH.wildP (TH.normalB (TH.conE 'Nothing)) [] ]
                ))
 
+-- | Canonical names for the core types used for computing the function selectors.
+abiCoreTypeCanonName :: ABICoreType -> String
+abiCoreTypeCanonName BOOL'       = "bool"
+abiCoreTypeCanonName (INTx' s n) = (if fromSBool s then "int" else "uint") <> show (natVal n * 8)
+abiCoreTypeCanonName ADDR'       = "address"
+abiCoreTypeCanonName (BYTESn' n) = "bytes" ++ show (natVal n)
+abiCoreTypeCanonName (ARRAY' a)  = if is_bytes_type a then "bytes" else abiCoreTypeCanonName a ++ "[]"
+
+-- | Compact but unambiguous names for the core types..
+abiCoreTypeCompactName :: ABICoreType -> String
+abiCoreTypeCompactName BOOL'       = "b"
+abiCoreTypeCompactName (INTx' s n) = (if fromSBool s then "i" else "u") <> show (natVal n)
+abiCoreTypeCompactName ADDR'       = "a"
+abiCoreTypeCompactName (BYTESn' n) = "B" ++ show (natVal n)
+abiCoreTypeCompactName (ARRAY' a)  = "[" ++ abiCoreTypeCompactName a ++ "]"
+
+-- | Decode result from 'abiCoreTypeCompactName'.
 decodeAbiCoreTypeCompactName :: String -> [ABICoreType]
 decodeAbiCoreTypeCompactName part = case results of
-  (rs, ""):[] -> rs
-  []          -> error ("Invalid abiCoreTypeCompactName, no match: " ++ part)
-  xs          -> error ("Invalid abiCoreTypeCompactName, non-unique match: " ++ show xs)
+  [(rs, "")] -> rs
+  []         -> error ("Invalid abiCoreTypeCompactName, no match: " ++ part)
+  xs         -> error ("Invalid abiCoreTypeCompactName, non-unique match: " ++ show xs)
   where parseOne = do
           a <- RP.get
           case a of
@@ -128,9 +130,7 @@ decodeAbiCoreTypeCompactName part = case results of
             _ -> RP.pfail
         parseINTx s = do
           digits <- RP.many1 $ RP.satisfy isDigit
-          case withValidINTxType s (read digits) id of
-            Just intx -> pure intx
-            Nothing   -> RP.pfail
+          maybe RP.pfail pure (withValidINTxType s (read digits) id)
         results = RP.readP_to_S (RP.manyTill parseOne RP.eof) part
 
 instance Show ABICoreType where show = abiCoreTypeCanonName
@@ -170,5 +170,5 @@ class Bounded a => ABIWordValue a where
 --
 
 is_bytes_type :: ABICoreType -> Bool
-is_bytes_type (ARRAY' (BYTESn' (n :: SNat n))) = if fromSNat n == 1 then True else False
+is_bytes_type (ARRAY' (BYTESn' (n :: SNat n))) = fromSNat n == 1
 is_bytes_type _                                = False

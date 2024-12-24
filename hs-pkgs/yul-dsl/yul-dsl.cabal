@@ -55,7 +55,6 @@ library
   other-modules:    YulDSL.CodeGens.Yul.Internal.CodeFormatters
                     YulDSL.CodeGens.Yul.Internal.Variables
                     YulDSL.CodeGens.Yul.Internal.CodeGen
-                    YulDSL.CodeGens.Yul.Internal.ABICodecGen
                     YulDSL.CodeGens.Yul.Internal.FunctionGen
                     YulDSL.CodeGens.Yul.Internal.ObjectGen
                     YulDSL.CodeGens.Yul.Internal.BuiltInRegistra

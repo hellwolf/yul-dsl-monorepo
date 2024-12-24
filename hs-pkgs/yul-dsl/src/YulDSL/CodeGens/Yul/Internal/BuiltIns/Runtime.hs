@@ -12,22 +12,22 @@ import           YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
 ------------------------------------------------------------------------------------------------------------------------
 
 allocate_unbounded =  const_builtin "__allocate_unbounded"
-  "function __allocate_unbounded() -> memPtr { memPtr := mload(64) }"
+  [ "function __allocate_unbounded() -> memPtr { memPtr := mload(64) }" ]
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Dispatcher
 ------------------------------------------------------------------------------------------------------------------------
 
 dispatcher_builtins =
-  [ const_builtin_with_deps "__dispatcher_dependencies" "" -- it is a pseudo builtin
+  [ const_builtin_with_deps "__dispatcher_dependencies" [] -- it is a pseudo builtin
     [ "__allocate_unbounded"
     , "__selector"
     ]
 
-  , const_builtin "__selector" $
-    T.unlines
-    [ "function selector() -> s \n"
-    , "{ s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000) }"
+  , const_builtin "__selector"
+    [ "function selector() -> s {"
+    , " s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)"
+    , "}"
     ]
   ]
 
@@ -36,8 +36,7 @@ dispatcher_builtins =
 ------------------------------------------------------------------------------------------------------------------------
 
 panic_errors = mk_builtin "panic_error_" $ \part full ->
-  (T.unlines
-    [ "function " <> T.pack full <> "() {"
+  ( [ "function " <> T.pack full <> "() {"
     -- `cast sig 'Panic(uint256)'` == 0x4e487b71
     , "  mstore(0, 0x4e487b71" <> T.pack (replicate 56 '0') <> ")"
     , "  mstore(4, " <> T.pack part <> ")"

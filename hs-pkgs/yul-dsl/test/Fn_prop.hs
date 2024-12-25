@@ -19,14 +19,14 @@ import           TestCommon           ()
 --------------------------------------------------------------------------------
 
 dis_any :: forall a. YulO1 a => PureFn (a -> ())
-dis_any = fn "" \_ -> emb ()
+dis_any = fn "" \_ -> YulEmb ()
 
 --------------------------------------------------------------------------------
 -- Simple functions
 --------------------------------------------------------------------------------
 
 uncurry_fn0 :: PureFn (U256)
-uncurry_fn0 = fn @(U256) "" (emb 42)
+uncurry_fn0 = fn @(U256) "" 42
 
 uncurry_fn1 :: ValidINTx s n => PureFn (INTx s n -> INTx s n)
 uncurry_fn1 = fn ""

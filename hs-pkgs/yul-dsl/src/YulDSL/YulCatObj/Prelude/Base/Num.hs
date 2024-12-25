@@ -7,9 +7,9 @@ import           YulDSL.Core.YulCatObj
 import           YulDSL.Core.YulNum
 
 instance (YulO2 a r, YulNum a) => Num (YulCat eff r a) where
-  a + b = jmpBuiltIn (yulNumAdd @a) <.< YulProd a b <.< YulDup
-  a - b = jmpBuiltIn (yulNumSub @a) <.< YulProd a b <.< YulDup
-  a * b = jmpBuiltIn (yulNumMul @a)  <.< YulProd a b <.< YulDup
-  abs = YulComp (jmpBuiltIn (yulNumAbs @a))
-  signum = YulComp (jmpBuiltIn (yulNumSig @a))
+  a + b = yulJmpBuiltIn (yulNumAdd @a) <.< YulProd a b <.< YulDup
+  a - b = yulJmpBuiltIn (yulNumSub @a) <.< YulProd a b <.< YulDup
+  a * b = yulJmpBuiltIn (yulNumMul @a)  <.< YulProd a b <.< YulDup
+  abs = YulComp (yulJmpBuiltIn (yulNumAbs @a))
+  signum = YulComp (yulJmpBuiltIn (yulNumSig @a))
   fromInteger = YulEmb . fromInteger

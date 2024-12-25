@@ -27,12 +27,11 @@ module YulDSL.Core.YulCat
   ( NonPureEffect, IsPureEffect, IsNonPureEffect
   , YulJmpTarget(UserDefinedYulCat, BuiltInYulJmpTarget)
   , YulCat (..), AnyYulCat (..)
-  , (>.>), (<.<), emb, jmpUserDefined, jmpBuiltIn
-  , digestYulCat
+  , (>.>), (<.<)
+  , yulJmpUserDefined, yulJmpBuiltIn
   , yulNumLt, yulNumLe, yulNumGt, yulNumGe, yulNumEq, yulNumNe
-  , IfThenElse (ifThenElse)
-  , PatternMatchable (inCase, match)
-  , PatternMatchableYulCat
+  , IfThenElse (ifThenElse), PatternMatchable (inCase, match), PatternMatchableYulCat
+  , digestYulCat
   ) where
 
 -- base
@@ -141,17 +140,13 @@ m >.> n = n `YulComp` m
 -- see https://hackage.haskell.org/package/base-4.20.0.1/docs/Control-Category.html
 infixr 1 >.>, <.<
 
--- | Embed a constant yul-categorical value.
-emb :: forall eff a r. YulO2 r a => a -> YulCat eff r a
-emb = YulEmb
-
 -- | Short-hand for 'YulJmp' to user-defined 'YulCat'.
-jmpUserDefined :: forall eff a b. YulO2 a b => (String, YulCat eff a b) %1-> YulCat eff a b
-jmpUserDefined tgt = YulJmp (UserDefinedYulCat tgt)
+yulJmpUserDefined :: forall eff a b. YulO2 a b => (String, YulCat eff a b) %1-> YulCat eff a b
+yulJmpUserDefined tgt = YulJmp (UserDefinedYulCat tgt)
 
 -- | Short-hand for 'YulJmp' to built-in target.
-jmpBuiltIn :: forall eff a b. YulO2 a b => BuiltInYulFunction a b %1-> YulCat eff a b
-jmpBuiltIn tgt = YulJmp (BuiltInYulJmpTarget tgt)
+yulJmpBuiltIn :: forall eff a b. YulO2 a b => BuiltInYulFunction a b %1-> YulCat eff a b
+yulJmpBuiltIn tgt = YulJmp (BuiltInYulJmpTarget tgt)
 
 -- YulNum Ord operations:
 
@@ -162,18 +157,18 @@ yulNumGe :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
 yulNumEq :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
 yulNumNe :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
 
-yulNumLt = jmpBuiltIn (yulNumCmp @a (True , False, False))
-yulNumLe = jmpBuiltIn (yulNumCmp @a (True , True , False))
-yulNumGt = jmpBuiltIn (yulNumCmp @a (False, False, True ))
-yulNumGe = jmpBuiltIn (yulNumCmp @a (False, True , True ))
-yulNumEq = jmpBuiltIn (yulNumCmp @a (False, True , False))
-yulNumNe = jmpBuiltIn (yulNumCmp @a (True , False, True ))
+yulNumLt = yulJmpBuiltIn (yulNumCmp @a (True , False, False))
+yulNumLe = yulJmpBuiltIn (yulNumCmp @a (True , True , False))
+yulNumGt = yulJmpBuiltIn (yulNumCmp @a (False, False, True ))
+yulNumGe = yulJmpBuiltIn (yulNumCmp @a (False, True , True ))
+yulNumEq = yulJmpBuiltIn (yulNumCmp @a (False, True , False))
+yulNumNe = yulJmpBuiltIn (yulNumCmp @a (True , False, True ))
 
 -- ^ 'IfThenElse' instance for 'YulCat' objects.
 instance YulO2 a r => IfThenElse (YulCat eff r BOOL) (YulCat eff r a) where
   ifThenElse c a b = YulITE <.< YulFork c (YulFork a b)
 
--- | Type alias of 'PatternMatchable' for 'YulCat' objects.
+-- | Type alias of 'PatternMatchable' p for 'YulCat' objects.
 type PatternMatchableYulCat eff p a = PatternMatchable (YulCat eff (p a)) (p a) (p (YulCat eff (p a) a)) YulCatObj
 
 ------------------------------------------------------------------------------------------------------------------------

@@ -116,4 +116,4 @@ call'p :: forall f xs b r m.
        => PureFn f                -- ^ a 'PureFn' of function type @f@
        -> LiftFunction f m m Many -- ^ a currying function type
 call'p (MkFn f) = curryingNP @xs @b @m @m @m @Many
-                  (\xs -> xs >.> jmpUserDefined (fnId f, fnCat f))
+                  (\xs -> xs >.> yulJmpUserDefined (fnId f, fnCat f))

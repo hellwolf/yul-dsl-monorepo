@@ -3,7 +3,7 @@ module Basic where
 import qualified Control.LinearlyVersionedMonad as LVM
 import           Prelude.YulDSL
 
-foo0 = fn @(I256 -> ()) "foo0" $ \_ -> emb ()
+foo0 = fn @(I256 -> ()) "foo0" $ \_ -> YulEmb ()
 
 -- | A function that takes one uint and store its value doubled at a fixed storage location.
 foo1 = fn @(I256 -> I256) "foo1" $
@@ -28,14 +28,14 @@ rangeSum'v1 = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV1"
   \from step until -> let j = from + step
                       in from + if j <= until
                                 then call'p rangeSum'v1 j step until
-                                else emb 0
+                                else 0
 
 -- | "rangeSum" implemented in a value function, and a locally scoped function
 rangeSum'v2 = go
   where
     go = fn @(U256 -> U256 -> U256 -> U256) "rangeSumV2" \from step until ->
       let j = from + step
-      in from + if j <= until then call'p go j step until else emb 0
+      in from + if j <= until then call'p go j step until else 0
 
 -- | Sum a range @[i..t]@ of numbers separated by a step number @s@ as a linear function.
 --

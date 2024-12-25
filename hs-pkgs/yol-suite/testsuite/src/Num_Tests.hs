@@ -22,7 +22,8 @@ sub_int192  = fn @(I192 -> I192 -> I192) "sub_int192"  \x y -> x - y
 sub_int128  = fn @(I128 -> I128 -> I128) "sub_int128"  \x y -> x - y
 sub_int32   = fn @(I32 -> I32 -> I32)    "sub_int32"   \x y -> x - y
 
-add_maybe_int96 = fn @(Maybe I96 -> Maybe I96 -> Maybe I96) "add_maybe_int96" \x y -> x + y
+add_maybe_int96 = fn @(Maybe I96 -> Maybe I96 -> Maybe I96) "add_maybe_int96"
+  \x y -> x + y
 
 add_maybe_int96_with_default = fn @(I96 -> I96 -> I96 -> I96) "add_maybe_int96_with_default"
   \x y def -> match (inCase (Just x) + inCase (Just y)) \case

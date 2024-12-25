@@ -32,5 +32,6 @@ common yol-module-options
 library
   import:           yol-module-options
   exposed-modules:  Project
+                    Basic_Tests
                     Num_Tests
   hs-source-dirs:   src

@@ -2,7 +2,8 @@
 {-# LANGUAGE FunctionalDependencies #-}
 module YulDSL.Effects.LinearSMC.LinearFn
   ( LinearEffect (PureInputVersionedOutput, VersionedInputOutput)
-  , fn'l, uncurry'lv, uncurry'lp, yulmonad'lv, yulmonad'lp
+  , fn'l, purify'l
+  , uncurry'lv, uncurry'lp, yulmonad'lv, yulmonad'lp
   , call'l
   , match'l
   ) where
@@ -43,6 +44,13 @@ instance forall vd. LinearFnKind (VersionedPort 0) (VersionedPort vd) (Versioned
 
 instance forall vd. LinearFnKind PurePort (VersionedPort vd) (PureInputVersionedOutput vd) where
   fn'l fid f = MkFn (MkFnCat fid (decode'lpv f))
+
+class PurifiableLinearFn (eff :: LinearEffect) where
+  purify'l :: Fn eff f ⊸ PureFn f
+  purify'l = UnsafeLinear.coerce
+
+instance PurifiableLinearFn (VersionedInputOutput 0)
+instance PurifiableLinearFn (PureInputVersionedOutput 0)
 
 -- $uncurry_lv
 -- = Uncurrying Functions With Linear Port Inputs

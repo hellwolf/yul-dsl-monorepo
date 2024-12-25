@@ -68,7 +68,7 @@ anyFnId (MkAnyFnCat fnCat) = fnId fnCat
 --
 
 instance YulO2 a b => Show (FnCat eff a b) where
-  show (MkFnCat fid cat) = "fn " ++ fid ++ ":\n" ++ show cat
+  show (MkFnCat fid cat) = "fn " ++ fid ++ ":\n" ++ show cat ++ "\n"
 
 deriving instance Show AnyFnCat
 

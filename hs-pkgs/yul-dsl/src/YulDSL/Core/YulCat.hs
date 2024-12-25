@@ -107,8 +107,8 @@ data YulCat (eff :: k) a b where
 
   -- * Control Flow Primitives
   --
-  -- ^ Embed a constant value @a@ and disregard any input object @b@.
-  YulEmb :: forall eff a b. YulO2 a b => a %1-> YulCat eff b a
+  -- ^ Embed a constant value @b@ and disregard any input object @a@.
+  YulEmb :: forall eff a b. YulO2 a b => b %1-> YulCat eff a b
   -- ^ Jump an internal yul function by reference its identifier along with maybe a definition.
   YulJmp :: forall eff a b. YulO2 a b => YulJmpTarget eff a b %1-> YulCat eff a b
   -- ^ If-then-else expression.

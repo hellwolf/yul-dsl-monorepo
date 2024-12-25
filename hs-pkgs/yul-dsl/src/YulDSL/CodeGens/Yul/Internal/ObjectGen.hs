@@ -3,6 +3,7 @@ module YulDSL.CodeGens.Yul.Internal.ObjectGen (compile_object) where
 
 import           GHC.Stack                                   (HasCallStack)
 --
+import           Control.Monad                               (when)
 import           Data.Functor                                ((<&>))
 import           Data.Maybe                                  (catMaybes)
 -- text
@@ -23,25 +24,32 @@ compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, 
   vars_a <- cg_mk_let_vars @a
   vars_b <- cg_mk_let_vars @b
   all_vars <- cg_declare_vars
-  cg_use_builtin abidec_builtin
-  cg_use_builtin abienc_builtin
+  when (length vars_a > 0) $ cg_use_builtin abidec_builtin
+  when (length vars_b > 0) $ cg_use_builtin abienc_builtin
   pure . Just $ cbracket ind ("case " <> T.pack (show sel)) $ \ ind' ->
         maybe "" ind' all_vars <>
-        -- call abi decoder
-        ind' ( T.intercalate "," vars_a <> " := " <>
-               -- skip selector and (TODO) check if calldatasize is big enough
-               T.pack abidec_builtin <> "(4, calldatasize())"
-             ) <>
+        -- call the abi decoder for inputs
+        ( if length vars_a > 0 then
+            ind' ( T.intercalate "," vars_a <> " := " <>
+                 -- skip selector and (TODO) check if calldatasize is big enough
+                 T.pack abidec_builtin <> "(4, calldatasize())"
+                 )
+          else ""
+        ) <>
         -- call the function
-        ind' ( T.intercalate "," vars_b <> " := " <>
+        ind' ( (if length vars_b > 0 then T.intercalate "," vars_b <> " := " else "") <>
                T.pack fname <> "(" <> T.intercalate "," vars_a <> ")"
              ) <>
-        ind' "let memPos := __allocate_unbounded()" <>
-        -- call abi encoder
-        ind' ( "let memEnd := " <>
-               T.pack abienc_builtin <> "(memPos, " <> T.intercalate "," vars_b <> ")"
-             ) <>
-        ind' "return(memPos, sub(memEnd, memPos))"
+        -- call the abi decoder for outputs
+        ( if length vars_b > 0 then
+            ind' "let memPos := __allocate_unbounded()" <>
+            -- call abi encoder
+            ind' ( "let memEnd := " <>
+                   T.pack abienc_builtin <> "(memPos, " <> T.intercalate "," vars_b <> ")"
+                 ) <>
+            ind' "return(memPos, sub(memEnd, memPos))"
+          else ind' "return(0, 0)"
+        )
 compile_fn_dispatcher _ _ = pure Nothing
 
 compile_dispatchers :: HasCallStack

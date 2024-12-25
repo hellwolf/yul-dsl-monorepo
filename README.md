@@ -45,44 +45,22 @@ Yolc allows you to write safe code in production, a joyful experience for super 
 Features
 ========
 
-Compatible & Extensible Type System
------------------------------------
+Ethereum-Compatible & Extensible Types
+--------------------------------------
 
 > [!NOTE]
 >
 > These include [Ethereum contract ABI specification](https://docs.soliditylang.org/en/latest/abi-spec.html)
 > implemented in as *core types*, their *type extensions*, including *dependently typed extensions*.
 
-(TODO move this distracting big table to its own documentation, instead.)
+Unlike solidity, and to accommodate Haskell lexical rules, types are all in capitalize letters:
 
-| ABIType Instances   | [ABICoreType]   | Name (Selector Name)                  | Examples               |
-|---------------------|-----------------|---------------------------------------|------------------------|
-| *(core types)*      |                 |                                       |                        |
-| NP xs               | xs'             | N-ary products ((T1, ... Tn))         | INT 1 :* true :* Nil   |
-| BOOL                | [BOOL']         | Boolean (bool)                        | true, false            |
-| INTx s n            | [INTx' s n]     | Fixed-precision integers (int?/uint?) | -1, 0, 42, 0xffff      |
-| ADDR                | [ADDR']         | Ethereum addresses (address)          | constAddr "#0xABC5..." |
-| BYTESn n            | [BYTESn']       | Binary type of n bytes (bytes?)       |                        |
-| ARRAY a             | [ARRAY' a]      | Arrays (T[])                          | TODO                   |
-| FIXx s m n          | [FIX m n]       | Fixed-point decimal numbers (fixed)   | TODO                   |
-| *(extended types)*  |                 |                                       |                        |
-| U8, U16, ... U256   | [INTx' False n] | Aliases of unsigned integers          | (see INTx)             |
-| I8, I16, ... I256   | [INTx' True n]  | Aliases of signed integers            | (see INTx)             |
-| B1, B2, ... B32     | [BYTESn n]      | Aliases of byte arrays                | (see BYTESn)           |
-| REF a w             | [B32']          | Memory or storage references          | TODO                   |
-| MAYBE a             | [MAYBE' a]      | Maybe a value                         | TODO                   |
-| FUNC c sel          | [U192']         | Contract function pointer             | TODO                   |
-| (a, b)              | [a', b']        | Tuples                                | (a, b)                 |
-| TUPLEn n            | [a1', ... an']  | Tuples of N-elements                  | (), a, (a, b, c)       |
-| STRUCT lens_xs      | xs'             | Struct with lenses                    | TODO                   |
-| STRING              | [BYTES']        | UTF-8 strings                         | TODO                   |
-| MAP a b             | [B32']          | Hash tables, aka. maps                | TODO                   |
-| *(dependent types)* |                 |                                       |                        |
-| BOOL'd v            | [BOOL']         | Dependent booleans                    | TODO                   |
-| INTx'd s n v        | [INTx' s n]     | Dependent integers                    | TODO                   |
-| BYTES'd l           | [BYTES']        | Length-indexed byte arrays            | TODO                   |
-| ARRAY'd a l         | [ARRAY' a]      | Length-indexed arrays                 | TODO                   |
-| STRING'd v          | [BYTES']        | Dependent strings                     | TODO                   |
+* Boolean type `BOOL`, and its values `true`, `false`.
+* Address type `ADDR`.
+* Integers types: `I8`, `I16`, ... `I256`; `U8`, `U16`, ... `U256`.
+* etc.
+
+Full table of the types implemented and planned can be found [here](./hs-pkgs/eth-abi/README.md).
 
 Expressive Pure Functions
 -------------------------
@@ -105,7 +83,12 @@ call3 = fn @(Maybe U8 -> Maybe U8) "call3"
 
 **Pattern Matching**
 
-TODO.
+```haskell
+add_maybe_int96_with_default = fn @(I96 -> I96 -> I96 -> I96) "add_maybe_int96_with_default"
+  \x y def -> match (inCase (Just x) + inCase (Just y)) \case
+    Nothing -> def
+    Just z  -> z
+```
 
 Linear Safety For Side Effects
 ------------------------------
@@ -122,7 +105,7 @@ TODO.
 Packages
 ========
 
-- *eth-abi* - Ethereum contract ABI specification in Haskell
+- [*eth-abi*](./hs-pkgs/eth-abi/README.md) - Ethereum contract ABI specification in Haskell
 - [*yul-dsl*](./hs-pkgs/yul-dsl/README.md) - A DSL for Solidity/Yul
 - [*yul-dsl-linear-smc*](./hs-pkgs/yul-dsl-linear-smc/README.md) - Embedding YulDSL in Haskell Using Linear Types
 - [*yol-suite*](./hs-pkgs/yol-suite/README.md) - A Collection of YulDSL Programs for the New Pioneer of Ethereum Smart
@@ -148,6 +131,7 @@ Headline Features
 
 - eth-abi
   - CoreType:
+    - [ ] INTn sign-extended word values.
     - [ ] ARRAY
   - ExtendedTypes:
     - [ ] TUPLEn
@@ -155,6 +139,7 @@ Headline Features
 - yul-dsl
   - Value primitives:
     - [ ] `YulCast`, casting values between value types.
+  - Storage primitives becomes builtin.
   - Control flow primitives:
     - [ ] `YulMapArray`, tight loop over an array.
     - [ ] `YulLen`, array length.
@@ -162,22 +147,20 @@ Headline Features
     - [ ] `YulCall`, external function calls.
   - Function Gen:
     - [ ] Change the logic to delay code gen until inner layer requires it.
-    - Bugs
-      - Bad code for unit type
-      - "emb true" fails
+    - [ ] Fix the implementation for all embeddable values.
 - yul-dsl-linear-smc
   - [ ] Complete the Num classes: mul, abs, sig, etc.
   - [ ] Prelude curation
 - yol-suite
+  - Cabal build system integration
+    - [ ] better YOLSuite build sharing.
+  - Yolc Project Builder
+    - [ ] Simplify RunYol/etc. templates
+  - Contract verification support:
+    - [ ] Basic stunt contract generator.
   - Software distributions:
     - [ ] Nix flake
     - [ ] Rudimentary github dev console
-- yolc
-  - Cabal build system integration
-    - [ ] better YOLSuite build sharing.
-  - Project Builder
-  - Contract verification support:
-    - [ ] Basic stunt contract generator.
 
 **TODOs for 0.2.0.0**
 

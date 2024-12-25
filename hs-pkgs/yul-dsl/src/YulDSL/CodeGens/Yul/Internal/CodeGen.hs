@@ -71,8 +71,8 @@ cg_next_var = do
 -- Make new locally scoped (let) variables.
 cg_mk_let_vars :: forall a. YulO1 a => CGState [Var]
 cg_mk_let_vars = reverse <$> go (abi_type_count_vars @a) []
-  where go n vars = cg_next_var >>= \var ->
-          if n > 1 then go (n - 1) (var:vars) else return (var:vars)
+  where go 0 vars = pure vars
+        go n vars = cg_next_var >>= \var -> go (n - 1) (var:vars)
 
 -- Declare variables.
 cg_declare_vars :: CGState (Maybe Code)

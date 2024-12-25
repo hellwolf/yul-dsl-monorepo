@@ -28,7 +28,7 @@ CABAL_COVERAGE = $(CABAL) --builddir=$(TEST_COVERAGE_BUILDDIR)
 CABAL_DOCS     = $(CABAL) --builddir=$(DOCS_BUILDDIR)
 
 # Misc
-DEV_TARGETS = test-all-modules build-all-modules test-yol-suite test-demo-yul
+DEV_TARGETS = test-all-modules build-all-modules test-yol-suite
 
 ########################################################################################################################
 # TARGETS
@@ -80,7 +80,6 @@ test-demo: test-demo-show test-demo-yul
 
 test-demo-show:
 	yolc -m show examples/demo:ERC20
-	yolc -m show examples/demo:Basic
 
 test-demo-yul:
 	yolc -m yul examples/demo

@@ -154,19 +154,17 @@ Headline Features
     - [ ] REF
 - yul-dsl
   - Value primitives:
-    - [ ] `YulNum (Maybe a)`, safe numerical operations.
     - [ ] `YulCast`, casting values between value types.
   - Control flow primitives:
     - [ ] `YulMapArray`, tight loop over an array.
     - [ ] `YulLen`, array length.
   - Non pure primitives:
     - [ ] `YulCall`, external function calls.
-  - Evaluator
-    - [ ] Support all `YulDSL` data constructors.
   - Function Gen:
     - [ ] Change the logic to delay code gen until inner layer requires it.
-  - Object builder:
-    - [ ] dispatcher builder with full dispatcher calldata codec support.
+    - Bugs
+      - Bad code for unit type
+      - "emb true" fails
 - yul-dsl-linear-smc
   - [ ] Complete the Num classes: mul, abs, sig, etc.
   - [ ] Prelude curation
@@ -194,6 +192,8 @@ Headline Features
   - ABITypeCodec
     - [ ]  Compatibility with the solidity abi-spec
 - yul-dsl
+  - ExtendedType
+    - Solidity MaybeXYZ struct
   - Pure value primitives:
     - [ ] contracts ABI serialization built-ins.
   - CodeGen core:

@@ -5,7 +5,6 @@ import           Prelude.YulDSL
 
 -- | ERC20 balance storage location for the account.
 -- TODO should use hashing of course.
--- erc20_balance_storage :: forall r eff. YulObj r => P'xL eff v r ADDR ⊸ P'xL eff v r
 erc20_balance_storage account =
   mkUnit account
   & \(account, unit) -> coerce'l (coerce'l account + emb'l (fromInteger @U256 0x42) unit)
@@ -13,6 +12,13 @@ erc20_balance_storage account =
 -- | ERC20 balance of the account.
 erc20_balance_of = fn'l "balanceOf" $ yulmonad'lv @(ADDR -> U256)
   \account -> sget (erc20_balance_storage account)
+
+erc20_mint = fn'l "mint" $ yulmonad'lp @(ADDR -> U256 -> BOOL)
+  \account'p amount'p -> LVM.do
+  (account, amount) <- impureN (account'p, amount'p)
+  u <- sput (erc20_balance_storage account) amount
+  -- FIXME embed true
+  pure $ emb'l true u
 
 erc20_transfer = fn'l "transfer" $ yulmonad'lp @(ADDR -> ADDR -> U256 -> BOOL)
   \from'p to'p amount'p -> LVM.do
@@ -30,9 +36,10 @@ erc20_transfer = fn'l "transfer" $ yulmonad'lp @(ADDR -> ADDR -> U256 -> BOOL)
     sput_ (erc20_balance_storage to) (balance2before + amount)
 
   pure $ emb'l true u2 -- FIXME: the following code bugs out: "embed true" in codegen
-  -- embed true
+  -- FIXME embed true
 
 object = mkYulObject "ERC20" emptyCtor
   [ externalFn erc20_balance_of
+  , externalFn erc20_mint
   , externalFn erc20_transfer
   ]

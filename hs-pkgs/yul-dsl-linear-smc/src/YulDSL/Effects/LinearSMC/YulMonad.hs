@@ -1,29 +1,17 @@
 module YulDSL.Effects.LinearSMC.YulMonad
   ( YulMonad, runYulMonad
-  -- * LVM Combinators
+  -- * Combinators Of Linearly Versioned Monad
   , module Control.LinearlyVersionedMonad.Combinators
   , Control.Functor.Linear.fmap
-  -- * YulMonad Combinator
-  -- ** Port Purity
-  , Impurable (impure), impureN
-  -- ** Storages
-  , sget, sput, sput_, sputAt
   ) where
-
--- base
-import           GHC.TypeLits                               (type (+))
--- constraints
-import           Data.Constraint.Unsafe                     (unsafeAxiom)
 -- linear-base
-import           Control.Category.Linear                    (discard, encode, ignore, merge, mkUnit)
+import           Control.Category.Linear                    (discard, ignore)
 import qualified Control.Functor.Linear
-import           Prelude.Linear                             ((&))
 import qualified Unsafe.Linear                              as UnsafeLinear
 -- yul-dsl
 import           YulDSL.Core
 --
-import           Control.LinearlyVersionedMonad             (LVM (..), runLVM)
-import qualified Control.LinearlyVersionedMonad             as LVM
+import           Control.LinearlyVersionedMonad             (LVM, runLVM)
 import           Control.LinearlyVersionedMonad.Combinators
 import           Data.LinearContext
 --
@@ -42,65 +30,6 @@ runYulMonad :: forall vd r a ue . YulO2 r a
 runYulMonad u m = let !(ctx', a) = runLVM (MkYulMonadCtx (UnsafeLinear.coerce u)) m
                       !(MkYulMonadCtx (MkUnitDumpster u')) = ctx'
                   in ignore (UnsafeLinear.coerce u') a
-
---------------------------------------------------------------------------------
--- Impurable (impure)
---------------------------------------------------------------------------------
-
-class Impurable x'p x'v where
-  -- | Safe operation that impures a pure yul port to a versioned yul port.
-  impure :: x'p ⊸ YulMonad v v r x'v
-
-instance forall v r a. Impurable (P'P r a) (P'V v r a) where
-  impure x = pure (UnsafeLinear.coerce x)
-
-instance Impurable (NP '[]) (NP '[]) where
-  impure Nil = pure Nil
-
-instance forall x'p x'v xs'p xs'v.
-         ( Impurable x'p x'v, Impurable (NP xs'p) (NP xs'v)
-         ) => Impurable (NP (x'p:xs'p)) (NP (x'v:xs'v)) where
-  impure (x :* xs) = LVM.do
-    x' <- impure x
-    xs' <- impure xs
-    pure (x' :* xs')
-
-impureN :: forall v r tpl'p tpl'v.
-           ( ConvertibleTupleN tpl'p
-           , ConvertibleTupleN tpl'v
-           -- , TupleNtoNP tpl'p ~ NP (P'P r a:xs)
-           -- , TupleNtoNP tpl'v ~ NP (P'V v r a:xs)
-           , Impurable (TupleNtoNP tpl'p) (TupleNtoNP tpl'v)
-           )
-        => tpl'p ⊸ YulMonad v v r tpl'v
-impureN tpl'p = LVM.do
-  np'v :: TupleNtoNP tpl'v <- impure (fromTupleNtoNP tpl'p)
-  pure (fromNPtoTupleN np'v)
-
---------------------------------------------------------------------------------
--- Storage Combinators
---------------------------------------------------------------------------------
-
-sget :: forall v r a. (YulO2 r a, ABIWordValue a)
-     => P'V v r ADDR ⊸ YulMonad v v r (P'V v r a)
-sget a = pure (encode YulSGet a)
-
-sput :: forall v r a. (YulO2 r a, ABIWordValue a)
-     => P'V v r ADDR ⊸ P'V v r a ⊸ YulMonad v (v + 1) r (P'V (v + 1) r a)
-sput to x =
-  dup2'l x
-  & \(x1, x2) -> encode YulSPut (merge (to, x1))
-  & \u -> MkLVM (unsafeAxiom, , UnsafeLinear.coerce (ignore u x2))
-
-sput_ :: forall v r a. (YulO2 r a, ABIWordValue a)
-      => P'V v r ADDR ⊸ P'V v r a ⊸ YulMonad v (v + 1) r (P'V (v + 1) r ())
-sput_ to x =
-  encode YulSPut (merge (to, x))
-  & \u -> MkLVM (unsafeAxiom, , UnsafeLinear.coerce u)
-
-sputAt :: forall v r a. (YulO2 r a, ABIWordValue a)
-       => ADDR ⊸ P'V v r a ⊸ YulMonad v (v + 1) r (P'V (v + 1) r a)
-sputAt to x = mkUnit x & \(x', u) -> emb'l to u & \a -> sput a x'
 
 --------------------------------------------------------------------------------
 -- (Internal Stuff)

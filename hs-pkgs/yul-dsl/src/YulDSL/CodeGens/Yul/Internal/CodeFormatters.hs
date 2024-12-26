@@ -1,9 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
-
-module YulDSL.CodeGens.Yul.Internal.CodeFormatters where
-
+module YulDSL.CodeGens.Yul.Internal.CodeFormatters
+  ( Code
+  , Indenter
+  , add_indent, indent, init_ind
+  , cbracket_m, cbracket, cbracket1
+  , HasCallStack, gen_assert_msg
+  ) where
+-- base
 import           Data.Functor.Identity (Identity (runIdentity))
---
+import           GHC.Stack             (HasCallStack)
+-- text
 import qualified Data.Text.Lazy        as T
 
 
@@ -38,3 +44,8 @@ cbracket ind prefix codegen = runIdentity $ cbracket_m ind prefix (pure . codege
 -- | Wrap a one liner in a pair of curly brackets.
 cbracket1 :: Indenter -> Code -> Code -> Code
 cbracket1 ind prefix oneliner = cbracket ind prefix ($ oneliner)
+
+-- | Assert true or stop code generation with a message.
+gen_assert_msg :: HasCallStack => String -> Bool -> a -> a
+gen_assert_msg msg False _ = error msg
+gen_assert_msg _     _ x   = x

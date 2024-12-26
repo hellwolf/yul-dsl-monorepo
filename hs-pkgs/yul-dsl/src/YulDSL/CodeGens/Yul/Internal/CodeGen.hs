@@ -1,17 +1,21 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE OverloadedStrings   #-}
 module YulDSL.CodeGens.Yul.Internal.CodeGen
-  ( CGState, CGOutput
+  ( -- $codegen_state
+    CGState
+  , gen_code
+    -- $codegen_vars
   , cg_reset_var_gen
   , cg_mk_let_vars
   , cg_declare_vars
   , cg_forget_vars
+    -- $codegen_dependencies
   , cg_list_dependent_cats
   , cg_insert_dependent_cat
+    -- $codegen_builtins
   , cg_register_builtin
   , cg_use_builtin
   , cg_gen_builtin_codes
-  , gen_code
   ) where
 
 -- base
@@ -30,9 +34,8 @@ import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
 import           YulDSL.CodeGens.Yul.Internal.Variables
 
 
-------------------------------------------------------------------------------------------------------------------------
--- CodeGen (CG) Machinery
-------------------------------------------------------------------------------------------------------------------------
+-- $codegen_state
+-- == CodeGen State
 
 -- | CodeGen state data.
 data CGStateData = MkCGStateData
@@ -43,6 +46,10 @@ data CGStateData = MkCGStateData
   , builtin_used    :: Set.Set String
   }
 
+-- | CodeGen state.
+type CGState = State CGStateData
+
+-- | Initial CodeGen state data.
 init_cg_state_data :: CGStateData
 init_cg_state_data = MkCGStateData
   { var_gen = MkAutoVarGen 0
@@ -52,13 +59,18 @@ init_cg_state_data = MkCGStateData
   , builtin_used = Set.empty
   }
 
-type CGState = State CGStateData
+-- | Generate code from the initial CodeGen state.
+gen_code :: CGState Code -> Code
+gen_code s = evalState s init_cg_state_data
 
-type CGOutput = (Code, [Val])
+-- $codegen_vars
+-- == CodeGen Variables
 
+-- | Reset the variable generator.
 cg_reset_var_gen :: CGState ()
 cg_reset_var_gen = modify $ \s -> s { var_gen = MkAutoVarGen 0 }
 
+-- | Generate the next variable name.
 cg_next_var :: CGState Var
 cg_next_var = do
   s <- get
@@ -68,13 +80,13 @@ cg_next_var = do
          })
   return v
 
--- Make new locally scoped (let) variables.
+-- | Make new locally scoped (let) variables needed for the type @a@.
 cg_mk_let_vars :: forall a. YulO1 a => CGState [Var]
 cg_mk_let_vars = reverse <$> go (abi_type_count_vars @a) []
   where go 0 vars = pure vars
         go n vars = cg_next_var >>= \var -> go (n - 1) (var:vars)
 
--- Declare variables.
+-- | Declare the undeclared variables.
 cg_declare_vars :: CGState (Maybe Code)
 cg_declare_vars = do
   s <- get
@@ -83,11 +95,12 @@ cg_declare_vars = do
   put (s { undeclared_vars = [] })
   return code
 
+-- | Forget about the undeclared variables.
 cg_forget_vars :: CGState ()
 cg_forget_vars = modify $ \s -> s { undeclared_vars = [] }
 
-cg_register_builtin :: BuiltInEntry -> CGState ()
-cg_register_builtin builtin = modify $ \s -> s { builtins = register_builtin builtin s.builtins }
+-- $codegen_dependencies
+-- == CodeGen YulCat Dependencies
 
 cg_list_dependent_cats :: CGState [(String, AnyYulCat)]
 cg_list_dependent_cats = get <&> Map.toList . dependent_cats
@@ -95,6 +108,12 @@ cg_list_dependent_cats = get <&> Map.toList . dependent_cats
 cg_insert_dependent_cat :: String -> AnyYulCat -> CGState ()
 cg_insert_dependent_cat depId depCat = modify
   (\d@(MkCGStateData { dependent_cats = deps }) -> d { dependent_cats = Map.insert depId depCat deps })
+
+-- $codegen_builtins
+-- == CodeGen Builtins
+
+cg_register_builtin :: BuiltInEntry -> CGState ()
+cg_register_builtin builtin = modify $ \s -> s { builtins = register_builtin builtin s.builtins }
 
 cg_use_builtin :: String -> CGState ()
 cg_use_builtin name = modify
@@ -112,6 +131,3 @@ cg_gen_builtin_codes ind = get >>= \(MkCGStateData{ builtins , builtin_used }) -
                       s'  = Set.union s (Set.fromList xs')
                   in if Set.size s == Set.size s' then s
                   else go (Set.toList (Set.difference s' s)) s'
-
-gen_code :: CGState Code -> Code
-gen_code s = evalState s init_cg_state_data

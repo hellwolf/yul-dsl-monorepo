@@ -53,6 +53,7 @@ build-docs:
 	$(CABAL_DOCS) haddock yul-dsl yul-dsl-linear-smc
 
 build-docs-and-display: build-docs
+	xdg-open $(DOCS_BUILDDIR)/build/*/*/eth-abi-*/doc/html/eth-abi/index.html
 	xdg-open $(DOCS_BUILDDIR)/build/*/*/yul-dsl-*/doc/html/yul-dsl/index.html
 	xdg-open $(DOCS_BUILDDIR)/build/*/*/yul-dsl-linear-smc-*/doc/html/yul-dsl-linear-smc/index.html
 

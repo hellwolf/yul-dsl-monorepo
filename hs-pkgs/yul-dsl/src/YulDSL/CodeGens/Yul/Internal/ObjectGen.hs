@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module YulDSL.CodeGens.Yul.Internal.ObjectGen (compile_object) where
 
-import           GHC.Stack                                   (HasCallStack)
---
+-- base
 import           Control.Monad                               (when)
 import           Data.Functor                                ((<&>))
 import           Data.Maybe                                  (catMaybes)

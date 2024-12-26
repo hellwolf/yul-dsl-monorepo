@@ -7,7 +7,6 @@ module YulDSL.CodeGens.Yul.Internal.FunctionGen
   ) where
 
 -- base
-import           GHC.Stack                                   (HasCallStack)
 -- text
 import qualified Data.Text.Lazy                              as T
 --
@@ -17,6 +16,8 @@ import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
 import           YulDSL.CodeGens.Yul.Internal.CodeGen
 import           YulDSL.CodeGens.Yul.Internal.Variables
 
+
+type CGOutput = (Code, [Val])
 
 do_compile_cat :: HasCallStack
                => Indenter -> AnyYulCat -> [Val] -> CGState CGOutput

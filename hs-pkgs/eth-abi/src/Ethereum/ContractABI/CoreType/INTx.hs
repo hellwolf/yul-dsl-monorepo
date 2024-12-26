@@ -140,7 +140,7 @@ instance ValidINTx s n => Integral (INTx s n) where
 instance ValidINTx s n => ABIWordValue (INTx s n) where
   fromWord w = let maxVal = coerce (maxBound @(INTx s n))
                    -- min = coerce (minBound @(INTx s n))
-                   a  = wordVal w
+                   a  = wordToInteger w
                in if intxSign @(INTx s n)
                   then if a <= maxVal
                        then Just (INT a)
@@ -152,9 +152,9 @@ instance ValidINTx s n => ABIWordValue (INTx s n) where
 
   toWord (INT a) = if intxSign @(INTx s n)
                    then if a >= 0
-                        then word a
-                        else word (a + 1 `shift` intxNBits @(INTx s n))
-                   else word a
+                        then integerToWord a
+                        else integerToWord (a + 1 `shift` intxNBits @(INTx s n))
+                   else integerToWord a
 
 {- ** Show instances -}
 

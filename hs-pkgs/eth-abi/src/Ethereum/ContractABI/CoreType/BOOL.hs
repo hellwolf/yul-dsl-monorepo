@@ -51,13 +51,13 @@ instance Bounded BOOL where
   maxBound = true
 
 instance ABIWordValue BOOL where
-  fromWord w = case wordVal w of
+  fromWord w = case wordToInteger w of
     0 -> Just false
     1 -> Just true
     _ -> Nothing
 
-  toWord (BOOL False) = word 0
-  toWord (BOOL True)  = word 1
+  toWord (BOOL False) = integerToWord 0
+  toWord (BOOL True)  = integerToWord 1
 
 instance Show BOOL where
   show (BOOL True)  = "true"

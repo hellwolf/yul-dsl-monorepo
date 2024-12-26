@@ -132,10 +132,10 @@ Headline Features
 - eth-abi
   - CoreType:
     - [ ] INTn sign-extended word values.
-    - [ ] ARRAY
+    - [ ] 🟠 ARRAY
   - ExtendedTypes:
     - [ ] TUPLEn
-    - [ ] REF
+    - [ ] 🟠 REF
 - yul-dsl
   - Value primitives:
     - [ ] `YulCast`, casting values between value types.
@@ -146,7 +146,7 @@ Headline Features
   - Non pure primitives:
     - [ ] `YulCall`, external function calls.
   - Function Gen:
-    - [ ] Change the logic to delay code gen until inner layer requires it.
+    - [ ] 🟠 Change the logic to delay code gen until inner layer requires it.
     - [ ] Fix the implementation for all embeddable values.
 - yul-dsl-linear-smc
   - [ ] Complete the Num classes: mul, abs, sig, etc.

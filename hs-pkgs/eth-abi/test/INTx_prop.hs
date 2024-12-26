@@ -20,7 +20,7 @@ test_bounds_op1 _ a = a >= minVal && a <= maxVal ==>
                       go negate negate && go abs abs
   where minVal = toInteger (minBound @i)
         maxVal = toInteger (maxBound @i)
-        a' = fromWord(word a) :: Maybe i
+        a' = fromWord(integerToWord a) :: Maybe i
         go op' op = if op a > maxVal || op a < minVal
                     then isNothing (op' a')
                     else op' a' == fromInteger (op a)
@@ -31,8 +31,8 @@ test_bounds_op2 _ a b = a >= minVal && a <= maxVal && b >= minVal && b <= maxVal
                         go (+) (+) && go (*) (*)
   where minVal = toInteger (minBound @i)
         maxVal = toInteger (maxBound @i)
-        a' = fromWord(word a) :: Maybe i
-        b' = fromWord(word b) :: Maybe i
+        a' = fromWord (integerToWord a) :: Maybe i
+        b' = fromWord (integerToWord b) :: Maybe i
         go op' op = if a `op` b > maxVal || a `op` b < minVal
                     then isNothing (a' `op'` b')
                     else a' `op'` b' == fromInteger (a `op` b)
@@ -41,10 +41,10 @@ test_twos_complement_law :: forall i n. (i ~ INTx True n, ValidINTn n)
                          => Proxy i -> Integer -> Property
 test_twos_complement_law _ a = a >= toInteger (minBound @i) && a <= toInteger (maxBound @i) ==>
   a1 <= maxUnsignedVal && a2 <= maxUnsignedVal && a1 + a2 == maxUnsignedVal
-  where wordValFrom n = wordVal(toWord(fromJust(fromInteger n) :: i))
+  where wordToIntegerFrom n = wordToInteger (toWord (fromJust (fromInteger n) :: i))
         maxUnsignedVal = toInteger (maxBound @(INTx False n))
-        a1 = wordValFrom a
-        a2 = wordValFrom (-(a + 1))
+        a1 = wordToIntegerFrom a
+        a2 = wordToIntegerFrom (-(a + 1))
 
 test_most_intx :: forall a b.
                   Example b

@@ -19,11 +19,12 @@ module Ethereum.ContractABI.ABICoreType
   -- for working with INTx, BYTEn
   , Nat, natSing, natVal
   , ValidINTn, withValidINTxType
+  , isBytesType
   -- ABI type names
   , abiCoreTypeCanonName
   , abiCoreTypeCompactName, decodeAbiCoreTypeCompactName
   -- EVM word representations
-  , WORD, word, wordVal, defWord, maxWord, ABIWordValue (toWord, fromWord)
+  , WORD, integerToWord, wordToInteger, defWord, maxWord, ABIWordValue (toWord, fromWord)
   ) where
 
 -- base
@@ -44,6 +45,9 @@ import           Internal.Data.Type.Bool
 -- | A constraint that restricts what Nat values are valid for 'INTx' and 'BYTESn'.
 --   Note: It is valid from 1 to 32.
 class KnownNat n => ValidINTn n
+
+-- | A top-level splice that declares all the valid INTx n values.
+flip foldMap [1..32] $ \i -> [d| instance ValidINTn $(TH.litT (TH.numTyLit i)) |]
 
 -- | Contract ABI core types.
 data ABICoreType where
@@ -71,8 +75,10 @@ instance Eq ABICoreType where
   (BYTESn' _) == _             = False
   (ARRAY' _)  == _             = False
 
--- | A top-level splice that declares all the valid INTx n values.
-flip foldMap [1..32] $ \i -> [d| instance ValidINTn $(TH.litT (TH.numTyLit i)) |]
+-- | It returns true for @[BYTESn' 1]@ type.
+isBytesType :: ABICoreType -> Bool
+isBytesType (ARRAY' (BYTESn' (n :: SNat n))) = fromSNat n == 1
+isBytesType _                                = False
 
 -- | Work with the INTx type information corresponding to signedness and data size during runtime.
 withValidINTxType :: Bool -> Integer -> (ABICoreType -> a) -> Maybe a
@@ -80,15 +86,15 @@ withValidINTxType sval nval f =
   toKnownSBool sval $ \s ->
   withSomeSNat nval $ \maybeSn -> maybeSn >>=
   \sn -> let n = fromSNat sn
+             -- this makes template haskell code shorter
+             g :: forall i -> ValidINTn i => Maybe ABICoreType
+             g i = Just (INTx' s (natSing @i))
              -- using template haskell to generate 32 cases for all @INTx' s n@
          in f <$> $(TH.caseE (TH.varE 'n) -- case n of
                -- @$i -> Just INTx' s (natSing @$i)@
-               (map (\i -> TH.match (TH.litP (TH.integerL i))
-                           (TH.normalB $
-                            TH.conE 'Just `TH.appE`
-                             (TH.conE ' INTx' `TH.appE`
-                              (TH.varE 's) `TH.appE`
-                              (TH.varE 'natSing `TH.appTypeE` TH.litT (TH.numTyLit i))))
+               (map (\i -> TH.match
+                           (TH.litP (TH.integerL i))
+                           (TH.normalB (TH.varE 'g `TH.appE` TH.litE (TH.integerL i)))
                            []) [1..32]
                 -- @_ -> Nothing@
                 ++ [ TH.match TH.wildP (TH.normalB (TH.conE 'Nothing)) [] ]
@@ -100,7 +106,7 @@ abiCoreTypeCanonName BOOL'       = "bool"
 abiCoreTypeCanonName (INTx' s n) = (if fromSBool s then "int" else "uint") <> show (natVal n * 8)
 abiCoreTypeCanonName ADDR'       = "address"
 abiCoreTypeCanonName (BYTESn' n) = "bytes" ++ show (natVal n)
-abiCoreTypeCanonName (ARRAY' a)  = if is_bytes_type a then "bytes" else abiCoreTypeCanonName a ++ "[]"
+abiCoreTypeCanonName (ARRAY' a)  = if isBytesType a then "bytes" else abiCoreTypeCanonName a ++ "[]"
 
 -- | Compact but unambiguous names for the core types..
 abiCoreTypeCompactName :: ABICoreType -> String
@@ -143,11 +149,13 @@ newtype WORD = WORD Integer deriving newtype (Eq)
 instance Show WORD where
     show (WORD a) = "0x" ++ fmap toUpper (showHex a "")
 
-word :: Integer -> WORD
-word a = assert (a >= 0 && a <= coerce maxWord) WORD a
+-- | Convert from an integer to a word.
+integerToWord :: Integer -> WORD
+integerToWord a = assert (a >= 0 && a <= coerce maxWord) WORD a
 
-wordVal :: WORD -> Integer
-wordVal = coerce
+-- | Convert to an integer from a word.
+wordToInteger :: WORD -> Integer
+wordToInteger = coerce
 
 -- | Default and minimum word value: 0.
 defWord :: WORD
@@ -163,12 +171,3 @@ class Bounded a => ABIWordValue a where
   fromWord :: WORD -> Maybe a
   -- | Convert from a ABI typed value to a storage value.
   toWord   :: a -> WORD
-
-
---
--- internal function
---
-
-is_bytes_type :: ABICoreType -> Bool
-is_bytes_type (ARRAY' (BYTESn' (n :: SNat n))) = fromSNat n == 1
-is_bytes_type _                                = False

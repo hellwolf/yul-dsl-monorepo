@@ -60,8 +60,8 @@ instance ABITypeCodec ADDR where
   abiDecoder = fmap ADDR S.get
 
 instance ABIWordValue ADDR where
-  fromWord = toAddr . wordVal
-  toWord (ADDR a) = word a
+  fromWord = toAddr . wordToInteger
+  toWord (ADDR a) = integerToWord a
 
 instance Show ADDR where
   -- TODO: show ERC-55 form

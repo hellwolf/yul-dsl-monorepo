@@ -1,30 +1,14 @@
-Cabal-Version:  3.0
+Cabal-Version:  3.4
 name:           runyol-__YOL_PKG_NAME__
 version:        0.1
 build-type:     Simple
 
-common yol-module-options
-    default-language:     GHC2024
-    default-extensions:   NoImplicitPrelude
-                          BlockArguments
-                          OverloadedStrings
-                          UnicodeSyntax
-                          LinearTypes
-                          ImpredicativeTypes
-    ghc-options:          -Wall
-                          -Wno-name-shadowing
-    mixins:               base hiding (Prelude),
-                          base (Prelude as Prelude.Base)
-    build-depends:        base >= 4.13 && < 666,
-                          bytestring >= 0.11,
-                          text >= 2.0.2,
-                          linear-base >= 0.3.1,
-                          linear-smc >= 2.2.3,
-                          yul-dsl-linear-smc,
-                          yul-dsl,
-                          yol-suite
-
 executable runyol
-  import:           yol-module-options
-  build-depends:    __YOL_PKG_NAME__
+  default-language: GHC2024
+  ghc-options:      -Wall
+                    -Wunused-packages
+  build-depends:    base >= 4.13 && < 666,
+                    text >= 2.0.2,
+                    yol-suite,
+                    __YOL_PKG_NAME__
   main-is:          RunYol.hs

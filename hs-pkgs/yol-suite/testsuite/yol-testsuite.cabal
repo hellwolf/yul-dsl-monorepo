@@ -1,13 +1,18 @@
-Cabal-Version:  3.0
+Cabal-Version:  3.4
 name:           yol-testsuite
-version:        0.1
-synopsis:       Testsuite for the YOL suite
+version:        0.1.0.0
+synopsis:       An example project of, and as a testsuite for, the yol-suite.
 build-type:     Simple
 
--- BEGIN yol-module-options
+--------------------------------------------------------------------------------
+-- !! THE CODE BELOW SHOULD BE MANAGED BY ATTILA !!
+--------------------------------------------------------------------------------
+
+-- BEGIN attila-cabal-section
 common yol-module-options
     default-language:     GHC2024
     ghc-options:          -Wall
+                          -Wunused-packages
                           -Wno-name-shadowing
                           -Wno-missing-signatures
     default-extensions:   UnicodeSyntax
@@ -17,21 +22,22 @@ common yol-module-options
                           QualifiedDo
                           ImpredicativeTypes
                           LinearTypes
+
+common base-mixins-options
     mixins:               base hiding (Prelude),
                           base (Prelude as Prelude.Base)
     build-depends:        base >= 4.13 && < 666,
-                          text >= 2.0.1,
-                          bytestring >= 0.11,
-                          yul-dsl,
-                          yul-dsl-linear-smc,
-                          yol-suite,
-                          linear-base >= 0.3.1,
-                          linear-smc >= 2.2.3
--- END yol-module-options
+-- END attila-cabal-section
+
+--------------------------------------------------------------------------------
+-- !! THIS SECTION SHOULD BE MAINTAINED BY YOU !!
+--------------------------------------------------------------------------------
 
 library
   import:           yol-module-options
+  hs-source-dirs:   src
   exposed-modules:  Project
                     Basic_Tests
                     Num_Tests
-  hs-source-dirs:   src
+  build-depends:    yul-dsl-linear-smc,
+                    yol-suite

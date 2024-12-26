@@ -155,16 +155,16 @@ build_yol_module() {
   cmpl_syms=$(echo -n "$rest" | sed -e 's|\s*,\s*| |g')
   if [ -z "$mod_name" ]; then
     mod_name=Project
-    codegen_mode=project_mode
+    codegen_mode=ProjectMode
     cmpl_syms=manifest
     yol_dir=${pkg_name}
     yol_output_file="${out_dir}/${yol_dir}/contracts/Contracts.sol"
   elif [ -z "$cmpl_syms" ]; then
-    codegen_mode=object_mode # object mode
+    codegen_mode=ObjectMode # object mode
     cmpl_syms=object
     yol_dir=${pkg_name}.${mod_name}
   else
-    codegen_mode=fn_mode # fn mode
+    codegen_mode=FnMode # fn mode
     yol_dir=${pkg_name}.${mod_name}.custom
   fi
   yol_dir=${out_dir}/${yol_dir}
@@ -211,7 +211,7 @@ EOF
   # instantiate RunYol.hs template
   local actions
   actions=$(for i in $cmpl_syms; do
-              echo -n "handleResult =<< ${codegen_name}_${codegen_mode} $i"
+              echo -n "${codegen_name}${codegen_mode} $i"
             done)
   {
     sed -e "s|%YOL_MOD_NAME%|${mod_name}|g" \

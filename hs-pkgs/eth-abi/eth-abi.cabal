@@ -1,4 +1,4 @@
-cabal-version:  3.0
+cabal-version:  3.4
 name:           eth-abi
 version:        0.1.0.0
 category:       Data Structures
@@ -51,7 +51,7 @@ library
                       crypton >= 0.32,
                       memory >= 0.18,
                       cereal >= 0.5,
-                      simple-np
+                      eth-abi:simple-np
 
 library simple-np
   import:     basic-options
@@ -71,7 +71,7 @@ Test-Suite test-eth-abi
   type:             exitcode-stdio-1.0
   build-depends:    QuickCheck >= 2.15,
                     hspec >= 2.11,
-                    simple-np,
+                    eth-abi:simple-np,
                     eth-abi
   hs-source-dirs:   test
   other-modules:    SimpleNP_test

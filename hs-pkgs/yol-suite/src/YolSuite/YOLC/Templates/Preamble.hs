@@ -1,3 +1,9 @@
+{-# LANGUAGE QuasiQuotes #-}
+module YolSuite.YOLC.Templates.Preamble (genPreamble) where
+import qualified Data.Text.Lazy              as T
+import           YolSuite.YOLC.TemplateUtils (fmt)
+genPreamble :: T.Text
+genPreamble = T.pack [fmt|
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
@@ -71,3 +77,4 @@ abstract contract Proxy {
         _fallback();
     }
 }
+|]

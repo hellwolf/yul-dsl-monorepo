@@ -1,3 +1,10 @@
+{-# LANGUAGE QuasiQuotes #-}
+module YolSuite.YOLC.Templates.SingletonContract (genSingletonContract) where
+import qualified Data.Text.Lazy              as T
+import           YolSuite.YOLC.TemplateUtils (fmt)
+
+genSingletonContract :: (String, String, T.Text) -> T.Text
+genSingletonContract (pname, iname, bytecode) = T.pack [fmt|
 contract %pname% is Proxy {
     address immutable public LOGIC_ADDRESS;
 
@@ -24,3 +31,4 @@ contract %pname% is Proxy {
 function create%pname%() returns (%iname%){
   return %iname%(address(new %pname%()));
 }
+|]

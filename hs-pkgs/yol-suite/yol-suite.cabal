@@ -32,9 +32,12 @@ common basic-options
 
 library
   import:           basic-options
-  exposed-modules:  YolSuite.TH
-                    YolSuite.YOLC.Manifest
+  exposed-modules:  YolSuite.YOLC.Manifest
+                    YolSuite.YOLC.TemplateUtils
+                    YolSuite.YOLC.Templates.Preamble
+                    YolSuite.YOLC.Templates.SingletonContract
                     YolSuite.YOLC.Builder
+                    YolSuite.YOLC.RunYolModes
   -- other-modules:
   -- other-extensions:
   build-depends:    text >= 2.0.1,

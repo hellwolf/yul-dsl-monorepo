@@ -150,12 +150,8 @@ Headline Features
     - [ ] Fix the implementation for all embeddable values.
 - yul-dsl-linear-smc
   - [ ] Complete the Num classes: mul, abs, sig, etc.
-  - [ ] Prelude curation
+  - [ ] Prelude curation first version.
 - yol-suite
-  - Cabal build system integration
-    - [ ] better YOLSuite build sharing.
-  - Yolc Project Builder
-    - [ ] Simplify RunYol/etc. templates
   - Contract verification support:
     - [ ] Basic stunt contract generator.
   - Software distributions:

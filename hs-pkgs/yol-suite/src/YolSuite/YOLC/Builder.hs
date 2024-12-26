@@ -1,6 +1,4 @@
-{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
 {-|
 
 Copyright   : (c) 2023-2024 Miao, ZhiCheng
@@ -10,40 +8,44 @@ Stability   : experimental
 
 = Description
 
-Manifest builder.
+Project manifest builder.
 
 -}
 module YolSuite.YOLC.Builder
-  ( Manifest (..)
-  , buildManifest
+  ( buildManifest
   ) where
 
 -- base
-import           Data.Either             (partitionEithers)
-import           Data.Functor            ((<&>))
-import           Data.Maybe              (fromJust, fromMaybe, mapMaybe)
-import           Data.String             (fromString)
+import           Data.Either                               (partitionEithers)
+import           Data.Functor                              ((<&>))
+import           Data.Maybe                                (fromJust, fromMaybe, mapMaybe)
+import           Data.String                               (fromString)
 -- text
-import qualified Data.Text.Lazy          as T
-import           Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
+import qualified Data.Text.Lazy                            as T
+import           Data.Text.Lazy.Encoding                   (decodeUtf8, encodeUtf8)
 -- lens
-import           Control.Lens            ((^..), (^?))
+import           Control.Lens                              ((^..), (^?))
 -- aseson
-import           Data.Aeson              (KeyValue ((.=)))
-import qualified Data.Aeson              as Aeson
-import qualified Data.Aeson.Types        as AesonTypes
+import           Data.Aeson                                (KeyValue ((.=)))
+import qualified Data.Aeson                                as Aeson
+import qualified Data.Aeson.Types                          as AesonTypes
 -- aeson-lens
-import           Data.Aeson.Lens         (key, values)
+import           Data.Aeson.Lens                           (key, values)
 -- system-process
-import           System.IO               (hClose, hGetContents', hPutStr)
-import           System.Process          (CreateProcess (..), StdStream (CreatePipe), createProcess, proc)
---
+import           System.IO                                 (hClose, hGetContents', hPutStr)
+import           System.Process
+    ( CreateProcess (..)
+    , StdStream (CreatePipe)
+    , createProcess
+    , proc
+    )
+-- yul-dsl
 import           YulDSL.CodeGens.YulGen
 import           YulDSL.Core
 --
-import           YolSuite.TH
 import           YolSuite.YOLC.Manifest
-
+import           YolSuite.YOLC.Templates.Preamble
+import           YolSuite.YOLC.Templates.SingletonContract
 
 type BuildResult = Either T.Text T.Text
 
@@ -69,7 +71,7 @@ compile_main_object mo = do
                ])
   hClose hin
   maybeOut :: Maybe Aeson.Value <- Aeson.decode . encodeUtf8 . T.pack <$> hGetContents' hout
-  return $ run_maybe "Failed to decode json output from solc." maybeOut
+  pure $ run_maybe "Failed to decode json output from solc." maybeOut
     $ \out -> run_maybe "Missing 'errors' field." (out ^? key "errors" >>= Just . (^.. values))
               $ \errors ->
                   if null errors
@@ -132,13 +134,13 @@ build_program (MkBuildUnit { mainObject = mo }) = do
         iname = "I" ++ oname ++ "Program"
         pname = oname ++ "Program"
         bytecode' = foldr ((<>) . ("\\x" <>)) "" (T.chunksOf 2 bytecode)
-    in singleton_contract_template (pname, iname, bytecode')
+    in genSingletonContract (pname, iname, bytecode')
 
 -- Build manifest in the single-file output mode.
 buildManifest :: Manifest -> IO BuildResult
 buildManifest (MkManifest { buildUnits }) = do
   sections <- sequence (concatMap (\bu -> [build_interface bu, build_program bu]) buildUnits)
-  let (errors, codes) = partitionEithers (Right project_preamble_template : sections)
+  let (errors, codes) = partitionEithers (Right genPreamble : sections)
   pure $ if null errors then Right (T.intercalate "\n" codes)
          else Left (T.intercalate "\n" errors)
 
@@ -147,7 +149,7 @@ buildManifest (MkManifest { buildUnits }) = do
 --
 
 get_solc :: IO String
-get_solc = return "solc" -- FIXME read SOLC environment variable
+get_solc = pure "solc" -- FIXME read SOLC environment variable
 
 run_maybe :: T.Text -> Maybe a -> (a -> BuildResult) -> BuildResult
 run_maybe err  Nothing _ = Left err
@@ -157,13 +159,3 @@ stringify :: Aeson.Value -> BuildResult
 stringify val = case Aeson.fromJSON val of
   Aeson.Success str -> Right str
   Aeson.Error   err -> Left (T.pack err)
-
-project_preamble_template :: T.Text
-project_preamble_template = [fmt'|
-#include "../../../templates/Preamble.sol"
-|]
-
-singleton_contract_template :: (String, String, T.Text) -> T.Text
-singleton_contract_template (pname, iname, bytecode) = [fmt'|
-#include "../../../templates/SingletonContract.sol"
-|]

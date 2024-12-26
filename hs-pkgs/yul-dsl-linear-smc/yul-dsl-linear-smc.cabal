@@ -1,4 +1,4 @@
-Cabal-Version:  3.0
+Cabal-Version:  3.4
 name:           yul-dsl-linear-smc
 version:        0.1.0.0
 category:       Language
@@ -67,9 +67,9 @@ library
                     linear-base >= 0.3.1,
                     linear-smc >= 2.2.3,
                     yul-dsl,
-                    lvm
+                    yul-dsl-linear-smc:linearly-versioned-monad
 
-library lvm
+library linearly-versioned-monad
   import:     basic-options
   visibility: private
   --

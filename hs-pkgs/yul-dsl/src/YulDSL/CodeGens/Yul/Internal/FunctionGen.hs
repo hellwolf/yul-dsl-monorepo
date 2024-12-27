@@ -17,9 +17,33 @@ import YulDSL.CodeGens.Yul.Internal.CodeGen
 import YulDSL.CodeGens.Yul.Internal.Variables
 
 
---
--- Function code gen utilities
---
+-- A value represented by a let-bound variable or an expression.
+data Val = LetVar Var
+         | ValExpr Code
+  deriving Show
+
+val_to_code :: Val -> Code
+val_to_code x = case x of LetVar c -> unVar c; ValExpr e -> e
+
+vals_to_code :: [Val] -> Code
+vals_to_code = T.intercalate ", " . map val_to_code
+
+-- | Aliasing variables.
+mk_aliases :: HasCallStack => Indenter -> [Var] -> [Var] -> Code
+mk_aliases ind varsTo varsFrom = gen_assert_msg ("mk_aliases" ++ show (varsTo, varsFrom))
+                                 (length varsTo == length varsFrom) $
+  T.intercalate "" (fmap
+                    (\(MkVar a, MkVar b) -> ind (a <> " := " <> b))
+                    (zip varsTo varsFrom))
+
+-- | Assigning expression @vals@ to variables @vars@.
+assign_vars :: HasCallStack => Indenter -> [Var] -> [Val] -> Code
+assign_vars ind vars vals = gen_assert_msg ("assign_vars" ++ show (vars, vals))
+                            (length vars == length vals) $
+  T.intercalate "" (fmap
+                    (\(MkVar a, b) -> ind (a <> " := " <> b))
+                    (zip vars (fmap val_to_code vals)))
+
 type CGOutput = (Code, [Val])
 
 ret_vals :: [Val] -> CGState CGOutput
@@ -28,46 +52,53 @@ ret_vals vals = pure ("", vals)
 do_compile_cat :: HasCallStack
                => Indenter -> AnyYulCat -> [Val] -> CGState CGOutput
 do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
-  -- code gen utilities
+  -- code gen helpers
+
   wrap_let_vars :: Maybe Code -> (Code -> Code)
   wrap_let_vars = \case
     Just vars -> \body -> ind (vars <> " {") <> body <> ind "}"
     Nothing -> id
+
   mk_code :: T.Text -> Code -> Code
   mk_code title code =
     ind ("//dbg: +" <> title) <>
     code <>
     ind ("//dbg: -" <> title)
+
   -- go functions
   go :: forall a b. YulO2 a b => YulCat eff a b -> CGState CGOutput
+  -- - type conversions
   go (YulExtendType)     = ret_vals vals_a
   go (YulReduceType)     = ret_vals vals_a
   go (YulCoerceType)     = ret_vals vals_a
   go (YulSplit)          = ret_vals vals_a
-  --
+  -- - categorical
   go (YulId)             = ret_vals vals_a
   go (YulComp cb ac)     = go_comp cb ac
   go (YulProd ab cd)     = go_prod ab cd
-  go (YulSwap @_ @m @n)  = ret_vals (swap_vals @m @n vals_a)
+  go (YulSwap @_ @m @n)  = go_swap @m @n
   go (YulFork ab ac)     = go_fork ab ac
   go (YulExl @_ @m @n)   = go_extract @m @n True  {- extractLeft -}
   go (YulExr @_ @m @n)   = go_extract @m @n False {- extractLeft -}
-  go (YulDis)            = ret_vals (dis_vals @a vals_a)
+  go (YulDis)            = go_dis @a
   go (YulDup)            = go_dup @a
-  --
+  -- - control flows
   go (YulEmb @_ @m @n x) = go_emb @m @n x
   go (YulITE @_ @m)      = go_ite @m
   go (YulJmp tgt)        = go_jmp @a @b tgt
-  --
+  -- - storage effects
   go (YulSGet)           = ret_vals [ ValExpr ("sload(" <> vals_to_code vals_a <> ")") ]
   go (YulSPut)           = pure (ind ("sstore(" <> vals_to_code vals_a <> ")"), [])
+
+  --
   go_emb :: forall a b. (HasCallStack, YulO2 a b)
          => b -> CGState CGOutput
   go_emb b = -- FIXME: proper implementation of embeddable
-    case abi_type_count_vars @b of
+    case length (abiTypeInfo @b) of
       0 -> pure("", []) -- unit type
       1 -> ret_vals [ ValExpr (T.pack (show b)) ]
       _ -> error ("Unembedable: " ++ show b)
+  --
   go_comp :: forall a b c. (HasCallStack, YulO3 a b c)
           => YulCat eff c b -> YulCat eff a c -> CGState CGOutput
   go_comp cb ac = do
@@ -78,9 +109,37 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
     (code_ac, vals_c) <- do_compile_cat ind (MkAnyYulCat ac) vals_a
     (code_cb, vals_b) <- do_compile_cat ind (MkAnyYulCat cb) vals_c
     out_vars <- cg_declare_vars
-    return ( mk_code title $
-             wrap_let_vars out_vars (code_ac <> code_cb)
-           , vals_b )
+    pure ( mk_code title $
+           wrap_let_vars out_vars (code_ac <> code_cb)
+         , vals_b )
+  --
+  go_prod :: forall a b c d. (HasCallStack, YulO4 a b c d)
+          => YulCat eff a b -> YulCat eff c d -> CGState CGOutput
+  go_prod ab cd = do
+    let ca = length (abiTypeInfo @a)
+        cc = length (abiTypeInfo @c)
+        (fst_vals, snd_vals) = gen_assert_msg ("fst_vals" ++ show (vals_a, ca, cc))
+                               (ca + cc == length vals_a)
+                               (take ca vals_a, drop ca vals_a)
+    (code_ab, vars_b1) <- do_compile_cat ind (MkAnyYulCat ab) fst_vals
+    (code_cd, vars_b2) <- do_compile_cat ind (MkAnyYulCat cd) snd_vals
+    let title = T.pack $ "prod " ++
+          ("(" ++ abiTypeCompactName @a ++ ", " ++ abiTypeCompactName @c ++ ") -> ") ++
+          ("(" ++ abiTypeCompactName @b ++ ", " ++ abiTypeCompactName @d ++ ")")
+    out_vars <- cg_declare_vars
+    pure ( mk_code title $
+           wrap_let_vars out_vars (code_ab <> code_cd)
+         , vars_b1 <> vars_b2 )
+  --
+  go_swap :: forall a b. (HasCallStack, YulO2 a b)
+          => CGState CGOutput
+  go_swap = gen_assert_msg ("swap " ++ show (vals_a, ca, cb))
+            (ca + cb == length vals_a)
+            (let (va, vb) = splitAt ca vals_a
+             in ret_vals (vb <> va))
+    where ca = length (abiTypeInfo @a)
+          cb = length (abiTypeInfo @b)
+  --
   go_fork :: forall a b c. (HasCallStack, YulO3 a b c)
           => YulCat eff a b -> YulCat eff a c -> CGState CGOutput
   go_fork ab ac = do
@@ -93,26 +152,23 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
     return ( mk_code title $
              wrap_let_vars out_vars (code_ab <> code_ac)
            , vars_b <> vars_c)
+  --
   go_extract :: forall a b. (HasCallStack, YulO2 a b)
              => Bool -> CGState CGOutput
   go_extract extractLeft =
     let title = T.pack $ ("extract" <> if extractLeft then "L " else "R ") ++
           ("(" ++ abiTypeCompactName @a ++ ", " ++ abiTypeCompactName @b ++ ")")
-        leftVars = abi_type_count_vars @a
+        leftVars = length (abiTypeInfo @a)
     in return ( mk_code title ""
               , if extractLeft then take leftVars vals_a else drop leftVars vals_a)
-  go_prod :: forall a b c d. (HasCallStack, YulO4 a b c d)
-          => YulCat eff a b -> YulCat eff c d -> CGState CGOutput
-  go_prod ab cd = do
-    let title = T.pack $ "prod " ++
-          ("(" ++ abiTypeCompactName @a ++ ", " ++ abiTypeCompactName @c ++ ") -> ") ++
-          ("(" ++ abiTypeCompactName @b ++ ", " ++ abiTypeCompactName @d ++ ")")
-    (code_ab, vars_b1) <- do_compile_cat ind (MkAnyYulCat ab) (fst_vals @a @c vals_a)
-    (code_cd, vars_b2) <- do_compile_cat ind (MkAnyYulCat cd) (snd_vals @a @c vals_a)
-    out_vars <- cg_declare_vars
-    return ( mk_code title $
-             wrap_let_vars out_vars (code_ab <> code_cd)
-           , vars_b1 <> vars_b2 )
+  --
+  go_dis :: forall a. (HasCallStack, YulO1 a)
+         => CGState CGOutput
+  go_dis = gen_assert_msg ("dis_vals " ++ show (vals_a, ca))
+           (ca == length vals_a)
+           (ret_vals [])
+    where ca = length (abiTypeInfo @a)
+  --
   go_dup :: forall a. (HasCallStack, YulO1 a)
          => CGState CGOutput
   go_dup = do
@@ -125,6 +181,7 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
                                       mk_aliases ind vars_a2 vars_a1
                                     )
            , fmap LetVar (vars_a1 <> vars_a2) )
+  --
   go_jmp :: forall a b. (HasCallStack, YulO2 a b)
          => YulJmpTarget eff a b -> CGState CGOutput
   go_jmp tgt = do
@@ -134,16 +191,17 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
     let title = T.pack $ "jmp " ++ fname ++
           "(" ++ abiTypeCompactName @a ++ ") -> (" ++ abiTypeCompactName @b ++ ")"
         callExpr = T.pack fname <> "(" <> vals_to_code vals_a <> ")"
-    if abi_type_count_vars @b == 1
+    if length (abiTypeInfo @b) == 1
       then do return ("" , [ValExpr callExpr])
       else do vars_b <- cg_create_vars @b
               pure ( mk_code title $
                      ind (vars_to_code vars_b <> " := " <> callExpr)
                      -- ind callExpr
                    , fmap LetVar vars_b )
+  --
   go_ite :: forall a. (HasCallStack, YulO1 a)
          => CGState CGOutput
-  go_ite = let nouts = abi_type_count_vars @a
+  go_ite = let nouts = length (abiTypeInfo @a)
            in gen_assert_msg ("vals_a len: "<> show (vals_a, nouts))
               (length vals_a == 1 + 2 * nouts)
     (do let title = T.pack $ "ite (" ++ abiTypeCompactName @a ++ ")"

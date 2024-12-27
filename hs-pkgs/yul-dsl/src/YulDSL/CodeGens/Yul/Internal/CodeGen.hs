@@ -97,7 +97,7 @@ cg_next_var = do
 
 -- | Create undeclared variables needed for the type @a@.
 cg_create_vars :: forall a. YulO1 a => CGState [Var]
-cg_create_vars = replicateM (abi_type_count_vars @a) cg_next_var
+cg_create_vars = replicateM (length (abiTypeInfo @a)) cg_next_var
 
 -- | Declare the undeclared variables.
 cg_declare_vars :: CGState (Maybe Code)

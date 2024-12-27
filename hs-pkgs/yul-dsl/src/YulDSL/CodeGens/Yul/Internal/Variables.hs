@@ -1,10 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE OverloadedStrings #-}
 module YulDSL.CodeGens.Yul.Internal.Variables
-  ( Var (unVar), Val (LetVar, ValExpr)
+  ( Var (MkVar, unVar)
   , AutoVarGen (MkAutoVarGen), cur_var, new_auto_var
-  , gen_vars, vars_to_code, val_to_code, vals_to_code, mk_aliases, assign_vars
-  , abi_type_count_vars, swap_vals, dis_vals, fst_vals, snd_vals
+  , gen_vars, vars_to_code
   ) where
 -- base
 import Data.Char                                   (chr)
@@ -12,22 +10,11 @@ import Data.Function                               ((&))
 -- text
 import Data.Text.Lazy                              qualified as T
 --
-import YulDSL.Core
---
-import YulDSL.CodeGens.Yul.Internal.CodeFormatters
-
+import YulDSL.CodeGens.Yul.Internal.CodeFormatters (Code)
 
 -- A variable represented by its name.
 newtype Var = MkVar { unVar :: T.Text }
   deriving Show
-
--- A value represented by a let-bound variable or an expression.
-data Val = LetVar Var
-         | ValExpr Code
-  deriving Show
-
--- Variable name generator
---
 
 -- | Variable generator state.
 newtype AutoVarGen = MkAutoVarGen Int
@@ -52,62 +39,5 @@ gen_vars n = snd $ foldr
              (MkAutoVarGen 0, [])
              (drop 1 [0..n])
 
--- Variable code generation helpers
---
-
 vars_to_code :: [Var] -> Code
 vars_to_code = T.intercalate ", " . fmap unVar
-
-val_to_code :: Val -> Code
-val_to_code x = case x of LetVar c -> unVar c; ValExpr e -> e
-
-vals_to_code :: [Val] -> Code
-vals_to_code = T.intercalate ", " . map val_to_code
-
--- | Aliasing variables.
-mk_aliases :: HasCallStack => Indenter -> [Var] -> [Var] -> Code
-mk_aliases ind varsTo varsFrom = gen_assert_msg ("mk_aliases" ++ show (varsTo, varsFrom))
-                                 (length varsTo == length varsFrom) $
-  T.intercalate "" (fmap
-                    (\(MkVar a, MkVar b) -> ind (a <> " := " <> b))
-                    (zip varsTo varsFrom))
-
--- | Assigning expression @vals@ to variables @vars@.
-assign_vars :: HasCallStack => Indenter -> [Var] -> [Val] -> Code
-assign_vars ind vars vals = gen_assert_msg ("assign_vars" ++ show (vars, vals))
-                            (length vars == length vals) $
-  T.intercalate "" (fmap
-                    (\(MkVar a, b) -> ind (a <> " := " <> b))
-                    (zip vars (fmap val_to_code vals)))
-
--- Type-aware variable operations
---
-
-abi_type_count_vars :: forall a. ABITypeable a => Int
-abi_type_count_vars = length (abiTypeInfo @a)
-
-swap_vals :: forall a b. (HasCallStack, YulO2 a b) => [Val] -> [Val]
-swap_vals vars = gen_assert_msg ("swap_vals" ++ show (vars, ca, cb))
-                 (ca + cb == length vars)
-  (let (va, vb) = splitAt ca vars in vb <> va)
-  where ca = abi_type_count_vars @a
-        cb = abi_type_count_vars @b
-
-dis_vals :: forall a. (HasCallStack, YulO1 a) => [Val] -> [Val]
-dis_vals vars = gen_assert_msg ("dis_vals" ++ show (vars, ca))
-                (ca == length vars) []
-  where ca = abi_type_count_vars @a
-
--- | Extract value expressions of the first type @a@.
-fst_vals :: forall a b. (HasCallStack, YulO2 a b) => [Val] -> [Val]
-fst_vals vars = gen_assert_msg ("fst_vals" ++ show (vars, ca, cb))
-                (ca + cb == length vars) (take ca vars)
-  where ca = abi_type_count_vars @a
-        cb = abi_type_count_vars @b
-
--- | Extract value expressions of the second type @b@.
-snd_vals :: forall a b. (HasCallStack, YulO2 a b) => [Val] -> [Val]
-snd_vals vars = gen_assert_msg ("snd_vals" ++ show (vars, ca, cb))
-                (ca + cb == length vars) (drop ca vars)
-  where ca = abi_type_count_vars @a
-        cb = abi_type_count_vars @b

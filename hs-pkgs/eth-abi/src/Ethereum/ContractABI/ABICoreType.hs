@@ -28,16 +28,16 @@ module Ethereum.ContractABI.ABICoreType
   ) where
 
 -- base
-import           Control.Exception            (assert)
-import           Data.Char                    (isDigit, toUpper)
-import           Data.Coerce                  (coerce)
-import           GHC.TypeLits                 (KnownNat (natSing), Nat, SNat, fromSNat, natVal, withSomeSNat)
-import           Numeric                      (showHex)
-import qualified Text.ParserCombinators.ReadP as RP
+import Control.Exception            (assert)
+import Data.Char                    (isDigit, toUpper)
+import Data.Coerce                  (coerce)
+import GHC.TypeLits                 (KnownNat (natSing), Nat, SNat, fromSNat, natVal, withSomeSNat)
+import Numeric                      (showHex)
+import Text.ParserCombinators.ReadP qualified as RP
 -- template-haskell
-import qualified Language.Haskell.TH          as TH
+import Language.Haskell.TH          qualified as TH
 --
-import           Internal.Data.Type.Bool
+import Internal.Data.Type.Bool
 
 
 {- * ABICoreType and their utilities -}

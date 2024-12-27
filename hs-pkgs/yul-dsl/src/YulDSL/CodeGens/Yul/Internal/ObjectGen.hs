@@ -2,17 +2,17 @@
 module YulDSL.CodeGens.Yul.Internal.ObjectGen (compile_object) where
 
 -- base
-import           Control.Monad                               (when)
-import           Data.Functor                                ((<&>))
-import           Data.Maybe                                  (catMaybes)
+import Control.Monad                               (when)
+import Data.Functor                                ((<&>))
+import Data.Maybe                                  (catMaybes)
 -- text
-import qualified Data.Text.Lazy                              as T
+import Data.Text.Lazy                              qualified as T
 --
-import           YulDSL.Core
+import YulDSL.Core
 --
-import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
-import           YulDSL.CodeGens.Yul.Internal.CodeGen
-import           YulDSL.CodeGens.Yul.Internal.FunctionGen
+import YulDSL.CodeGens.Yul.Internal.CodeFormatters
+import YulDSL.CodeGens.Yul.Internal.CodeGen
+import YulDSL.CodeGens.Yul.Internal.FunctionGen
 
 
 compile_fn_dispatcher :: HasCallStack

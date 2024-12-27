@@ -23,11 +23,11 @@ module Data.TupleN.TH
   ) where
 
 -- base
-import           Control.Monad       (replicateM)
+import Control.Monad       (replicateM)
 -- template-haskell
-import qualified Language.Haskell.TH as TH
+import Language.Haskell.TH qualified as TH
 --
-import           Data.SimpleNP
+import Data.SimpleNP
 
 
 do

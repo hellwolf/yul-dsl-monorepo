@@ -1,12 +1,12 @@
 module YolSuite.YOLC.RunYolModes where
 -- text
-import qualified Data.Text.Lazy         as T
+import Data.Text.Lazy         qualified as T
 -- yul-dsl
-import qualified YulDSL.CodeGens.YulGen as YulCodeGen
-import           YulDSL.Core
+import YulDSL.CodeGens.YulGen qualified as YulCodeGen
+import YulDSL.Core
 --
-import qualified YolSuite.YOLC.Builder  as YOLCBuilder
-import           YolSuite.YOLC.Manifest (Manifest)
+import YolSuite.YOLC.Builder  qualified as YOLCBuilder
+import YolSuite.YOLC.Manifest (Manifest)
 
 -- | Result from the RunYol.
 type RunYolResult = Either T.Text T.Text

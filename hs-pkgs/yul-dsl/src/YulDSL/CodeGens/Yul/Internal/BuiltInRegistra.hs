@@ -6,13 +6,13 @@ module YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
   ) where
 
 -- base
-import           Data.List                                   (isPrefixOf)
+import Data.List                                   (isPrefixOf)
 -- text
-import qualified Data.Text.Lazy                              as T
+import Data.Text.Lazy                              qualified as T
 -- containers
-import qualified Data.Map.Lazy                               as Map
+import Data.Map.Lazy                               qualified as Map
 --
-import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
+import YulDSL.CodeGens.Yul.Internal.CodeFormatters
 
 
 type BuiltInName = String

@@ -1,8 +1,8 @@
-import           Test.Hspec
+import Test.Hspec
 --
-import qualified INTx_prop
-import qualified SimpleNP_test
-import qualified TupleN_test
+import INTx_prop qualified
+import SimpleNP_test qualified
+import TupleN_test qualified
 
 main = hspec $ describe "Ethereum.ContractABI types" $ do
   SimpleNP_test.tests

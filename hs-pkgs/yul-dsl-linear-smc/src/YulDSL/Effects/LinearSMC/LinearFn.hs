@@ -8,20 +8,20 @@ module YulDSL.Effects.LinearSMC.LinearFn
   , match'l
   ) where
 -- base
-import           GHC.TypeLits                          (type (+))
-import qualified Prelude                               as BasePrelude
+import GHC.TypeLits                          (type (+))
+import Prelude                               qualified as BasePrelude
 -- linear-base
-import           Control.Category.Linear               (discard, ignore, mkUnit, split)
-import           Prelude.Linear
-import qualified Unsafe.Linear                         as UnsafeLinear
+import Control.Category.Linear               (discard, ignore, mkUnit, split)
+import Prelude.Linear
+import Unsafe.Linear                         qualified as UnsafeLinear
 -- yul-dsl
-import           YulDSL.Core
+import YulDSL.Core
 --
-import qualified Control.LinearlyVersionedMonad        as LVM
+import Control.LinearlyVersionedMonad        qualified as LVM
 --
-import           YulDSL.Effects.LinearSMC.LinearYulCat
-import           YulDSL.Effects.LinearSMC.YulMonad
-import           YulDSL.Effects.LinearSMC.YulPort
+import YulDSL.Effects.LinearSMC.LinearYulCat
+import YulDSL.Effects.LinearSMC.YulMonad
+import YulDSL.Effects.LinearSMC.YulPort
 
 
 -- $fnl_functions

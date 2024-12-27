@@ -1,8 +1,8 @@
 module Project where
 
-import qualified Basic_Tests
-import qualified Num_Tests
-import           YolSuite.YOLC.Manifest
+import Basic_Tests qualified
+import Num_Tests qualified
+import YolSuite.YOLC.Manifest
 
 manifest :: Manifest
 manifest = MkManifest

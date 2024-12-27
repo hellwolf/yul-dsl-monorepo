@@ -2,9 +2,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module YulDSL.CodeGens.Yul.Internal.BuiltIns.ValueType (exports) where
 -- text
-import qualified Data.Text.Lazy                               as T
+import Data.Text.Lazy                               qualified as T
 --
-import           YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
+import YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
 
 raw_boolean_operators =
   [ const_builtin  "eq" []

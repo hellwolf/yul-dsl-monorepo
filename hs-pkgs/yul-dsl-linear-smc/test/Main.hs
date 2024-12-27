@@ -1,7 +1,7 @@
-import           Test.Hspec
+import Test.Hspec
 
-import qualified LinearFn_prop
-import qualified Num_prop
+import LinearFn_prop qualified
+import Num_prop qualified
 
 main = hspec do
   Num_prop.tests

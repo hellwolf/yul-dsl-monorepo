@@ -8,13 +8,13 @@ module YulDSL.CodeGens.Yul.Internal.FunctionGen
 
 -- base
 -- text
-import qualified Data.Text.Lazy                              as T
+import Data.Text.Lazy                              qualified as T
 --
-import           YulDSL.Core
+import YulDSL.Core
 --
-import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
-import           YulDSL.CodeGens.Yul.Internal.CodeGen
-import           YulDSL.CodeGens.Yul.Internal.Variables
+import YulDSL.CodeGens.Yul.Internal.CodeFormatters
+import YulDSL.CodeGens.Yul.Internal.CodeGen
+import YulDSL.CodeGens.Yul.Internal.Variables
 
 
 type CGOutput = (Code, [Val])

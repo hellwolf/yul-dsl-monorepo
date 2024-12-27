@@ -1,7 +1,7 @@
-import           Test.Hspec
+import Test.Hspec
 
-import qualified Eval_prop
-import qualified Fn_prop
+import Eval_prop qualified
+import Fn_prop qualified
 
 main = hspec $ do
   Fn_prop.tests

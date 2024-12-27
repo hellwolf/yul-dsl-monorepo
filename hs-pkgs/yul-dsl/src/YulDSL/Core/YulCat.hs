@@ -35,21 +35,21 @@ module YulDSL.Core.YulCat
   ) where
 
 -- base
-import           Data.Char                (ord)
-import           Data.Kind                (Constraint)
-import           GHC.Integer              (xorInteger)
-import           GHC.TypeError            (Assert, ErrorMessage (Text), TypeError)
-import           Text.Printf              (printf)
+import Data.Char                (ord)
+import Data.Kind                (Constraint)
+import GHC.Integer              (xorInteger)
+import GHC.TypeError            (Assert, ErrorMessage (Text), TypeError)
+import Text.Printf              (printf)
 -- bytestring
-import qualified Data.ByteString.Char8    as B
+import Data.ByteString.Char8    qualified as B
 -- eth-abi
-import           Ethereum.ContractABI
+import Ethereum.ContractABI
 --
-import           Control.IfThenElse
-import           Control.PatternMatchable
+import Control.IfThenElse
+import Control.PatternMatchable
 --
-import           YulDSL.Core.YulCatObj
-import           YulDSL.Core.YulNum
+import YulDSL.Core.YulCatObj
+import YulDSL.Core.YulNum
 
 
 ------------------------------------------------------------------------------------------------------------------------

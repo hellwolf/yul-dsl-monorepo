@@ -5,15 +5,15 @@ module YulDSL.Effects.LinearSMC.LinearYulCat
   , decode'lvv, decode'lpv, encode'lvv
   ) where
 -- base
-import           GHC.TypeLits
+import GHC.TypeLits
 -- linear-base
-import           Control.Category.Linear          (P, decode, discard, encode, ignore, split)
-import           Prelude.Linear
-import qualified Unsafe.Linear                    as UnsafeLinear
+import Control.Category.Linear          (P, decode, discard, encode, ignore, split)
+import Prelude.Linear
+import Unsafe.Linear                    qualified as UnsafeLinear
 -- yul-dsl
-import           YulDSL.Core
+import YulDSL.Core
 --
-import           YulDSL.Effects.LinearSMC.YulPort
+import YulDSL.Effects.LinearSMC.YulPort
 
 
 -- | Various types of linear effects for the yul category.

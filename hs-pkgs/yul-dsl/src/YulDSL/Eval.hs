@@ -15,18 +15,18 @@ This module provides a system for evaluation of a YulCat morphism semantically.
 module YulDSL.Eval where
 
 -- base
-import           Data.Maybe               (fromJust)
-import           GHC.Stack                (HasCallStack)
+import Data.Maybe               (fromJust)
+import GHC.Stack                (HasCallStack)
 -- containers
-import qualified Data.Map                 as M
+import Data.Map                 qualified as M
 -- mtl
-import           Control.Monad.State.Lazy (State, evalState, gets, modify')
+import Control.Monad.State.Lazy (State, evalState, gets, modify')
 -- eth-abi
-import           Ethereum.ContractABI
+import Ethereum.ContractABI
 --
-import           YulDSL.Core.Fn
-import           YulDSL.Core.YulCat
-import           YulDSL.Core.YulCatObj
+import YulDSL.Core.Fn
+import YulDSL.Core.YulCat
+import YulDSL.Core.YulCatObj
 
 
 newtype EvalData = MkEvalData { store_map :: M.Map ADDR WORD

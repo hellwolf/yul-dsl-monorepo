@@ -3,13 +3,13 @@
 module YulDSL.CodeGens.Yul.Internal.BuiltIns.ABICodec (exports) where
 -- base
 --
-import           YulDSL.Core
+import YulDSL.Core
 -- text
-import qualified Data.Text.Lazy                               as T
+import Data.Text.Lazy                               qualified as T
 --
-import           YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
-import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
-import           YulDSL.CodeGens.Yul.Internal.Variables
+import YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
+import YulDSL.CodeGens.Yul.Internal.CodeFormatters
+import YulDSL.CodeGens.Yul.Internal.Variables
 
 
 abidec_dispatcher = mk_builtin "__abidec_dispatcher_" $ \part full ->

@@ -29,17 +29,17 @@ module Ethereum.ContractABI.CoreType.INTx
   ) where
 
 -- base
-import           Data.Bits                         (shift)
-import           Data.Coerce                       (coerce)
-import           Data.Maybe                        (fromJust)
-import           Data.Proxy                        (Proxy (Proxy))
+import Data.Bits                         (shift)
+import Data.Coerce                       (coerce)
+import Data.Maybe                        (fromJust)
+import Data.Proxy                        (Proxy (Proxy))
 -- cereal
-import qualified Data.Serialize                    as S
+import Data.Serialize                    qualified as S
 -- eth-abi
-import           Ethereum.ContractABI.ABICoreType
-import           Ethereum.ContractABI.ABITypeable
-import           Ethereum.ContractABI.ABITypeCodec
-import           Internal.Data.Type.Bool
+import Ethereum.ContractABI.ABICoreType
+import Ethereum.ContractABI.ABITypeable
+import Ethereum.ContractABI.ABITypeCodec
+import Internal.Data.Type.Bool
 
 
 -- | ABI integer value types, where @s@ is for signess and @n@ is the multiple of 8 bits

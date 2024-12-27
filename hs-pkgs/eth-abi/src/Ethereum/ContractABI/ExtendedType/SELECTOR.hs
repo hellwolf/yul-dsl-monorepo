@@ -8,22 +8,22 @@ module Ethereum.ContractABI.ExtendedType.SELECTOR
  ) where
 
 -- base
-import           Data.Bits                          (shift, (.|.))
-import           Data.List                          (intercalate)
-import           Data.Maybe                         (fromJust)
-import           Data.Word                          (Word32)
-import           Numeric                            (showHex)
+import Data.Bits                          (shift, (.|.))
+import Data.List                          (intercalate)
+import Data.Maybe                         (fromJust)
+import Data.Word                          (Word32)
+import Numeric                            (showHex)
 -- bytesstring
-import qualified Data.ByteString                    as B
-import qualified Data.ByteString.Char8              as BC
+import Data.ByteString                    qualified as B
+import Data.ByteString.Char8              qualified as BC
 -- crypton
-import           Crypto.Hash                        (Digest, Keccak_256, hash)
+import Crypto.Hash                        (Digest, Keccak_256, hash)
 -- memory
-import qualified Data.ByteArray                     as BA
+import Data.ByteArray                     qualified as BA
 -- eth-abi
-import           Ethereum.ContractABI.ABICoreType
-import           Ethereum.ContractABI.ABITypeable
-import           Ethereum.ContractABI.CoreType.INTx (U32)
+import Ethereum.ContractABI.ABICoreType
+import Ethereum.ContractABI.ABITypeable
+import Ethereum.ContractABI.CoreType.INTx (U32)
 
 
 -- | External function signature. This optional information does not have run-time representation.

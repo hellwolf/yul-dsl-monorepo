@@ -16,36 +16,31 @@ module YolSuite.YOLC.Builder
   ) where
 
 -- base
-import           Data.Either                               (partitionEithers)
-import           Data.Functor                              ((<&>))
-import           Data.Maybe                                (fromJust, fromMaybe, mapMaybe)
-import           Data.String                               (fromString)
+import Data.Either                               (partitionEithers)
+import Data.Functor                              ((<&>))
+import Data.Maybe                                (fromJust, fromMaybe, mapMaybe)
+import Data.String                               (fromString)
 -- text
-import qualified Data.Text.Lazy                            as T
-import           Data.Text.Lazy.Encoding                   (decodeUtf8, encodeUtf8)
+import Data.Text.Lazy                            qualified as T
+import Data.Text.Lazy.Encoding                   (decodeUtf8, encodeUtf8)
 -- lens
-import           Control.Lens                              ((^..), (^?))
+import Control.Lens                              ((^..), (^?))
 -- aseson
-import           Data.Aeson                                (KeyValue ((.=)))
-import qualified Data.Aeson                                as Aeson
-import qualified Data.Aeson.Types                          as AesonTypes
+import Data.Aeson                                (KeyValue ((.=)))
+import Data.Aeson                                qualified as Aeson
+import Data.Aeson.Types                          qualified as AesonTypes
 -- aeson-lens
-import           Data.Aeson.Lens                           (key, values)
+import Data.Aeson.Lens                           (key, values)
 -- system-process
-import           System.IO                                 (hClose, hGetContents', hPutStr)
-import           System.Process
-    ( CreateProcess (..)
-    , StdStream (CreatePipe)
-    , createProcess
-    , proc
-    )
+import System.IO                                 (hClose, hGetContents', hPutStr)
+import System.Process                            (CreateProcess (..), StdStream (CreatePipe), createProcess, proc)
 -- yul-dsl
-import           YulDSL.CodeGens.YulGen
-import           YulDSL.Core
+import YulDSL.CodeGens.YulGen
+import YulDSL.Core
 --
-import           YolSuite.YOLC.Manifest
-import           YolSuite.YOLC.Templates.Preamble
-import           YolSuite.YOLC.Templates.SingletonContract
+import YolSuite.YOLC.Manifest
+import YolSuite.YOLC.Templates.Preamble
+import YolSuite.YOLC.Templates.SingletonContract
 
 type BuildResult = Either T.Text T.Text
 

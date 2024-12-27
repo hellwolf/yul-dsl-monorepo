@@ -1,7 +1,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 module YolSuite.YOLC.Templates.Preamble (genPreamble) where
-import qualified Data.Text.Lazy              as T
-import           YolSuite.YOLC.TemplateUtils (fmt)
+import Data.Text.Lazy              qualified as T
+import YolSuite.YOLC.TemplateUtils (fmt)
 genPreamble :: T.Text
 genPreamble = T.pack [fmt|
 // SPDX-License-Identifier: MIT

@@ -18,13 +18,13 @@ module Ethereum.ContractABI.CoreType.BOOL
   ) where
 
 -- cereal
-import qualified Data.Serialize                    as S
+import Data.Serialize                    qualified as S
 --
-import           Internal.Data.Type.Bool
+import Internal.Data.Type.Bool
 --
-import           Ethereum.ContractABI.ABICoreType
-import           Ethereum.ContractABI.ABITypeable
-import           Ethereum.ContractABI.ABITypeCodec
+import Ethereum.ContractABI.ABICoreType
+import Ethereum.ContractABI.ABITypeable
+import Ethereum.ContractABI.ABITypeCodec
 
 
 -- | ABI boolean value type.

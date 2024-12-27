@@ -5,17 +5,17 @@ module YulDSL.Effects.LinearSMC.YulMonad
   , Control.Functor.Linear.fmap
   ) where
 -- linear-base
-import           Control.Category.Linear                    (discard, ignore)
-import qualified Control.Functor.Linear
-import qualified Unsafe.Linear                              as UnsafeLinear
+import Control.Category.Linear                    (discard, ignore)
+import Control.Functor.Linear qualified
+import Unsafe.Linear                              qualified as UnsafeLinear
 -- yul-dsl
-import           YulDSL.Core
+import YulDSL.Core
 --
-import           Control.LinearlyVersionedMonad             (LVM, runLVM)
-import           Control.LinearlyVersionedMonad.Combinators
-import           Data.LinearContext
+import Control.LinearlyVersionedMonad             (LVM, runLVM)
+import Control.LinearlyVersionedMonad.Combinators
+import Data.LinearContext
 --
-import           YulDSL.Effects.LinearSMC.YulPort
+import YulDSL.Effects.LinearSMC.YulPort
 
 
 --------------------------------------------------------------------------------

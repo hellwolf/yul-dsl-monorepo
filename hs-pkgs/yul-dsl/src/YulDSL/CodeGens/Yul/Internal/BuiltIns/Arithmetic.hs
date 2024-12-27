@@ -2,12 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module YulDSL.CodeGens.Yul.Internal.BuiltIns.Arithmetic (exports) where
 -- base
-import           Data.List                                    (stripPrefix)
-import           Data.Maybe                                   (fromJust)
+import Data.List                                    (stripPrefix)
+import Data.Maybe                                   (fromJust)
 -- text
-import qualified Data.Text.Lazy                               as T
+import Data.Text.Lazy                               qualified as T
 --
-import           YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
+import YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
 
 
 cmp_builtins = mk_builtin "__cmp_" $ \part full ->

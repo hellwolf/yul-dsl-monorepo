@@ -7,10 +7,10 @@ module YulDSL.CodeGens.Yul.Internal.CodeFormatters
   , HasCallStack, gen_assert_msg
   ) where
 -- base
-import           Data.Functor.Identity (Identity (runIdentity))
-import           GHC.Stack             (HasCallStack)
+import Data.Functor.Identity (Identity (runIdentity))
+import GHC.Stack             (HasCallStack)
 -- text
-import qualified Data.Text.Lazy        as T
+import Data.Text.Lazy        qualified as T
 
 
 -- | Code is text.

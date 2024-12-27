@@ -2,14 +2,14 @@
 {-# LANGUAGE OverloadedStrings   #-}
 module YulDSL.CodeGens.Yul.Internal.Variables where
 -- base
-import           Data.Char                                   (chr)
-import           Data.Function                               ((&))
+import Data.Char                                   (chr)
+import Data.Function                               ((&))
 -- text
-import qualified Data.Text.Lazy                              as T
+import Data.Text.Lazy                              qualified as T
 --
-import           YulDSL.Core
+import YulDSL.Core
 --
-import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
+import YulDSL.CodeGens.Yul.Internal.CodeFormatters
 
 
 -- A variable represented by its name.

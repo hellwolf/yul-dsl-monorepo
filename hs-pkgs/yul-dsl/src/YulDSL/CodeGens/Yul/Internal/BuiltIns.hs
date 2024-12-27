@@ -1,10 +1,10 @@
 module YulDSL.CodeGens.Yul.Internal.BuiltIns where
-import           YulDSL.CodeGens.Yul.Internal.BuiltInRegistra     (BuiltInEntry)
+import YulDSL.CodeGens.Yul.Internal.BuiltInRegistra     (BuiltInEntry)
 --
-import qualified YulDSL.CodeGens.Yul.Internal.BuiltIns.ABICodec
-import qualified YulDSL.CodeGens.Yul.Internal.BuiltIns.Arithmetic
-import qualified YulDSL.CodeGens.Yul.Internal.BuiltIns.Runtime
-import qualified YulDSL.CodeGens.Yul.Internal.BuiltIns.ValueType
+import YulDSL.CodeGens.Yul.Internal.BuiltIns.ABICodec qualified
+import YulDSL.CodeGens.Yul.Internal.BuiltIns.Arithmetic qualified
+import YulDSL.CodeGens.Yul.Internal.BuiltIns.Runtime qualified
+import YulDSL.CodeGens.Yul.Internal.BuiltIns.ValueType qualified
 
 default_builtins :: [BuiltInEntry]
 default_builtins =

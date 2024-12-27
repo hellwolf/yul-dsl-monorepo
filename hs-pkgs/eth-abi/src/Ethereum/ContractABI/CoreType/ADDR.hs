@@ -19,14 +19,14 @@ module Ethereum.ContractABI.CoreType.ADDR
   ) where
 
 -- base
-import           GHC.TypeLits                      (KnownNat, fromSNat, type (-), type (<=), type (^))
-import           Numeric                           (showHex)
+import GHC.TypeLits                      (KnownNat, fromSNat, type (-), type (<=), type (^))
+import Numeric                           (showHex)
 -- cereal
-import qualified Data.Serialize                    as S
+import Data.Serialize                    qualified as S
 --
-import           Ethereum.ContractABI.ABICoreType
-import           Ethereum.ContractABI.ABITypeable
-import           Ethereum.ContractABI.ABITypeCodec
+import Ethereum.ContractABI.ABICoreType
+import Ethereum.ContractABI.ABITypeable
+import Ethereum.ContractABI.ABITypeCodec
 
 newtype ADDR = ADDR Integer deriving newtype (Ord, Eq)
 

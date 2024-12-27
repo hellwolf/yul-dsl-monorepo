@@ -1,12 +1,12 @@
 module LinearFn_prop where
 
 -- hspec
-import           Test.Hspec
+import Test.Hspec
 --
-import           Prelude                        ()
-import           Prelude.YulDSL
+import Prelude                        ()
+import Prelude.YulDSL
 --
-import qualified Control.LinearlyVersionedMonad as LVM
+import Control.LinearlyVersionedMonad qualified as LVM
 
 foo0 = fn'l "foo0" $
   uncurry'lv @(() -> U256) (emb'l 42)

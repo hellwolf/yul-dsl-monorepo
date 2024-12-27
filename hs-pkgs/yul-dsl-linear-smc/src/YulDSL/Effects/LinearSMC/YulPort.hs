@@ -8,14 +8,14 @@ module YulDSL.Effects.LinearSMC.YulPort
   , coerce'l, cons'l, uncons'l
   ) where
 -- linear-base
-import           Prelude.Linear
+import Prelude.Linear
 -- linear-smc
-import           Control.Category.Linear
+import Control.Category.Linear
 -- yul-dsl
-import           YulDSL.Core
+import YulDSL.Core
 --
-import           Control.Category.Constrained.YulDSL ()
-import           Data.MPOrd
+import Control.Category.Constrained.YulDSL ()
+import Data.MPOrd
 
 
 -- $linear_port_defs

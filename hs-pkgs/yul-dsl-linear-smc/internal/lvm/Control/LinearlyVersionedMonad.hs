@@ -29,17 +29,17 @@ module Control.LinearlyVersionedMonad
   ) where
 
 -- base
-import           GHC.TypeLits           (Nat, type (<=))
+import GHC.TypeLits           (Nat, type (<=))
 -- constraints
-import           Data.Constraint.Linear (Dict (Dict), (\\))
-import           Data.Constraint.Nat    (leTrans)
+import Data.Constraint.Linear (Dict (Dict), (\\))
+import Data.Constraint.Nat    (leTrans)
 -- linear-base
-import qualified Control.Functor.Linear
-import qualified Data.Functor.Linear
-import           Prelude.Linear         (flip, lseq)
-import qualified Unsafe.Linear          as UnsafeLinear
+import Control.Functor.Linear qualified
+import Data.Functor.Linear qualified
+import Prelude.Linear         (flip, lseq)
+import Unsafe.Linear          qualified as UnsafeLinear
 --
-import           Data.LinearContext
+import Data.LinearContext
 
 
 -- $linear_safety

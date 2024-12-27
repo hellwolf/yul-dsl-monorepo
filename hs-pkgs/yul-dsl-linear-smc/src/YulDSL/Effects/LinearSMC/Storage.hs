@@ -2,20 +2,20 @@ module YulDSL.Effects.LinearSMC.Storage
   ( sget, sput, sput_, sputAt
   ) where
 -- base
-import           GHC.TypeLits                      (type (+))
+import GHC.TypeLits                      (type (+))
 -- constraints
-import           Data.Constraint.Unsafe            (unsafeAxiom)
+import Data.Constraint.Unsafe            (unsafeAxiom)
 -- linear-base
-import           Control.Category.Linear
-import           Prelude.Linear                    ((&))
-import qualified Unsafe.Linear                     as UnsafeLinear
+import Control.Category.Linear
+import Prelude.Linear                    ((&))
+import Unsafe.Linear                     qualified as UnsafeLinear
 -- yul-dsl
-import           YulDSL.Core
+import YulDSL.Core
 -- linearly-versioned-monad
-import           Control.LinearlyVersionedMonad    (LVM (MkLVM))
+import Control.LinearlyVersionedMonad    (LVM (MkLVM))
 --
-import           YulDSL.Effects.LinearSMC.YulMonad
-import           YulDSL.Effects.LinearSMC.YulPort
+import YulDSL.Effects.LinearSMC.YulMonad
+import YulDSL.Effects.LinearSMC.YulPort
 
 
 sget :: forall v r a. (YulO2 r a, ABIWordValue a)

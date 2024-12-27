@@ -1,7 +1,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 module YolSuite.YOLC.Templates.SingletonContract (genSingletonContract) where
-import qualified Data.Text.Lazy              as T
-import           YolSuite.YOLC.TemplateUtils (fmt)
+import Data.Text.Lazy              qualified as T
+import YolSuite.YOLC.TemplateUtils (fmt)
 
 genSingletonContract :: (String, String, T.Text) -> T.Text
 genSingletonContract (pname, iname, bytecode) = T.pack [fmt|

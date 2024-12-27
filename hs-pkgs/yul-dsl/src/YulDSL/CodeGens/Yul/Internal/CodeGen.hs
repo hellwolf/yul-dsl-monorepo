@@ -19,19 +19,19 @@ module YulDSL.CodeGens.Yul.Internal.CodeGen
   ) where
 
 -- base
-import           Control.Monad.State.Lazy                     (MonadState (..), State, evalState, modify)
-import           Data.Functor                                 ((<&>))
+import Control.Monad.State.Lazy                     (MonadState (..), State, evalState, modify)
+import Data.Functor                                 ((<&>))
 -- text
-import qualified Data.Text.Lazy                               as T
+import Data.Text.Lazy                               qualified as T
 -- containers
-import qualified Data.Map.Lazy                                as Map
-import qualified Data.Set                                     as Set
+import Data.Map.Lazy                                qualified as Map
+import Data.Set                                     qualified as Set
 --
-import           YulDSL.Core
+import YulDSL.Core
 --
-import           YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
-import           YulDSL.CodeGens.Yul.Internal.CodeFormatters
-import           YulDSL.CodeGens.Yul.Internal.Variables
+import YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
+import YulDSL.CodeGens.Yul.Internal.CodeFormatters
+import YulDSL.CodeGens.Yul.Internal.Variables
 
 
 -- $codegen_state

@@ -4,14 +4,14 @@ module YulDSL.Effects.LinearSMC.Impurable
   ( Impurable (impure), impureN
   ) where
 -- yul-dsl
-import           YulDSL.Core
+import YulDSL.Core
 -- linear-base
-import qualified Unsafe.Linear                     as UnsafeLinear
+import Unsafe.Linear                     qualified as UnsafeLinear
 -- lvm
-import qualified Control.LinearlyVersionedMonad    as LVM
+import Control.LinearlyVersionedMonad    qualified as LVM
 --
-import           YulDSL.Effects.LinearSMC.YulMonad
-import           YulDSL.Effects.LinearSMC.YulPort
+import YulDSL.Effects.LinearSMC.YulMonad
+import YulDSL.Effects.LinearSMC.YulPort
 
 
 class Impurable xs'p xs'v v r | xs'v -> xs'p where

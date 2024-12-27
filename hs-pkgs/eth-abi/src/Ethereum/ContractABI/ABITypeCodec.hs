@@ -5,16 +5,16 @@ module Ethereum.ContractABI.ABITypeCodec
   ) where
 
 -- base
-import           Data.Functor                     ((<&>))
-import           GHC.TypeError                    (Assert, ErrorMessage (Text), TypeError)
+import Data.Functor                     ((<&>))
+import GHC.TypeError                    (Assert, ErrorMessage (Text), TypeError)
 -- cereal
-import qualified Data.Serialize                   as S
+import Data.Serialize                   qualified as S
 -- bytestring
-import qualified Data.ByteString                  as B
+import Data.ByteString                  qualified as B
 --
-import           Internal.Data.Type.Bool          (Not)
+import Internal.Data.Type.Bool          (Not)
 --
-import           Ethereum.ContractABI.ABITypeable (ABITypeable (..), IsABICoreType)
+import Ethereum.ContractABI.ABITypeable (ABITypeable (..), IsABICoreType)
 
 
 -- | ABI type bytstream codec

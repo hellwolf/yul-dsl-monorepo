@@ -8,14 +8,14 @@ module Ethereum.ContractABI.CoreType.BYTESn
   ) where
 
 -- base
-import           Control.Monad                      (forM)
+import Control.Monad                      (forM)
 -- template-haskell
-import qualified Language.Haskell.TH                as TH
+import Language.Haskell.TH                qualified as TH
 --
-import           Ethereum.ContractABI.ABICoreType
-import           Ethereum.ContractABI.ABITypeable
-import           Ethereum.ContractABI.ABITypeCodec
-import           Ethereum.ContractABI.CoreType.INTx
+import Ethereum.ContractABI.ABICoreType
+import Ethereum.ContractABI.ABITypeable
+import Ethereum.ContractABI.ABITypeCodec
+import Ethereum.ContractABI.CoreType.INTx
 
 -- | BYTESn is a new type of INTx, which has its own name in function selectors.
 newtype BYTESn n = BYTESn (INTx False n)

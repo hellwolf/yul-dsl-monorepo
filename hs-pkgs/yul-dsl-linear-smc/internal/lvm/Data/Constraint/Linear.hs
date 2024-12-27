@@ -5,12 +5,12 @@ module Data.Constraint.Linear
   ) where
 
 -- constraints
-import           Data.Constraint hiding ((\\))
+import Data.Constraint hiding ((\\))
 -- deepseq
-import           Control.DeepSeq (rnf)
+import Control.DeepSeq (rnf)
 -- linear-base
-import           Prelude.Linear  (Consumable (consume), flip)
-import qualified Unsafe.Linear   as UnsafeLinear
+import Prelude.Linear  (Consumable (consume), flip)
+import Unsafe.Linear   qualified as UnsafeLinear
 
 
 -- Linear version of (\\) for internal use.

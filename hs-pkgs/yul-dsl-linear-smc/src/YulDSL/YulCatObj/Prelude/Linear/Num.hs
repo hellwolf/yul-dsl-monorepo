@@ -2,12 +2,12 @@
 module YulDSL.YulCatObj.Prelude.Linear.Num where
 
 -- base
-import qualified Prelude        as Prelude.Base
+import Prelude        qualified as Prelude.Base
 -- linear-base
-import           Prelude.Linear
-import qualified Unsafe.Linear  as UnsafeLinear
+import Prelude.Linear
+import Unsafe.Linear  qualified as UnsafeLinear
 -- yul-dsl
-import           YulDSL.Core
+import YulDSL.Core
 
 
 --

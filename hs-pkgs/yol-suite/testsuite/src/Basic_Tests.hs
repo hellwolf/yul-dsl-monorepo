@@ -2,7 +2,6 @@
 Test code generations for typical and problematic functions.
 -}
 module Basic_Tests where
--- import qualified Control.LinearlyVersionedMonad as LVM
 import           Prelude.YulDSL
 
 embUnit'p = fn @(I256 -> ()) "embUnit$p" $ \_ -> YulEmb ()

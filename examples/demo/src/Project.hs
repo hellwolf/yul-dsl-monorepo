@@ -1,7 +1,7 @@
 module Project where
 
-import qualified ERC20
-import           YolSuite.YOLC.Manifest
+import ERC20 qualified
+import YolSuite.YOLC.Manifest
 
 manifest :: Manifest
 manifest = MkManifest

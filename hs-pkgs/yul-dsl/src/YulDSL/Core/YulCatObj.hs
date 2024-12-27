@@ -1,9 +1,9 @@
 module YulDSL.Core.YulCatObj where
 
 -- constraints
-import           Data.Constraint      (Dict (Dict))
+import Data.Constraint      (Dict (Dict))
 -- eth-abi
-import           Ethereum.ContractABI
+import Ethereum.ContractABI
 
 
 -- | All objects in the yul category is simply a 'YulCatObj'.

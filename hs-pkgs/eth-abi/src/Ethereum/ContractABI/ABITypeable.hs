@@ -24,11 +24,11 @@ module Ethereum.ContractABI.ABITypeable
  ) where
 
 -- base
-import           Data.Kind                        (Constraint, Type)
-import           Data.List                        (intercalate)
-import           Data.Type.Equality               (type (==))
+import Data.Kind                        (Constraint, Type)
+import Data.List                        (intercalate)
+import Data.Type.Equality               (type (==))
 --
-import           Ethereum.ContractABI.ABICoreType
+import Ethereum.ContractABI.ABICoreType
 
 -- | Type information for all core and derived contract ABI types.
 class ABITypeable a where

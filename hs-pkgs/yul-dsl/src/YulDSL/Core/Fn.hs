@@ -20,10 +20,10 @@ module YulDSL.Core.Fn
   ) where
 
 -- eth-abi
-import           Ethereum.ContractABI
+import Ethereum.ContractABI
 --
-import           YulDSL.Core.YulCat
-import           YulDSL.Core.YulCatObj
+import YulDSL.Core.YulCat
+import YulDSL.Core.YulCatObj
 
 
 -- | Yul functions are encoded in their categorical forms.

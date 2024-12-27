@@ -16,13 +16,13 @@ module YulDSL.CodeGens.YulGen
   , compileYulObject
   ) where
 
-import           YulDSL.Core                                 (FnCat, YulO2, YulObject)
+import YulDSL.Core                                 (FnCat, YulO2, YulObject)
 --
-import           YulDSL.CodeGens.Yul.Internal.BuiltIns       (default_builtins)
-import           YulDSL.CodeGens.Yul.Internal.CodeFormatters (Code, init_ind)
-import           YulDSL.CodeGens.Yul.Internal.CodeGen        (cg_register_builtin, gen_code)
-import           YulDSL.CodeGens.Yul.Internal.FunctionGen    (compile_fn)
-import           YulDSL.CodeGens.Yul.Internal.ObjectGen      (compile_object)
+import YulDSL.CodeGens.Yul.Internal.BuiltIns       (default_builtins)
+import YulDSL.CodeGens.Yul.Internal.CodeFormatters (Code, init_ind)
+import YulDSL.CodeGens.Yul.Internal.CodeGen        (cg_register_builtin, gen_code)
+import YulDSL.CodeGens.Yul.Internal.FunctionGen    (compile_fn)
+import YulDSL.CodeGens.Yul.Internal.ObjectGen      (compile_object)
 
 
 -- | Compiling a yul function.

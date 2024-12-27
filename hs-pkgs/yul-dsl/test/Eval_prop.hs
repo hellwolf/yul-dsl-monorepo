@@ -3,15 +3,15 @@ module Eval_prop (tests) where
 -- base
 -- import           Control.Exception    (evaluate)
 -- hspec, quickcheck
-import           Test.Hspec
-import           Test.QuickCheck
+import Test.Hspec
+import Test.QuickCheck
 -- eth-abi
-import           Ethereum.ContractABI
+import Ethereum.ContractABI
 -- yul-dsl
-import           YulDSL.Core
-import           YulDSL.Eval
+import YulDSL.Core
+import YulDSL.Eval
 --
-import           TestCommon           ()
+import TestCommon           ()
 
 test_coerce_uint256_unit_prod :: forall a. a ~ U256 => a -> Bool
 test_coerce_uint256_unit_prod a = toInteger a == toInteger b

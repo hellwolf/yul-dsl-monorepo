@@ -1,13 +1,13 @@
 module SimpleNP_test where
 
 -- base
-import           Data.Functor.Identity (Identity)
-import           Data.Type.Equality    (type (==))
+import Data.Functor.Identity (Identity)
+import Data.Type.Equality    (type (==))
 -- hspec
-import           Test.Hspec
+import Test.Hspec
 
 --
-import           Ethereum.ContractABI
+import Ethereum.ContractABI
 
 
 test_tf_lift_function_examples = and

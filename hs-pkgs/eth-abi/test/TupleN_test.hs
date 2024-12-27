@@ -2,12 +2,12 @@
 module TupleN_test where
 
 -- base
-import           Data.Type.Equality   (type (==))
+import Data.Type.Equality   (type (==))
 -- hspec
-import           Test.Hspec
+import Test.Hspec
 --
-import           Data.TupleN          (Solo (MkSolo))
-import           Ethereum.ContractABI
+import Data.TupleN          (Solo (MkSolo))
+import Ethereum.ContractABI
 
 
 default (U256)

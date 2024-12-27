@@ -4,9 +4,10 @@ module YulDSL.CodeGens.Yul.Internal.CodeGen
   ( -- $codegen_state
     CGState
   , gen_code
+  , cg_reset_for_fn
+  , cg_reset_for_object
     -- $codegen_vars
-  , cg_reset_var_gen
-  , cg_mk_let_vars
+  , cg_create_vars
   , cg_declare_vars
   , cg_forget_vars
     -- $codegen_dependencies
@@ -19,8 +20,10 @@ module YulDSL.CodeGens.Yul.Internal.CodeGen
   ) where
 
 -- base
-import Control.Monad.State.Lazy                     (MonadState (..), State, evalState, modify)
+import Control.Monad                                (replicateM)
 import Data.Functor                                 ((<&>))
+-- mtl
+import Control.Monad.State.Lazy                     (MonadState (..), State, evalState, modify)
 -- text
 import Data.Text.Lazy                               qualified as T
 -- containers
@@ -39,10 +42,10 @@ import YulDSL.CodeGens.Yul.Internal.Variables
 
 -- | CodeGen state data.
 data CGStateData = MkCGStateData
-  { var_gen         :: AutoVarGen
+  { builtins        :: BuiltInRegistra
+  , var_gen         :: AutoVarGen
   , undeclared_vars :: [Var]
   , dependent_cats  :: Map.Map String AnyYulCat -- cat_id -> cat
-  , builtins        :: BuiltInRegistra
   , builtin_used    :: Set.Set String
   }
 
@@ -52,9 +55,9 @@ type CGState = State CGStateData
 -- | Initial CodeGen state data.
 init_cg_state_data :: CGStateData
 init_cg_state_data = MkCGStateData
-  { var_gen = MkAutoVarGen 0
+  { builtins = Map.empty
+  , var_gen = MkAutoVarGen 0
   , undeclared_vars = []
-  , builtins = Map.empty
   , dependent_cats = Map.empty
   , builtin_used = Set.empty
   }
@@ -63,12 +66,24 @@ init_cg_state_data = MkCGStateData
 gen_code :: CGState Code -> Code
 gen_code s = evalState s init_cg_state_data
 
+-- | Reset the CodeGen for new function generation.
+cg_reset_for_fn :: CGState ()
+cg_reset_for_fn = modify $
+  \s -> gen_assert_msg "undeclared_vars not empty"
+        (null (undeclared_vars s))
+        $ s { var_gen = MkAutoVarGen 0
+            , undeclared_vars = []
+            }
+
+cg_reset_for_object :: CGState ()
+cg_reset_for_object = do
+  modify $ \s -> s { dependent_cats = Map.empty
+                   , builtin_used = Set.empty
+                   }
+  cg_reset_for_fn
+
 -- $codegen_vars
 -- == CodeGen Variables
-
--- | Reset the variable generator.
-cg_reset_var_gen :: CGState ()
-cg_reset_var_gen = modify $ \s -> s { var_gen = MkAutoVarGen 0 }
 
 -- | Generate the next variable name.
 cg_next_var :: CGState Var
@@ -80,18 +95,16 @@ cg_next_var = do
          })
   return v
 
--- | Make new locally scoped (let) variables needed for the type @a@.
-cg_mk_let_vars :: forall a. YulO1 a => CGState [Var]
-cg_mk_let_vars = reverse <$> go (abi_type_count_vars @a) []
-  where go 0 vars = pure vars
-        go n vars = cg_next_var >>= \var -> go (n - 1) (var:vars)
+-- | Create undeclared variables needed for the type @a@.
+cg_create_vars :: forall a. YulO1 a => CGState [Var]
+cg_create_vars = replicateM (abi_type_count_vars @a) cg_next_var
 
 -- | Declare the undeclared variables.
 cg_declare_vars :: CGState (Maybe Code)
 cg_declare_vars = do
   s <- get
   let vars = undeclared_vars s
-      code = if null vars then Nothing else Just ("let " <> T.intercalate ", " vars)
+      code = if null vars then Nothing else Just ("let " <> vars_to_code vars)
   put (s { undeclared_vars = [] })
   return code
 

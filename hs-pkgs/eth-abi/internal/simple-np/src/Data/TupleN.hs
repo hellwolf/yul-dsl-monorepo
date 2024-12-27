@@ -22,9 +22,9 @@ module Data.TupleN
   ) where
 
 -- ghc-experimental
-import           Data.Tuple.Experimental (Solo (MkSolo))
+import Data.Tuple.Experimental (Solo (MkSolo))
 --
-import           Data.TupleN.TH
+import Data.TupleN.TH
 
 
 -- | A constraint for TupleN types that are convertible to NP and vice versa.

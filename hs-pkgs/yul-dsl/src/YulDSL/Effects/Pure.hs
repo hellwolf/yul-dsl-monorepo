@@ -16,11 +16,11 @@ module YulDSL.Effects.Pure
   ) where
 
 -- eth-abi
-import           Ethereum.ContractABI
+import Ethereum.ContractABI
 --
-import           YulDSL.Core.Fn
-import           YulDSL.Core.YulCat
-import           YulDSL.Core.YulCatObj
+import YulDSL.Core.Fn
+import YulDSL.Core.YulCat
+import YulDSL.Core.YulCatObj
 
 
 -- $yulCatVal

@@ -4,11 +4,11 @@
 module YulDSL.YulCatObj.Prelude.Base.Maybe () where
 
 -- eth-abi
-import           Ethereum.ContractABI
+import Ethereum.ContractABI
 --
-import           YulDSL.Core.YulCat
-import           YulDSL.Core.YulCatObj
-import           YulDSL.Core.YulNum
+import YulDSL.Core.YulCat
+import YulDSL.Core.YulCatObj
+import YulDSL.Core.YulNum
 
 
 type MaybeYulNum a = ( ABITypeable a

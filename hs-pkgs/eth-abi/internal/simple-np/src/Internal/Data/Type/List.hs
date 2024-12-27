@@ -17,8 +17,8 @@ module Internal.Data.Type.List
   ( Length, Head, Tail, type (++)
   ) where
 
-import           GHC.List     (List)
-import           GHC.TypeLits (ErrorMessage (Text), Nat, TypeError, type (+))
+import GHC.List     (List)
+import GHC.TypeLits (ErrorMessage (Text), Nat, TypeError, type (+))
 
 
 type Length :: List k -> Nat

@@ -16,12 +16,12 @@ module Control.Category.Constrained.YulDSL () where
 
 -- base
 -- constraints
-import           Data.Constraint              (Dict (Dict))
+import Data.Constraint              (Dict (Dict))
 -- linear-smc
-import           Control.Category.Constrained (Cartesian (..), Category (..), Monoidal (..), ProdObj (..))
+import Control.Category.Constrained (Cartesian (..), Category (..), Monoidal (..), ProdObj (..))
 --
-import           YulDSL.Core.YulCat           (YulCat (..))
-import           YulDSL.Core.YulCatObj        (YulCatObj (yul_prod_objs))
+import YulDSL.Core.YulCat           (YulCat (..))
+import YulDSL.Core.YulCatObj        (YulCatObj (yul_prod_objs))
 
 -- | Instance for linear-smc 'ProdObj' for the objects in the category.
 instance ProdObj YulCatObj where

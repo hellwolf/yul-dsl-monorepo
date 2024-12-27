@@ -15,16 +15,16 @@ module Ethereum.ContractABI
   ) where
 
 -- type machinery
-import           Ethereum.ContractABI.ABICoreType
-import           Ethereum.ContractABI.ABITypeable
-import           Ethereum.ContractABI.ABITypeCodec
+import Ethereum.ContractABI.ABICoreType
+import Ethereum.ContractABI.ABITypeable
+import Ethereum.ContractABI.ABITypeCodec
 -- core types
-import           Ethereum.ContractABI.CoreType.ADDR
-import           Ethereum.ContractABI.CoreType.BOOL
-import           Ethereum.ContractABI.CoreType.BYTESn
-import           Ethereum.ContractABI.CoreType.INTx
-import           Ethereum.ContractABI.CoreType.NP
+import Ethereum.ContractABI.CoreType.ADDR
+import Ethereum.ContractABI.CoreType.BOOL
+import Ethereum.ContractABI.CoreType.BYTESn
+import Ethereum.ContractABI.CoreType.INTx
+import Ethereum.ContractABI.CoreType.NP
 -- extended types
-import           Ethereum.ContractABI.ABITypeCoercible
-import           Ethereum.ContractABI.ExtendedType.SELECTOR
-import           Ethereum.ContractABI.ExtendedType.TUPLEn
+import Ethereum.ContractABI.ABITypeCoercible
+import Ethereum.ContractABI.ExtendedType.SELECTOR
+import Ethereum.ContractABI.ExtendedType.TUPLEn

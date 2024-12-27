@@ -1,17 +1,17 @@
 module Fn_prop where
 
 -- base
-import           Data.Functor         ((<&>))
+import Data.Functor         ((<&>))
 -- hspec, quickcheck
-import           Test.Hspec
-import           Test.QuickCheck
+import Test.Hspec
+import Test.QuickCheck
 --
-import           Ethereum.ContractABI
+import Ethereum.ContractABI
 --
-import           YulDSL.Core
-import           YulDSL.Eval
+import YulDSL.Core
+import YulDSL.Eval
 --
-import           TestCommon           ()
+import TestCommon           ()
 
 
 --------------------------------------------------------------------------------

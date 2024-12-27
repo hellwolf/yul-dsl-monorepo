@@ -1,7 +1,7 @@
 module ERC20 where
+import Control.LinearlyVersionedMonad qualified as LVM
+import Prelude.YulDSL
 
-import qualified Control.LinearlyVersionedMonad as LVM
-import           Prelude.YulDSL
 
 -- | ERC20 balance storage location for the account.
 -- TODO should use hashing of course.

@@ -1,6 +1,6 @@
 module Num_Tests where
 
-import           Prelude.YulDSL
+import Prelude.YulDSL
 
 add_uint256 = fn @(U256 -> U256 -> U256) "add_uint256" \x y -> x + y
 add_uint192 = fn @(U192 -> U192 -> U192) "add_uint192" \x y -> x + y

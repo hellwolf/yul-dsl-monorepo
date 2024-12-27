@@ -1,7 +1,10 @@
 module YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
   ( BuiltInName, BuiltInPrefix
-  , BuiltInEntry, BuiltInRegistra
-  , register_builtin, lookup_builtin
+    -- $builtin_registra
+  , BuiltInRegistra
+    -- $builtin_registra_operations
+  , BuiltInEntry, register_builtin, lookup_builtin
+    -- $builtin_builders
   , mk_builtin, const_builtin, const_builtin_with_deps
   ) where
 
@@ -15,9 +18,16 @@ import Data.Map.Lazy                               qualified as Map
 import YulDSL.CodeGens.Yul.Internal.CodeFormatters
 
 
+-- | The type alias for names of built-ins.
 type BuiltInName = String
 
+-- | The type alias for prefixes of built-ins.
 type BuiltInPrefix = String
+
+-- $builtin_registra
+-- == Built-in Registra
+--
+-- Builtin registra is a map of 'PrefixKey' to 'BuiltInYulGen'.
 
 newtype PrefixKey = MkPrefixKey { unPrefixKey :: BuiltInPrefix }
 
@@ -30,9 +40,13 @@ instance Ord PrefixKey where
 -- A function that returns a builtin's code and its dependent built-ins.
 type BuiltInYulGen = BuiltInName -> (Indenter -> T.Text, [BuiltInName])
 
--- The registra of builtin yul code generator.
+-- | The registra of builtin yul code generator.
 type BuiltInRegistra = Map.Map PrefixKey BuiltInYulGen
 
+-- | $builtin_registra_operations
+-- == Built-in Registra Operations
+
+-- | Entry data for registering a new builtin.
 type BuiltInEntry = (BuiltInPrefix, BuiltInYulGen)
 
 register_builtin :: BuiltInEntry -> BuiltInRegistra -> BuiltInRegistra
@@ -49,6 +63,9 @@ lookup_builtin name registra = case Map.lookupLE (MkPrefixKey name) registra of
   Nothing  -> error ("No builtin found: " <> name)
   Just (MkPrefixKey prefix, gen) -> if prefix `isPrefixOf` name then gen name
                                     else error ("Builtin not found: " <> name)
+
+-- $builtin_builders
+-- == Built-in Builders
 
 mk_builtin :: BuiltInPrefix
            -> (String {- partial name / builtin suffix -} -> BuiltInName -> ([Code], [BuiltInName]))

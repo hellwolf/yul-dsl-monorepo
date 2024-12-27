@@ -7,9 +7,9 @@ module YulDSL.Effects.LinearSMC
   , module YulDSL.Effects.LinearSMC.Storage
   ) where
 
-import           YulDSL.Effects.LinearSMC.LinearFn
-import           YulDSL.Effects.LinearSMC.YulMonad
-import           YulDSL.Effects.LinearSMC.YulPort
+import YulDSL.Effects.LinearSMC.LinearFn
+import YulDSL.Effects.LinearSMC.YulMonad
+import YulDSL.Effects.LinearSMC.YulPort
 --
-import           YulDSL.Effects.LinearSMC.Impurable
-import           YulDSL.Effects.LinearSMC.Storage
+import YulDSL.Effects.LinearSMC.Impurable
+import YulDSL.Effects.LinearSMC.Storage

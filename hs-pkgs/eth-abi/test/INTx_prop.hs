@@ -1,13 +1,13 @@
 module INTx_prop where
 
-import           Data.Maybe
-import           Data.Proxy
+import Data.Maybe
+import Data.Proxy
 --
-import           Test.Hspec
-import           Test.QuickCheck
+import Test.Hspec
+import Test.QuickCheck
 --
-import           Ethereum.ContractABI.ABICoreType
-import           Ethereum.ContractABI.CoreType.INTx
+import Ethereum.ContractABI.ABICoreType
+import Ethereum.ContractABI.CoreType.INTx
 
 
 validate_bounds :: forall i n. (i ~ INTx True n, ValidINTn n) => Proxy i -> Bool

@@ -31,10 +31,10 @@ module Data.SimpleNP
   ) where
 
 -- base
-import           Data.Kind               (Type)
-import           GHC.Base                (Multiplicity (..))
+import Data.Kind               (Type)
+import GHC.Base                (Multiplicity (..))
 --
-import           Internal.Data.Type.List
+import Internal.Data.Type.List
 
 
 -- | N-ary product without a type function comparing to its homonym in the "sop" package.

@@ -18,18 +18,18 @@ module YulDSL.Core
   ) where
 
 
-import           Ethereum.ContractABI
+import Ethereum.ContractABI
 
-import           YulDSL.Core.YulCatObj
-import           YulDSL.Core.YulNum
+import YulDSL.Core.YulCatObj
+import YulDSL.Core.YulNum
 
-import           YulDSL.Core.YulCat
+import YulDSL.Core.YulCat
 
-import           YulDSL.Core.Fn
+import YulDSL.Core.Fn
 
-import           YulDSL.Core.YulObject
+import YulDSL.Core.YulObject
 
-import           YulDSL.Effects.Pure
+import YulDSL.Effects.Pure
 
-import           YulDSL.YulCatObj.Prelude.Base.Maybe ()
-import           YulDSL.YulCatObj.Prelude.Base.Num   ()
+import YulDSL.YulCatObj.Prelude.Base.Maybe ()
+import YulDSL.YulCatObj.Prelude.Base.Num   ()

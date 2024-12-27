@@ -1,9 +1,9 @@
 module Num_prop where
 
-import           Test.Hspec
+import Test.Hspec
 --
-import           Prelude        ()
-import           Prelude.YulDSL
+import Prelude        ()
+import Prelude.YulDSL
 
 
 num_add_just = fn'l "add2"

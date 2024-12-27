@@ -12,10 +12,10 @@ module Ethereum.ContractABI.ABITypeCoercible
   ( SameABICoreType, ABITypeCoercible
   ) where
 
-import           Ethereum.ContractABI.ABITypeable
-import           Ethereum.ContractABI.CoreType.ADDR
-import           Ethereum.ContractABI.CoreType.INTx
-import           Ethereum.ContractABI.CoreType.NP
+import Ethereum.ContractABI.ABITypeable
+import Ethereum.ContractABI.CoreType.ADDR
+import Ethereum.ContractABI.CoreType.INTx
+import Ethereum.ContractABI.CoreType.NP
 
 
 type SameABICoreType a a' = ABITypeDerivedOf a ~ ABITypeDerivedOf a'

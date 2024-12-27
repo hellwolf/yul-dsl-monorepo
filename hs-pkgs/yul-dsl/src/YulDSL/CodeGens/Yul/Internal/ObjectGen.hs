@@ -2,7 +2,7 @@
 module YulDSL.CodeGens.Yul.Internal.ObjectGen (compile_object) where
 
 -- base
-import Control.Monad                               (when)
+import Control.Monad                               (unless)
 import Data.Functor                                ((<&>))
 import Data.Maybe                                  (catMaybes)
 -- text
@@ -13,6 +13,7 @@ import YulDSL.Core
 import YulDSL.CodeGens.Yul.Internal.CodeFormatters
 import YulDSL.CodeGens.Yul.Internal.CodeGen
 import YulDSL.CodeGens.Yul.Internal.FunctionGen
+import YulDSL.CodeGens.Yul.Internal.Variables
 
 
 compile_fn_dispatcher :: HasCallStack
@@ -20,32 +21,26 @@ compile_fn_dispatcher :: HasCallStack
 compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, _)))) (_ :: FnCat eff a b)) = do
   let abidec_builtin = "__abidec_dispatcher_" <> abiTypeCompactName @a
       abienc_builtin = "__abienc_dispatcher_" <> abiTypeCompactName @b
-  vars_a <- cg_mk_let_vars @a
-  vars_b <- cg_mk_let_vars @b
+  vars_a <- cg_create_vars @a
+  vars_b <- cg_create_vars @b
   all_vars <- cg_declare_vars
-  when (length vars_a > 0) $ cg_use_builtin abidec_builtin
-  when (length vars_b > 0) $ cg_use_builtin abienc_builtin
+  unless (null vars_a) $ cg_use_builtin abidec_builtin
+  unless (null vars_b) $ cg_use_builtin abienc_builtin
   pure . Just $ cbracket ind ("case " <> T.pack (show sel)) $ \ ind' ->
         maybe "" ind' all_vars <>
         -- call the abi decoder for inputs
-        ( if length vars_a > 0 then
-            ind' ( T.intercalate "," vars_a <> " := " <>
-                 -- skip selector and (TODO) check if calldatasize is big enough
-                 T.pack abidec_builtin <> "(4, calldatasize())"
-                 )
+        ( if not (null vars_a)
+          then ind' ( vars_to_code vars_a <> " := " <> T.pack abidec_builtin <> "(4, calldatasize())" )
           else ""
         ) <>
         -- call the function
-        ind' ( (if length vars_b > 0 then T.intercalate "," vars_b <> " := " else "") <>
-               T.pack fname <> "(" <> T.intercalate "," vars_a <> ")"
+        ind' ( (if not (null vars_b) then vars_to_code vars_b <> " := " else "") <>
+               T.pack fname <> "(" <> vars_to_code vars_a <> ")"
              ) <>
         -- call the abi decoder for outputs
-        ( if length vars_b > 0 then
+        ( if not (null vars_b) then
             ind' "let memPos := __allocate_unbounded()" <>
-            -- call abi encoder
-            ind' ( "let memEnd := " <>
-                   T.pack abienc_builtin <> "(memPos, " <> T.intercalate "," vars_b <> ")"
-                 ) <>
+            ind' ( "let memEnd := " <> T.pack abienc_builtin <> "(memPos, " <> vars_to_code vars_b <> ")" ) <>
             ind' "return(memPos, sub(memEnd, memPos))"
           else ind' "return(0, 0)"
         )
@@ -122,5 +117,7 @@ compile_object ind (MkYulObject { yulObjectName = oname
 
     -- sub objects code
     code_subobjs <- mapM (compile_object ind') subobjs <&> T.intercalate "\n"
+
+    cg_reset_for_object
 
     pure $ T.intercalate "\n" [code_ctor, code_runtime, code_subobjs]

@@ -1,6 +1,6 @@
 module YolSuite.YOLC.Manifest where
 
-import           YulDSL.Core.YulObject (YulObject)
+import YulDSL.Core.YulObject (YulObject)
 
 data DeploymentType = SingletonContract
                     | FactoryContract

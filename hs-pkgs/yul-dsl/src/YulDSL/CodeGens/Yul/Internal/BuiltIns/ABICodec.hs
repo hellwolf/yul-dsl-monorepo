@@ -15,7 +15,7 @@ import YulDSL.CodeGens.Yul.Internal.Variables
 abidec_dispatcher = mk_builtin "__abidec_dispatcher_" $ \part full ->
   let types = decodeAbiCoreTypeCompactName part
       vars  = gen_vars (length types)
-  in ( [ "function " <> T.pack full <> "(headStart, dataEnd) -> " <> T.intercalate ", " vars <> " {" ]
+  in ( [ "function " <> T.pack full <> "(headStart, dataEnd) -> " <> vars_to_code vars <> " {" ]
        ++ abidec_dispatcher_body types vars
        ++ [ "}" ]
      , fmap abidec_from_stack_builtin_name types
@@ -25,7 +25,7 @@ abidec_dispatcher = mk_builtin "__abidec_dispatcher_" $ \part full ->
 abienc_dispatcher = mk_builtin "__abienc_dispatcher_" $ \part full ->
   let types = decodeAbiCoreTypeCompactName part
       vars  = gen_vars (length types)
-  in ( [ "function " <> T.pack full <> "(headStart, " <> T.intercalate ", " vars <>") -> tail {" ]
+  in ( [ "function " <> T.pack full <> "(headStart, " <> vars_to_code vars <>") -> tail {" ]
        ++ abienc_dispatcher_types types vars
        ++ [ "}" ]
      , fmap abienc_from_stack_builtin_name types
@@ -85,7 +85,7 @@ abidec_dispatcher_body types vars =
     go (n:ns) slot =
       [ "{"
       , add_indent $ "let offset := " <> T.pack (show (slot * 32))
-      , add_indent $ vars !! slot <> " := "
+      , add_indent $ unVar (vars !! slot) <> " := "
         <> T.pack (abidec_from_stack_builtin_name n) <> "(add(headStart, offset), dataEnd)"
       , "}"
       ]
@@ -102,7 +102,7 @@ abienc_dispatcher_types types vars =
   where
     go (n:ns) slot =
       T.pack (abienc_from_stack_builtin_name n)
-      <> "(add(headStart, " <> T.pack(show (slot * 32)) <> "), " <> vars !! slot <> ")"
+      <> "(add(headStart, " <> T.pack(show (slot * 32)) <> "), " <> unVar (vars !! slot) <> ")"
       : go ns (slot + 1)
     go _ _         = []
     dataSize = length types * 32

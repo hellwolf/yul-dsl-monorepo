@@ -20,17 +20,17 @@ module YulDSL.Core.YulObject
   ) where
 
 -- base
-import           Data.List                                  (intercalate)
+import Data.List                                  (intercalate)
 -- eth-abi
-import           Ethereum.ContractABI.ABITypeable           (abiTypeCanonName)
-import           Ethereum.ContractABI.CoreType.NP
+import Ethereum.ContractABI.ABITypeable           (abiTypeCanonName)
+import Ethereum.ContractABI.CoreType.NP
 -- import Ethereum.ContractABI.CoreType.NP
-import           Ethereum.ContractABI.ExtendedType.SELECTOR (SELECTOR, mkTypedSelector)
+import Ethereum.ContractABI.ExtendedType.SELECTOR (SELECTOR, mkTypedSelector)
 --
-import           YulDSL.Core.Fn
-import           YulDSL.Core.YulCat
-import           YulDSL.Core.YulCatObj
-import           YulDSL.Effects.Pure
+import YulDSL.Core.Fn
+import YulDSL.Core.YulCat
+import YulDSL.Core.YulCatObj
+import YulDSL.Effects.Pure
 
 
 -- |  type for the external function call.

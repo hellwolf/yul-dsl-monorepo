@@ -3,12 +3,12 @@
 
 module TestCommon where
 
-import           Data.Functor         ((<&>))
-import           Data.Maybe           (fromJust)
+import Data.Functor         ((<&>))
+import Data.Maybe           (fromJust)
 -- quickcheck
-import           Test.QuickCheck
+import Test.QuickCheck
 
-import           Ethereum.ContractABI
+import Ethereum.ContractABI
 
 instance Arbitrary ADDR where
   arbitrary = chooseBoundedIntegral (minBound @U256, maxBound @U256)

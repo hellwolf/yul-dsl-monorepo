@@ -18,7 +18,7 @@ module Internal.Data.Type.Bool
   , KnownBool (boolSing, fromSBool, fromBoolKind), toKnownSBool
   , module Data.Type.Bool
   ) where
-import           Data.Type.Bool
+import Data.Type.Bool
 
 
 -- | Boolean type singleton.

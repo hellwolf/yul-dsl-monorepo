@@ -2,11 +2,11 @@
 module Data.MPOrd.YulDSL where
 
 -- linear-base
-import           Prelude.Linear (Bool (False, True), Consumable, lseq)
+import Prelude.Linear (Bool (False, True), Consumable, lseq)
 -- yul-dsl
-import           YulDSL.Core
+import YulDSL.Core
 --
-import           Data.MPOrd
+import Data.MPOrd
 
 -- | 'MPEq' instance for yul category morphisms.
 instance (YulO1 r, YulNumCmp a) => MPEq (YulCat eff r a) (YulCat eff r BOOL) where

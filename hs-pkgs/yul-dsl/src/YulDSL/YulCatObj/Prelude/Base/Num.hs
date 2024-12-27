@@ -2,9 +2,9 @@
 module YulDSL.YulCatObj.Prelude.Base.Num where
 
 --
-import           YulDSL.Core.YulCat
-import           YulDSL.Core.YulCatObj
-import           YulDSL.Core.YulNum
+import YulDSL.Core.YulCat
+import YulDSL.Core.YulCatObj
+import YulDSL.Core.YulNum
 
 instance (YulO2 a r, YulNum a) => Num (YulCat eff r a) where
   a + b = yulJmpBuiltIn (yulNumAdd @a) <.< YulProd a b <.< YulDup

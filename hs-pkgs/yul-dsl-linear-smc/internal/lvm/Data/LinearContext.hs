@@ -19,10 +19,10 @@ module Data.LinearContext
   ) where
 
 -- linear-base
-import           Prelude.Linear (lseq)
+import Prelude.Linear (lseq)
 -- eth-abi
-import           Data.SimpleNP  (NP (..))
-import           Data.TupleN
+import Data.SimpleNP  (NP (..))
+import Data.TupleN
 
 
 --------------------------------------------------------------------------------

@@ -99,12 +99,3 @@ instance (YulNum a, YulO1 r) => AddIdentity (P'V v r a) where
 
 instance (YulNum a, YulO1 r) => AdditiveGroup (P'V v r a) where
   a - b = encode (yulJmpBuiltIn (yulNumSub @a)) (merge (a, b))
-
---
--- 'IfThenElse' instance for the yul ports.
---
-
--- FIXME, this should use pattern matching and built-in Bool type; otherwise the linearity of the branches are not
--- respected.
-instance YulO2 a r => IfThenElse (P'x eff r BOOL) (P'x eff r a) where
-  ifThenElse c a b = encode YulITE (merge(c, merge(a, b)))

@@ -131,32 +131,31 @@ Headline Features
 
 - eth-abi
   - CoreType:
-    - [ ] INTn sign-extended word values.
+    - [ ] 🟢 `{upCast, safeCast, unSafeCast}INTx}` operations:
+      - INTn sign-extended word values using `upCaseINTx @I256`
     - [ ] 🟠 ARRAY
   - ExtendedTypes:
-    - [ ] TUPLEn
+    - [ ] 🟢 TUPLEn
     - [ ] 🟠 REF
 - yul-dsl
   - Value primitives:
-    - [ ] `YulCast`, casting values between value types.
-  - Storage primitives becomes builtin.
+    - [ ] 🟢 `YulCast`, casting values between value types.
   - Control flow primitives:
-    - [ ] `YulMapArray`, tight loop over an array.
-    - [ ] `YulLen`, array length.
+    - [ ] 🟠 `YulMapArray`, tight loop over an array.
+      - array length built-in.
   - Non pure primitives:
-    - [ ] `YulCall`, external function calls.
-  - Function Gen:
-    - [ ] 🟠 Change the logic to delay code gen until inner layer requires it.
-    - [ ] Fix the implementation for all embeddable values.
+    - [ ] 🟠 `YulCall`, external function calls.
 - yul-dsl-linear-smc
-  - [ ] Complete the Num classes: mul, abs, sig, etc.
-  - [ ] Prelude curation first version.
+  - [ ] 🟢 ifThenElse for port.
+  - [ ] 🟢 Complete the Num classes: mul, abs, sig, etc.
+  - [ ] 🟠 More storage combinators.
+  - [ ] 🟠 Prelude curation first version.
 - yol-suite
   - Contract verification support:
-    - [ ] Basic stunt contract generator.
+    - [ ] 🟢 Basic stunt contract generator.
   - Software distributions:
-    - [ ] Nix flake
-    - [ ] Rudimentary github dev console
+    - [ ] 🟠 Nix flake
+      - Rudimentary github dev console
 
 **TODOs for 0.2.0.0**
 
@@ -177,6 +176,8 @@ Headline Features
     - [ ] contracts ABI serialization built-ins.
   - CodeGen core:
     - [ ] Fn autoId (instead of using yulCatDigest.)
+  - Function Gen:
+    - [ ] Fix the implementation for all embeddable values.
   - Object builder:
     - [ ] constructor support.
 - yol-suite

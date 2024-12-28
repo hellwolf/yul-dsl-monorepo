@@ -30,6 +30,7 @@ module YulDSL.Core.YulCat
   , (>.>), (<.<)
   , yulJmpUserDefined, yulJmpBuiltIn
   , yulNumLt, yulNumLe, yulNumGt, yulNumGe, yulNumEq, yulNumNe
+  , yulRevert
   , IfThenElse (ifThenElse), PatternMatchable (inCase, match), PatternMatchableYulCat
   , digestYulCat
   ) where
@@ -112,7 +113,7 @@ data YulCat (eff :: k) a b where
   -- ^ Jump an internal yul function by reference its identifier along with maybe a definition.
   YulJmp :: forall eff a b. YulO2 a b => YulJmpTarget eff a b %1-> YulCat eff a b
   -- ^ If-then-else expression.
-  YulITE :: forall eff a. YulO1 a => YulCat eff (BOOL, (a, a)) a
+  YulITE :: forall eff a b. YulO1 a => YulCat eff a b %1-> YulCat eff a b %1-> YulCat eff (BOOL, a) b
 
   -- * Effectful Primitives
   --
@@ -166,10 +167,14 @@ yulNumNe = yulJmpBuiltIn (yulNumCmp @a (True , False, True ))
 
 -- ^ 'IfThenElse' instance for 'YulCat' objects.
 instance YulO2 a r => IfThenElse (YulCat eff r BOOL) (YulCat eff r a) where
-  ifThenElse c a b = YulITE <.< YulFork c (YulFork a b)
+  ifThenElse c a b = YulFork c YulId >.> YulITE a b
 
 -- | Type alias of 'PatternMatchable' p for 'YulCat' objects.
 type PatternMatchableYulCat eff p a = PatternMatchable (YulCat eff (p a)) (p a) (p (YulCat eff (p a) a)) YulCatObj
+
+-- | Revert without any message.
+yulRevert :: forall eff a b. YulO2 a b => YulCat eff a b
+yulRevert = YulDis >.> yulJmpBuiltIn ("__revert_" ++ abiTypeCompactName @b, error "revert(0, 0)")
 
 ------------------------------------------------------------------------------------------------------------------------
 -- NP Helpers
@@ -244,7 +249,7 @@ instance Show (YulCat eff a b) where
   show (YulJmp tgt)    = case tgt of
     (UserDefinedYulCat (cid, _))   -> "Ju " <> cid
     (BuiltInYulJmpTarget (cid, _)) -> "Jb " <> cid
-  show (YulITE)        = "?" <> abi_type_name @a
+  show (YulITE a b)    = "?" <> "(" <> show a <> "):(" <> show b <> ")"
   --
   show (YulSGet)       = "Sget" <> abi_type_name @a
   show (YulSPut)       = "Sput" <> abi_type_name @a

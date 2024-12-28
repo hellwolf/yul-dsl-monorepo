@@ -14,66 +14,20 @@ import YulDSL.Core
 --
 import YulDSL.CodeGens.Yul.Internal.CodeFormatters
 import YulDSL.CodeGens.Yul.Internal.CodeGen
-import YulDSL.CodeGens.Yul.Internal.Variables
+import YulDSL.CodeGens.Yul.Internal.RhsExpr
+import YulDSL.CodeGens.Yul.Internal.Variable
 
-
--- A value represented by a let-bound variable or an expression.
-data Val = LetVar Var
-         | ValExpr Code
-  deriving Show
-
-val_to_code :: Val -> Code
-val_to_code x = case x of LetVar c -> unVar c; ValExpr e -> e
-
-vals_to_code :: [Val] -> Code
-vals_to_code = T.intercalate ", " . map val_to_code
-
--- | Aliasing variables.
-mk_aliases :: HasCallStack => Indenter -> [Var] -> [Var] -> Code
-mk_aliases ind varsTo varsFrom = gen_assert_msg ("mk_aliases" ++ show (varsTo, varsFrom))
-                                 (length varsTo == length varsFrom) $
-  T.intercalate "" (fmap
-                    (\(MkVar a, MkVar b) -> ind (a <> " := " <> b))
-                    (zip varsTo varsFrom))
-
--- | Assigning expression @vals@ to variables @vars@.
-assign_vars :: HasCallStack => Indenter -> [Var] -> [Val] -> Code
-assign_vars ind vars vals = gen_assert_msg ("assign_vars" ++ show (vars, vals))
-                            (length vars == length vals) $
-  T.intercalate "" (fmap
-                    (\(MkVar a, b) -> ind (a <> " := " <> b))
-                    (zip vars (fmap val_to_code vals)))
-
-type CGOutput = (Code, [Val])
-
-ret_vals :: [Val] -> CGState CGOutput
-ret_vals vals = pure ("", vals)
 
 do_compile_cat :: HasCallStack
-               => Indenter -> AnyYulCat -> [Val] -> CGState CGOutput
-do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
-  -- code gen helpers
-
-  wrap_let_vars :: Maybe Code -> (Code -> Code)
-  wrap_let_vars = \case
-    Just vars -> \body -> ind (vars <> " {") <> body <> ind "}"
-    Nothing -> id
-
-  mk_code :: T.Text -> Code -> Code
-  mk_code title code =
-    ind ("//dbg: +" <> title) <>
-    code <>
-    ind ("//dbg: -" <> title)
-
-  -- go functions
-  go :: forall a b. YulO2 a b => YulCat eff a b -> CGState CGOutput
+               => AnyYulCat -> CGState RhsExprGen
+do_compile_cat (MkAnyYulCat (cat :: YulCat eff a b)) = go cat where
   -- - type conversions
-  go (YulExtendType)     = ret_vals vals_a
-  go (YulReduceType)     = ret_vals vals_a
-  go (YulCoerceType)     = ret_vals vals_a
-  go (YulSplit)          = ret_vals vals_a
+  go (YulExtendType)     = build_rhs_aliases @a
+  go (YulReduceType)     = build_rhs_aliases @a
+  go (YulCoerceType)     = build_rhs_aliases @a
+  go (YulSplit)          = build_rhs_aliases @a
   -- - categorical
-  go (YulId)             = ret_vals vals_a
+  go (YulId)             = build_rhs_aliases @a
   go (YulComp cb ac)     = go_comp cb ac
   go (YulProd ab cd)     = go_prod ab cd
   go (YulSwap @_ @m @n)  = go_swap @m @n
@@ -84,159 +38,172 @@ do_compile_cat ind (MkAnyYulCat @eff cat) vals_a = go cat where
   go (YulDup)            = go_dup @a
   -- - control flows
   go (YulEmb @_ @m @n x) = go_emb @m @n x
-  go (YulITE @_ @m)      = go_ite @m
-  go (YulJmp tgt)        = go_jmp @a @b tgt
+  go (YulITE ct cf)      = go_ite ct cf
+  go (YulJmp tgt)        = go_jmp tgt
   -- - storage effects
-  go (YulSGet)           = ret_vals [ ValExpr ("sload(" <> vals_to_code vals_a <> ")") ]
-  go (YulSPut)           = pure (ind ("sstore(" <> vals_to_code vals_a <> ")"), [])
+  go (YulSGet)           = go_sget
+  go (YulSPut @_ @m)     = go_sput @m
 
-  --
-  go_emb :: forall a b. (HasCallStack, YulO2 a b)
-         => b -> CGState CGOutput
-  go_emb b = -- FIXME: proper implementation of embeddable
-    case length (abiTypeInfo @b) of
-      0 -> pure("", []) -- unit type
-      1 -> ret_vals [ ValExpr (T.pack (show b)) ]
-      _ -> error ("Unembedable: " ++ show b)
-  --
-  go_comp :: forall a b c. (HasCallStack, YulO3 a b c)
-          => YulCat eff c b -> YulCat eff a c -> CGState CGOutput
-  go_comp cb ac = do
+go_comp :: forall eff a b c. (HasCallStack, YulO3 a b c)
+        => YulCat eff c b -> YulCat eff a c -> CGState RhsExprGen
+go_comp cb ac = build_code_block @a @b $ \ind (code, a_ins) -> do
     let title = T.pack $ "comp " ++
           "(" ++ abiTypeCompactName @a ++ ") -> " ++
           "(" ++ abiTypeCompactName @c ++ ") -> " ++
           "(" ++ abiTypeCompactName @b ++ ")"
-    (code_ac, vals_c) <- do_compile_cat ind (MkAnyYulCat ac) vals_a
-    (code_cb, vals_b) <- do_compile_cat ind (MkAnyYulCat cb) vals_c
-    out_vars <- cg_declare_vars
-    pure ( mk_code title $
-           wrap_let_vars out_vars (code_ac <> code_cb)
-         , vals_b )
-  --
-  go_prod :: forall a b c d. (HasCallStack, YulO4 a b c d)
-          => YulCat eff a b -> YulCat eff c d -> CGState CGOutput
-  go_prod ab cd = do
-    let ca = length (abiTypeInfo @a)
-        cc = length (abiTypeInfo @c)
-        (fst_vals, snd_vals) = gen_assert_msg ("fst_vals" ++ show (vals_a, ca, cc))
-                               (ca + cc == length vals_a)
-                               (take ca vals_a, drop ca vals_a)
-    (code_ab, vars_b1) <- do_compile_cat ind (MkAnyYulCat ab) fst_vals
-    (code_cd, vars_b2) <- do_compile_cat ind (MkAnyYulCat cd) snd_vals
+    ac_gen <- do_compile_cat (MkAnyYulCat ac)
+    cb_gen <- do_compile_cat (MkAnyYulCat cb)
+    (code',  c_outs) <- gen_rhs_exprs ac_gen ind (code,  a_ins)
+    (code'', b_outs) <- gen_rhs_exprs cb_gen ind (code', c_outs)
+    pure (decor_code ind title code'', b_outs)
+
+go_prod :: forall eff a b c d. (HasCallStack, YulO4 a b c d)
+        => YulCat eff a b -> YulCat eff c d -> CGState RhsExprGen
+go_prod ab cd = build_code_block @(a, c) @(b, d) $ \ind (code, ac_ins) -> do
     let title = T.pack $ "prod " ++
           ("(" ++ abiTypeCompactName @a ++ ", " ++ abiTypeCompactName @c ++ ") -> ") ++
           ("(" ++ abiTypeCompactName @b ++ ", " ++ abiTypeCompactName @d ++ ")")
-    out_vars <- cg_declare_vars
-    pure ( mk_code title $
-           wrap_let_vars out_vars (code_ab <> code_cd)
-         , vars_b1 <> vars_b2 )
-  --
-  go_swap :: forall a b. (HasCallStack, YulO2 a b)
-          => CGState CGOutput
-  go_swap = gen_assert_msg ("swap " ++ show (vals_a, ca, cb))
-            (ca + cb == length vals_a)
-            (let (va, vb) = splitAt ca vals_a
-             in ret_vals (vb <> va))
-    where ca = length (abiTypeInfo @a)
-          cb = length (abiTypeInfo @b)
-  --
-  go_fork :: forall a b c. (HasCallStack, YulO3 a b c)
-          => YulCat eff a b -> YulCat eff a c -> CGState CGOutput
-  go_fork ab ac = do
-    let title = T.pack $ "fork " ++
-          "(" ++ abiTypeCompactName @a ++ ") -> " ++
-          "(" ++ abiTypeCompactName @b ++ ", " ++ abiTypeCompactName @c ++ ")"
-    (code_ab, vars_b) <- do_compile_cat ind (MkAnyYulCat ab) vals_a
-    (code_ac, vars_c) <- do_compile_cat ind (MkAnyYulCat ac) vals_a
-    out_vars <- cg_declare_vars
-    return ( mk_code title $
-             wrap_let_vars out_vars (code_ab <> code_ac)
-           , vars_b <> vars_c)
-  --
-  go_extract :: forall a b. (HasCallStack, YulO2 a b)
-             => Bool -> CGState CGOutput
-  go_extract extractLeft =
-    let title = T.pack $ ("extract" <> if extractLeft then "L " else "R ") ++
-          ("(" ++ abiTypeCompactName @a ++ ", " ++ abiTypeCompactName @b ++ ")")
-        leftVars = length (abiTypeInfo @a)
-    in return ( mk_code title ""
-              , if extractLeft then take leftVars vals_a else drop leftVars vals_a)
-  --
-  go_dis :: forall a. (HasCallStack, YulO1 a)
-         => CGState CGOutput
-  go_dis = gen_assert_msg ("dis_vals " ++ show (vals_a, ca))
-           (ca == length vals_a)
-           (ret_vals [])
-    where ca = length (abiTypeInfo @a)
-  --
-  go_dup :: forall a. (HasCallStack, YulO1 a)
-         => CGState CGOutput
-  go_dup = do
-    let title = T.pack $ "dup (" ++ abiTypeCompactName @a ++ ")"
-    vars_a1 <- cg_create_vars @a
-    vars_a2 <- cg_create_vars @a
-    out_vars <- cg_declare_vars
-    return ( mk_code title $
-             wrap_let_vars out_vars ( assign_vars ind vars_a1 vals_a <>
-                                      mk_aliases ind vars_a2 vars_a1
-                                    )
-           , fmap LetVar (vars_a1 <> vars_a2) )
-  --
-  go_jmp :: forall a b. (HasCallStack, YulO2 a b)
-         => YulJmpTarget eff a b -> CGState CGOutput
-  go_jmp tgt = do
-    fname <- case tgt of
-      (UserDefinedYulCat (depId, depCat))    -> cg_insert_dependent_cat depId (MkAnyYulCat depCat) >> pure depId
-      (BuiltInYulJmpTarget (builtinName, _)) -> cg_use_builtin builtinName >> pure builtinName
-    let title = T.pack $ "jmp " ++ fname ++
-          "(" ++ abiTypeCompactName @a ++ ") -> (" ++ abiTypeCompactName @b ++ ")"
-        callExpr = T.pack fname <> "(" <> vals_to_code vals_a <> ")"
-    if length (abiTypeInfo @b) == 1
-      then do return ("" , [ValExpr callExpr])
-      else do vars_b <- cg_create_vars @b
-              pure ( mk_code title $
-                     ind (vars_to_code vars_b <> " := " <> callExpr)
-                     -- ind callExpr
-                   , fmap LetVar vars_b )
-  --
-  go_ite :: forall a. (HasCallStack, YulO1 a)
-         => CGState CGOutput
-  go_ite = let nouts = length (abiTypeInfo @a)
-           in gen_assert_msg ("vals_a len: "<> show (vals_a, nouts))
-              (length vals_a == 1 + 2 * nouts)
-    (do let title = T.pack $ "ite (" ++ abiTypeCompactName @a ++ ")"
-        vals_b <- map LetVar <$> cg_create_vars @a
-        return ( mk_code title $
-                 ind ("switch " <> val_to_code (vals_a !! 0)) <>
-                 cbracket1 ind "case 1"
-                 (vals_to_code vals_b <> " := " <> (vals_to_code . take nouts . drop 1) vals_a) <>
-                 cbracket1 ind "default"
-                 (vals_to_code vals_b <> " := " <> (vals_to_code . drop (1 + nouts)) vals_a)
-               , vals_b ))
+        ca = length (abiTypeInfo @a)
+        a_ins = take ca ac_ins
+        c_ins = drop ca ac_ins
+    ab_gen <- do_compile_cat (MkAnyYulCat ab)
+    cd_gen <- do_compile_cat (MkAnyYulCat cd)
+    (code',  b_outs) <- gen_rhs_exprs ab_gen ind (code,  a_ins)
+    (code'', d_outs) <- gen_rhs_exprs cd_gen ind (code', c_ins)
+    pure (decor_code ind title code'', b_outs ++ d_outs)
+
+go_swap :: forall a b. (HasCallStack, YulO2 a b)
+        => CGState RhsExprGen
+go_swap = build_code_block @(a, b) @(b, a) $ \ind (code, ab_ins) -> do
+  let title = T.pack $ "swap " ++ ("(" ++ abiTypeCompactName @a ++ ", " ++ abiTypeCompactName @b ++ ")")
+      ca = length (abiTypeInfo @a)
+      (va, vb) = splitAt ca ab_ins
+  pure (decor_code ind title code, vb ++ va)
+
+go_fork :: forall eff a b c. (HasCallStack, YulO3 a b c)
+        => YulCat eff a b -> YulCat eff a c -> CGState RhsExprGen
+go_fork ab ac = build_code_block @a @(b, c) $ \ind (code, a_ins) -> do
+  let title = T.pack $ "fork " ++
+        "(" ++ abiTypeCompactName @a ++ ") -> " ++
+        "(" ++ abiTypeCompactName @b ++ ", " ++ abiTypeCompactName @c ++ ")"
+  ab_gen <- do_compile_cat (MkAnyYulCat ab)
+  ac_gen <- do_compile_cat (MkAnyYulCat ac)
+  (code',  b_outs) <- gen_rhs_exprs ab_gen ind (code,  a_ins)
+  (code'', c_outs) <- gen_rhs_exprs ac_gen ind (code', a_ins)
+
+  pure (decor_code ind title code'', b_outs ++ c_outs)
+
+go_extract :: forall a b. (HasCallStack, YulO2 a b)
+           => Bool -> CGState RhsExprGen
+go_extract extractLeft =
+  let title = T.pack $ ("extract" <> if extractLeft then "L " else "R ") ++
+              ("(" ++ abiTypeCompactName @a ++ ", " ++ abiTypeCompactName @b ++ ")")
+      na = length (abiTypeInfo @a)
+  in if extractLeft
+     then build_code_block @(a, b) @a $
+          \ind (code, ab_ins) -> pure (decor_code ind title code, take na ab_ins)
+     else build_code_block @(a, b) @b $
+          \ind (code, ab_ins) -> pure (decor_code ind title code, drop na ab_ins)
+
+go_dis :: forall a. (HasCallStack, YulO1 a)
+       => CGState RhsExprGen
+go_dis = build_code_block @a @() $ \ind (code, _) ->
+  let title = T.pack $ "dis " ++ "(" ++ abiTypeCompactName @a ++ ")"
+  in pure (decor_code ind title code, [])
+
+go_dup :: forall a. (HasCallStack, YulO1 a)
+       => CGState RhsExprGen
+go_dup = build_code_block @a @(a, a) $ \ind (code, a_ins) ->
+  let title = T.pack $ "dup (" ++ abiTypeCompactName @a ++ ")"
+  in pure (decor_code ind title code, a_ins ++ a_ins)
+
+go_emb :: forall a b. (HasCallStack, YulO2 a b)
+       => b -> CGState RhsExprGen
+go_emb b =
+  case length (abiTypeInfo @b) of
+    0 -> build_code_block @a @() $ \_ (code, _) -> pure (code, [])
+    -- FIXME: proper implementation of embeddable
+    1 -> build_inline_expr @a $ \_ -> pure (T.pack (show b))
+    _ -> error ("Unembedable: " ++ show b)
+--
+go_ite :: forall eff a b. (HasCallStack, YulO2 a b)
+       => YulCat eff a b -> YulCat eff a b -> CGState RhsExprGen
+go_ite ct cf = build_code_block @(BOOL, a) @b $ \ind (code, ba_ins) -> do
+  let title = T.pack $ "ite (" ++ abiTypeCompactName @a ++ ")"
+      a_ins = drop 1 ba_ins
+  b_vars <- cg_create_vars @b
+  ct_gen <- do_compile_cat (MkAnyYulCat ct)
+  cf_gen <- do_compile_cat (MkAnyYulCat cf)
+  (ct_code, ct_outs) <- gen_rhs_exprs ct_gen (indent ind) ("", a_ins)
+  (cf_code, cf_outs) <- gen_rhs_exprs cf_gen (indent ind) ("", a_ins)
+  pure ( decor_code ind title $
+         code <>
+         declare_vars ind b_vars <>
+         ind ("switch " <> rhs_expr_to_code (ba_ins !! 0)) <>
+         cbracket ind "case 1" -- true branch
+         (\ind' -> ct_code <>
+           assign_vars ind' b_vars ct_outs
+         ) <>
+         cbracket ind "default" -- false branch
+         (\ind' -> cf_code <>
+           assign_vars ind' b_vars cf_outs
+         )
+       , mk_rhs_vars b_vars )
+
+go_jmp :: forall eff a b. (HasCallStack, YulO2 a b)
+       => YulJmpTarget eff a b -> CGState RhsExprGen
+go_jmp tgt = do
+  fname <- case tgt of
+    (UserDefinedYulCat (depId, depCat))    -> cg_insert_dependent_cat depId (MkAnyYulCat depCat) >> pure depId
+    (BuiltInYulJmpTarget (builtinName, _)) -> cg_use_builtin builtinName >> pure builtinName
+  let callExpr a_ins = T.pack fname <> "(" <> T.intercalate ", " (fmap rhs_expr_to_code a_ins) <> ")"
+  if length (abiTypeInfo @b) <= 1
+    then build_inline_expr @a (pure . callExpr)
+    else build_code_block @a @b $ \ind (code, a_ins) -> do
+    b_vars <- cg_create_vars @b
+    pure ( code <>
+           declare_vars ind b_vars <>
+           ind (T.intercalate ", " (fmap unVar b_vars) <> " := " <> callExpr a_ins)
+         , mk_rhs_vars b_vars )
+
+go_sget :: HasCallStack
+        => CGState RhsExprGen
+go_sget = build_inline_expr @ADDR $
+          \ins -> pure ("sload(" <> rhs_expr_to_code (ins !! 0) <> ")")
+
+go_sput :: forall a. (HasCallStack, YulO1 a)
+        => CGState RhsExprGen
+go_sput = build_code_block @(ADDR, a) @() $
+          \ind (code, ins) -> pure
+          ( code <>
+            ind ("sstore(" <> T.intercalate ", " (fmap rhs_expr_to_code ins) <> ")")
+          , [])
 
 compile_cat :: forall a b eff. (HasCallStack, YulO2 a b)
             => Indenter -> YulCat eff a b -> ([Var], [Var]) -> CGState Code
-compile_cat ind acat (vars_a, vars_r) = do
-  (code, vals_b) <- do_compile_cat ind (MkAnyYulCat acat) (fmap LetVar vars_a)
+compile_cat ind acat (a_vars, b_vars) = do
+  gen <- do_compile_cat (MkAnyYulCat acat)
+  (code, b_outs) <- gen_rhs_exprs gen ind ("", mk_rhs_vars a_vars)
   pure $
     code <>
-    assign_vars ind vars_r vals_b
+    assign_vars ind b_vars b_outs
 
 compile_fn :: forall a b eff. (HasCallStack, YulO2 a b)
            => Indenter -> FnCat eff a b -> CGState Code
 compile_fn ind f = do
   vars_a <- cg_create_vars @a
   vars_b <- cg_create_vars @b
-  cg_forget_vars -- these variables will not be declared separately
 
   code <- cbracket_m ind
     ( "function " <> T.pack (fnId f) <>
-      "(" <> vars_to_code vars_a <> ")" <>
-      (if null vars_b then "" else " -> " <> vars_to_code vars_b)
+      "(" <> spread_vars vars_a <> ")" <>
+      (if null vars_b then "" else " -> " <> spread_vars vars_b)
     )
     ( \ind' -> do
         body <- compile_cat ind' (fnCat f) (vars_a, vars_b)
-        pure $ body <> ind' "leave"
+        pure $
+          body <>
+          ind' "leave"
     )
 
   cg_reset_for_fn

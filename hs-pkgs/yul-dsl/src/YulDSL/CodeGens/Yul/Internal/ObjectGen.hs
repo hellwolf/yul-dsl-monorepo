@@ -13,7 +13,7 @@ import YulDSL.Core
 import YulDSL.CodeGens.Yul.Internal.CodeFormatters
 import YulDSL.CodeGens.Yul.Internal.CodeGen
 import YulDSL.CodeGens.Yul.Internal.FunctionGen
-import YulDSL.CodeGens.Yul.Internal.Variables
+import YulDSL.CodeGens.Yul.Internal.Variable
 
 
 compile_fn_dispatcher :: HasCallStack
@@ -23,24 +23,23 @@ compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, 
       abienc_builtin = "__abienc_dispatcher_" <> abiTypeCompactName @b
   vars_a <- cg_create_vars @a
   vars_b <- cg_create_vars @b
-  all_vars <- cg_declare_vars
   unless (null vars_a) $ cg_use_builtin abidec_builtin
   unless (null vars_b) $ cg_use_builtin abienc_builtin
   pure . Just $ cbracket ind ("case " <> T.pack (show sel)) $ \ ind' ->
-        maybe "" ind' all_vars <>
+        declare_vars ind' (vars_a ++ vars_b) <>
         -- call the abi decoder for inputs
         ( if not (null vars_a)
-          then ind' ( vars_to_code vars_a <> " := " <> T.pack abidec_builtin <> "(4, calldatasize())" )
+          then ind' ( spread_vars vars_a <> " := " <> T.pack abidec_builtin <> "(4, calldatasize())" )
           else ""
         ) <>
         -- call the function
-        ind' ( (if not (null vars_b) then vars_to_code vars_b <> " := " else "") <>
-               T.pack fname <> "(" <> vars_to_code vars_a <> ")"
+        ind' ( (if not (null vars_b) then spread_vars vars_b <> " := " else "") <>
+               T.pack fname <> "(" <> spread_vars vars_a <> ")"
              ) <>
         -- call the abi decoder for outputs
         ( if not (null vars_b) then
             ind' "let memPos := __allocate_unbounded()" <>
-            ind' ( "let memEnd := " <> T.pack abienc_builtin <> "(memPos, " <> vars_to_code vars_b <> ")" ) <>
+            ind' ( "let memEnd := " <> T.pack abienc_builtin <> "(memPos, " <> spread_vars vars_b <> ")" ) <>
             ind' "return(memPos, sub(memEnd, memPos))"
           else ind' "return(0, 0)"
         )

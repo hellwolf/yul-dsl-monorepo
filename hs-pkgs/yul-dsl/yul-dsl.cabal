@@ -53,7 +53,8 @@ library
                     YulDSL.Eval
                     YulDSL.CodeGens.YulGen
   other-modules:    YulDSL.CodeGens.Yul.Internal.CodeFormatters
-                    YulDSL.CodeGens.Yul.Internal.Variables
+                    YulDSL.CodeGens.Yul.Internal.Variable
+                    YulDSL.CodeGens.Yul.Internal.RhsExpr
                     YulDSL.CodeGens.Yul.Internal.CodeGen
                     YulDSL.CodeGens.Yul.Internal.FunctionGen
                     YulDSL.CodeGens.Yul.Internal.ObjectGen

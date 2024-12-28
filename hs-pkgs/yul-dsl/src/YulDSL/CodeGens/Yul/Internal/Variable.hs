@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-module YulDSL.CodeGens.Yul.Internal.Variables
+module YulDSL.CodeGens.Yul.Internal.Variable
   ( Var (MkVar, unVar)
   , AutoVarGen (MkAutoVarGen), cur_var, new_auto_var
-  , gen_vars, vars_to_code
+  , gen_vars, spread_vars, declare_vars
   ) where
 -- base
 import Data.Char                                   (chr)
@@ -10,11 +10,11 @@ import Data.Function                               ((&))
 -- text
 import Data.Text.Lazy                              qualified as T
 --
-import YulDSL.CodeGens.Yul.Internal.CodeFormatters (Code)
+import YulDSL.CodeGens.Yul.Internal.CodeFormatters
 
--- A variable represented by its name.
+
+-- | A variable represented by its name.
 newtype Var = MkVar { unVar :: T.Text }
-  deriving Show
 
 -- | Variable generator state.
 newtype AutoVarGen = MkAutoVarGen Int
@@ -39,5 +39,11 @@ gen_vars n = snd $ foldr
              (MkAutoVarGen 0, [])
              (drop 1 [0..n])
 
-vars_to_code :: [Var] -> Code
-vars_to_code = T.intercalate ", " . fmap unVar
+-- | Spread variables separated by comma.
+spread_vars :: [Var] -> Code
+spread_vars = T.intercalate ", " . fmap unVar
+
+-- | Declare variables in an one-liner let expression.
+declare_vars :: Indenter -> [Var] -> Code
+declare_vars ind vars = if null vars then ""
+                        else ind ("let " <> spread_vars vars)

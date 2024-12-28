@@ -9,13 +9,13 @@ import Data.Text.Lazy                               qualified as T
 --
 import YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
 import YulDSL.CodeGens.Yul.Internal.CodeFormatters
-import YulDSL.CodeGens.Yul.Internal.Variables
+import YulDSL.CodeGens.Yul.Internal.Variable
 
 
 abidec_dispatcher = mk_builtin "__abidec_dispatcher_" $ \part full ->
   let types = decodeAbiCoreTypeCompactName part
       vars  = gen_vars (length types)
-  in ( [ "function " <> T.pack full <> "(headStart, dataEnd) -> " <> vars_to_code vars <> " {" ]
+  in ( [ "function " <> T.pack full <> "(headStart, dataEnd) -> " <> spread_vars vars <> " {" ]
        ++ abidec_dispatcher_body types vars
        ++ [ "}" ]
      , fmap abidec_from_stack_builtin_name types
@@ -25,7 +25,7 @@ abidec_dispatcher = mk_builtin "__abidec_dispatcher_" $ \part full ->
 abienc_dispatcher = mk_builtin "__abienc_dispatcher_" $ \part full ->
   let types = decodeAbiCoreTypeCompactName part
       vars  = gen_vars (length types)
-  in ( [ "function " <> T.pack full <> "(headStart, " <> vars_to_code vars <>") -> tail {" ]
+  in ( [ "function " <> T.pack full <> "(headStart, " <> spread_vars vars <>") -> tail {" ]
        ++ abienc_dispatcher_types types vars
        ++ [ "}" ]
      , fmap abienc_from_stack_builtin_name types

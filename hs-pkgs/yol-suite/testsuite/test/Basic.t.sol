@@ -18,6 +18,12 @@ contract BasicProgramTest is Test {
     assertTrue(_p.embTrue$l(), "embTrue$l");
   }
 
+  function testRevetIfTrue() external {
+    vm.expectRevert();
+    _p.revertIfTrue(true, 42);
+    assertEq(_p.revertIfTrue(false, 42), 42);
+  }
+
   function testRangeSum() external {
     assertEq(_p.rangeSum$p(0, 1, 10), 55, "result1");
   }

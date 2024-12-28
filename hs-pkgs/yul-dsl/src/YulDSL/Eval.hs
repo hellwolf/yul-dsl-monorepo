@@ -66,7 +66,7 @@ evalYulCat' YulDup  a  = pure (a, a)
 -- control flow
 evalYulCat' (YulJmp (UserDefinedYulCat  (_, f))) a = evalYulCat' f a
 evalYulCat' (YulJmp (BuiltInYulJmpTarget (_, f))) a = pure (f a)
-evalYulCat' YulITE (BOOL a, (b, c)) = pure (if a then b else c)
+evalYulCat' (YulITE ct cf) (BOOL t, a) = if t then evalYulCat' ct a else evalYulCat' cf a
 -- value primitives
 evalYulCat' (YulEmb b)  _ = pure b
 evalYulCat' YulSGet r = gets $ \s -> fromJust (fromWord =<< M.lookup r (store_map s))

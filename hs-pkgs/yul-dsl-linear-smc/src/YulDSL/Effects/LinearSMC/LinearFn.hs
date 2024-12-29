@@ -138,7 +138,7 @@ yulmonad'lv :: forall f xs b f1 b1 r vd m1 m1b m2 m2b.
                , UncurryingNP f1 xs b1 m1 m1b m2 m2b One
                , LiftFunction b1 m2 m2b One ~ m2b b1
                )
-            => LiftFunction f1 m1 m1b One      -- ^ LiftFunction               f1 m1 m1b One
+            => LiftFunction f1 m1 m1b One     -- ^ LiftFunction               f1  m1 m1b One
             -> (P'V 0 r (NP xs) ⊸ P'V vd r b) -- ^ LiftFunction (NP (():xs) -> b) m1 m1b One
 yulmonad'lv f = let !(MkYulCat'LVM f') = uncurryingNP @f1 @xs @b1 @m1 @m1b @m2 @m2b @One f (MkYulCat'LVV id)
   in \xs -> mkUnit xs
@@ -196,7 +196,7 @@ yulmonad'lp :: forall f xs b f1 b1 r vd m1 m1b m2 m2b.
                , UncurryingNP f1 xs b1 m1 m1b m2 m2b One
                , LiftFunction b1 m2 m2b One ~ m2b b1
                )
-            => LiftFunction f1 m1 m1b One   -- ^ LiftFunction               f1 m1 m1b One
+            => LiftFunction f1 m1 m1b One   -- ^ LiftFunction               f1  m1 m1b One
             -> (P'P r (NP xs) ⊸ P'V vd r b) -- ^ LiftFunction (NP (():xs) -> b) m1 m1b One
 yulmonad'lp f = let !(MkYulCat'LPM f') = uncurryingNP @f1 @xs @b1 @m1 @m1b @m2 @m2b @One f (MkYulCat'LPP id)
   in \xs -> mkUnit xs

@@ -124,88 +124,108 @@ TODOs & Future Plans
 > [!WARNING]
 >
 > YOU DON'T NEED TO LOOK AT THIS DIRTY LAUNDRY!
+>
+> Legend for unclosed items:
+> * 🟢 - Planned and low uncertainty;
+> * 🟠 - Planned with some design decisions to be made;
+> * 🔴 - Likely deferred to the future versions;
+> * ❓ - To be reviewed.
 
 **TODOs for 0.1.0.0**
 
-Headline Features
-
 - eth-abi
   - CoreType:
-    - [ ] 🟠 ARRAY
-  - ExtendedTypes:
-    - [ ] 🟢 TUPLEn
-    - [ ] 🟠 REF
+    - [x] NP (N-ary Product, type-level recursive-friendly alternative to tuple type)
+    - [x] BOOL
+    - [x] INTx s n
+    - [x] ADDR
+  - ExtendedType:
+    - [ ] 🟠 REF, NamedSlot
 - yul-dsl
   - Value primitives:
+    - [x] PatternMatchable `Maybe Num`
+    - [ ] 🟢 All `Num` and `Maybe Num` built-ins
     - [ ] 🟢 `YulCast`, casting values between value types.
-    - [ ] 🟢 All Num built-ins
-  - Non pure primitives:
+  - Impure primitives:
     - [ ] 🟠 `YulCall`, external function calls.
-  - Control flow primitives:
-    - [ ] 🟠 `YulMapArray`, tight loop over an array.
-      - array length built-in.
+  - Yul CodeGen
+    - [x] Function generator completion
+    - Object generator:
+      - [x] Dispatcher generator
+    - Built-ins:
+      - [x] ABICodec
 - yul-dsl-linear-smc
   - [ ] 🟢 ifThenElse for port.
   - [ ] 🟢 Complete the Num classes: mul, abs, sig, etc.
   - [ ] 🟠 More storage combinators.
-  - [ ] 🟠 Prelude curation first version.
 - yol-suite
-  - Contract verification support:
-    - [ ] 🟢 Basic stunt contract generator.
+  - YOLC
+    - Singleton program factory:
+      - [x] Program interface, e.g. `interface IERC20Program`
+      - [x] Program factory, e.g. `function createERC20Program()`
+    - Contract verification support:
+      - [ ] 🟢 EIP-1967 compatible "stunt contract" generator. A stunt contract includes both:
+            a) the program's interface necessary to interact with the program via EIP-1967-aware explorers,
+            b) a copy of Haskell main source code in a block of solidity comments.
+  - CLI:
+    - [x] `yolc`, a MVP in shells script, prepares YOLC project and invoke YOLC builder.
+  - Developer communication:
+    - [ ] 🟠 Annotated ERC20 demo
   - Software distributions:
-    - [ ] 🟠 Nix flake
+    - [ ] 🟢 Nix flake
       - Rudimentary github dev console
 
 **TODOs for 0.2.0.0**
 
 - eth-abi
   - CoreType
-    - [ ] BYTESn, additional operations
-    - [ ] BYTES
+    - [ ] 🟢 BYTESn, complete support
+    - [ ] 🟠 ARRAY a
+    - [ ] 🟠 BYTES
+    - [ ] 🟠 STRING
   - ExtendedType
-    - [ ] STRING
-    - [ ] FUNC
-    - [ ] STRUCT with named fields
+    - [ ] 🟠 TUPLEn
+    - [ ] 🟠 STRUCT with named fields
+    - [ ] 🟠 SELECTOR
   - ABITypeCodec
-    - [ ]  Compatibility with the solidity abi-spec
+    - [ ] 🟢 Compatibility with the solidity abi-spec
 - yul-dsl
-  - ExtendedType
-    - [ ] Maybe support of non WordValues
-    - [ ] Solidity MaybeXYZ struct
-  - Pure value primitives:
-    - [ ] contracts ABI serialization built-ins.
-  - CodeGen core:
-    - [ ] Fn autoId (instead of using yulCatDigest.)
-  - Function Gen:
-    - [ ] Fix the implementation for all embeddable values.
-  - Object builder:
-    - [ ] constructor support.
+  - Composite type support
+    - [ ] 🟢 array length built-in.
+    - [ ] 🟠 Maybe support of non WordValues
+  - Other built-ins:
+    - [ ] 🟢 contracts ABI serialization built-ins.
+  - Control flow primitives:
+    - [ ] 🟠 `YulMapArray`, tight loop over an array.
+  - Yul CodeGen:
+    - [ ] ❓ Fn autoId (instead of using yulCatDigest.)
+    - Function Gen:
+      - [ ] 🟠 Fix the implementation for all embeddable values.
+    - Object builder:
+      - [ ] 🟠 constructor support.
 - yol-suite
+  - YOLC
+    - [ ] 🟠 Solidity struct generator for types.
+    - Advanced program deployment strategy:
+      - [ ] 🟠 manual logic split through delegateCall.
+      - [ ] 🔴 auto logic split & dispatching,
+      - [ ] 🔴 Shared library.
+    - Program upgradability:
+      - [ ] 🟠 Beacon upgradability.
+    - Contract verification support
+      - [ ] 🔴 Full stunt contract generator.
+  - CLI
+    - [ ] 🔴 Use 'THSH' to mix shell scripting and publish its haskell binary.
   - Software distributions:
     - [ ] better github dev console
     - [ ] yolc.dev playground
-- yolc
-  - Project builder
-    - Contract size strategy:
-      - [ ] Manual logic split & dispatching,
-      - [ ] Auto logic split.
-    - Deployment types:
-      - [ ] Factory contract,
-      - [ ] Shared library.
-    - Upgradability:
-      - [ ] Singleton upgradability,
-      - [ ] Beacon Upgradability.
-  - Contract verification support
-    - [ ] Full stunt contract generator.
-  - CLI
-    - [ ] Use 'THSH' to mix shell scripting and publish its haskell binary.
 - attila
   - Test Pipeline: `attila test`
-    - [ ] QuickCheck integration using Eval monad.
-    - [ ] Foundry testing integration using stunt contract.
+    - [ ] 🟠 Foundry testing integration using stunt contract.
+    - [ ] 🔴 QuickCheck integration using Eval monad.
   - Deployment Pipeline: `attila deploy`
-    - [ ] Deploy the program (program is an unit of deployment.)
-    - [ ] Etherscan verification pipeline.
+    - [ ] 🟠 Deploy the program (program is an unit of deployment.)
+    - [ ] 🔴 Etherscan verification pipeline.
 - drwitch
   - ...
 

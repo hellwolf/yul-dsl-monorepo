@@ -131,8 +131,6 @@ Headline Features
 
 - eth-abi
   - CoreType:
-    - [ ] 🟢 `{upCast, safeCast, unSafeCast}INTx}` operations:
-      - INTn sign-extended word values using `upCaseINTx @I256`
     - [ ] 🟠 ARRAY
   - ExtendedTypes:
     - [ ] 🟢 TUPLEn
@@ -140,11 +138,12 @@ Headline Features
 - yul-dsl
   - Value primitives:
     - [ ] 🟢 `YulCast`, casting values between value types.
+    - [ ] 🟢 All Num built-ins
+  - Non pure primitives:
+    - [ ] 🟠 `YulCall`, external function calls.
   - Control flow primitives:
     - [ ] 🟠 `YulMapArray`, tight loop over an array.
       - array length built-in.
-  - Non pure primitives:
-    - [ ] 🟠 `YulCall`, external function calls.
 - yul-dsl-linear-smc
   - [ ] 🟢 ifThenElse for port.
   - [ ] 🟢 Complete the Num classes: mul, abs, sig, etc.
@@ -171,7 +170,8 @@ Headline Features
     - [ ]  Compatibility with the solidity abi-spec
 - yul-dsl
   - ExtendedType
-    - Solidity MaybeXYZ struct
+    - [ ] Maybe support of non WordValues
+    - [ ] Solidity MaybeXYZ struct
   - Pure value primitives:
     - [ ] contracts ABI serialization built-ins.
   - CodeGen core:

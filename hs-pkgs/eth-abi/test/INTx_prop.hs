@@ -46,8 +46,7 @@ test_twos_complement_law _ a = a >= toInteger (minBound @i) && a <= toInteger (m
         a1 = wordToIntegerFrom a
         a2 = wordToIntegerFrom (-(a + 1))
 
-test_most_intx :: forall a b.
-                  Example b
+test_most_intx :: forall a b. Example b
                => (a -> b) -> (forall i n. (i ~ INTx True n, ValidINTn n) => Proxy i -> a) -> SpecWith (Arg b)
 test_most_intx g f = do
   it "  8bits" $ g (f (Proxy @I8))
@@ -57,8 +56,27 @@ test_most_intx g f = do
   it "128bits" $ g (f (Proxy @I128))
   it "256bits" $ g (f (Proxy @I256))
 
+test_some_upcast_cases :: Bool
+test_some_upcast_cases = and
+  [ -- * unsigned inputs
+    let n = maxBound @U32 in intxUpCast n == (fromInteger (toInteger n) :: U32)
+    -- , let n = maxBound @U32 in intxUpCast n == (fromInteger (toInteger n) :: U16)
+    -- , let n = maxBound @U32 in intxUpCast n == (fromInteger (toInteger n) :: I32)
+  , let n = maxBound @U32 in intxUpCast n == (fromInteger (toInteger n) :: U40)
+  , let n = maxBound @U256 in intxUpCast n == (fromInteger (toInteger n) :: U256)
+    -- * signed inputs
+  , let n = maxBound @I32 in intxUpCast n == (fromInteger (toInteger n) :: I32)
+  , let n = maxBound @I32 in intxUpCast n == (fromInteger (toInteger n) :: I40)
+    -- , let n = maxBound @I32 in intxUpCast n == (fromInteger (toInteger n) :: U32)
+    -- , let n = maxBound @I32 in intxUpCast n == (fromInteger (toInteger n) :: U256)
+  , let n = maxBound @I32 in intxUpCast n == (fromInteger (toInteger n) :: I256)
+  , let n = maxBound @I256 in intxUpCast n == (fromInteger (toInteger n) :: I256)
+  ]
+
 tests = describe "INTx" $ do
   describe "Minimum and maximum bounds" $ test_most_intx id validate_bounds
   describe "Property of bounds for unary operators" $ test_most_intx property test_bounds_op1
-  describe "property of bounds for binary operators" $ test_most_intx property test_bounds_op2
+  describe "Property of bounds for binary operators" $ test_most_intx property test_bounds_op2
   describe "Two's complement law" $ test_most_intx property test_twos_complement_law
+  describe "Integer casting cases" $
+    it "Some up-casting cases" test_some_upcast_cases

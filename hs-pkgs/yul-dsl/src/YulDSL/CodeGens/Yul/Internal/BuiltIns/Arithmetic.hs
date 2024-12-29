@@ -4,6 +4,8 @@ module YulDSL.CodeGens.Yul.Internal.BuiltIns.Arithmetic (exports) where
 -- base
 import Data.List                                    (stripPrefix)
 import Data.Maybe                                   (fromJust)
+-- eth-abi
+import Ethereum.ContractABI
 -- text
 import Data.Text.Lazy                               qualified as T
 --
@@ -54,13 +56,12 @@ append_checked_maybe_variants op@(safeOpPrefix, _) =
 safe_add_uintn = mk_builtin "__safe_add_t_uint" $ \part full ->
   let part' = T.pack part
       nbits = read part :: Int
-      maxVal = "0x" <> replicate (nbits `div` 4) 'f'
   in ( [ "function " <> T.pack full <> "(x, y) -> sum, failed {"
        , "  x := __cleanup_t_uint" <> part' <> "(x)"
        , "  y := __cleanup_t_uint" <> part' <> "(y)"
        , "  sum := add(x, y)"
        , "  if "
-         <> (if nbits < 256 then "gt(sum, " <> T.pack maxVal <> ")" else "gt(x, sum)")
+         <> (if nbits < 256 then "gt(sum, " <> max_uint_val nbits <> ")" else "gt(x, sum)")
          <> " { failed := true }"
        , "}"
        ]
@@ -70,16 +71,14 @@ safe_add_uintn = mk_builtin "__safe_add_t_uint" $ \part full ->
 safe_add_intn = mk_builtin "__safe_add_t_int" $ \part full ->
   let part' = T.pack part
       nbits = read part :: Int
-      minVal = "0x7f" <> replicate (nbits `div` 4 - 2) 'f'
-      maxVal = "0x"   <> replicate (64 - nbits `div` 4) 'f' <> "80" <> replicate (nbits `div` 4 - 2) '0'
   in ( [ "function " <> T.pack full <> "(x, y) -> sum, failed {"
        , "  x := __cleanup_t_int" <> part' <> "(x)"
        , "  y := __cleanup_t_int" <> part' <> "(y)"
        , "  sum := add(x, y)"
        , "  if or("
        , (if nbits < 256
-          then "    sgt(sum, " <> T.pack minVal <> "),\n" <>
-               "    slt(sum, " <> T.pack maxVal <> ")"
+          then "    sgt(sum, " <> max_int_val nbits <> "),\n" <>
+               "    slt(sum, " <> min_int_val nbits <> ")"
           else "    and(sge(x, 0), slt(sum, y)),\n" <>
                "    and(slt(x, 0), sge(sum, y))"
          )
@@ -93,13 +92,12 @@ safe_add_intn = mk_builtin "__safe_add_t_int" $ \part full ->
 safe_sub_uintn = mk_builtin "__safe_sub_t_uint" $ \part full ->
   let part' = T.pack part
       nbits = read part :: Int
-      maxVal = "0x" <> replicate (nbits `div` 4) 'f'
   in ( [ "function " <> T.pack full <> "(x, y) -> diff, failed {"
        , "  x := __cleanup_t_uint" <> part' <> "(x)"
        , "  y := __cleanup_t_uint" <> part' <> "(y)"
        , "  diff := sub(x, y)"
        , "  if "
-         <> (if nbits < 256 then "gt(diff, " <> T.pack maxVal <> ")" else "gt(diff, x)")
+         <> (if nbits < 256 then "gt(diff, " <> max_uint_val nbits <> ")" else "gt(diff, x)")
          <> " { failed := true}"
        , "}"
        ]
@@ -109,16 +107,14 @@ safe_sub_uintn = mk_builtin "__safe_sub_t_uint" $ \part full ->
 safe_sub_intn = mk_builtin "__safe_sub_t_int" $ \part full ->
   let part' = T.pack part
       nbits = read part :: Int
-      minVal = "0x7f" <> replicate (nbits `div` 4 - 2) 'f'
-      maxVal = "0x"   <> replicate (64 - nbits `div` 4) 'f' <> "80" <> replicate (nbits `div` 4 - 2) '0'
   in ( [ "function " <> T.pack full <> "(x, y) -> diff, failed {"
        , "  x := __cleanup_t_int" <> part' <> "(x)"
        , "  y := __cleanup_t_int" <> part' <> "(y)"
        , "  diff := sub(x, y)"
        , "  if or("
        , (if nbits < 256
-          then "    slt(diff, " <> T.pack maxVal <> "),\n" <>
-               "    sgt(diff, " <> T.pack minVal <> ")"
+          then "    slt(diff, " <> min_int_val nbits <> "),\n" <>
+               "    sgt(diff, " <> max_int_val nbits <> ")"
           else "    and(sge(y, 0), sgt(diff, x)),\n" <>
                "    and(slt(y, 0), slt(diff, x))"
          )
@@ -136,3 +132,19 @@ exports =
   append_checked_maybe_variants safe_add_intn ++
   append_checked_maybe_variants safe_sub_uintn ++
   append_checked_maybe_variants safe_sub_intn
+
+--
+-- Internal functions
+--
+
+max_uint_val nbits = T.pack . show . fromJust $
+  withSomeValidINTx False (toInteger (nbits `div` 8)) $
+  \_ (_ :: SNat n) -> toWord (maxBound @(INTx False n))
+
+max_int_val nbits = T.pack . show . fromJust $
+  withSomeValidINTx True (toInteger (nbits `div` 8)) $
+  \_ (_ :: SNat n) -> toWord (maxBound @(INTx True n))
+
+min_int_val nbits = T.pack . show . fromJust $
+  withSomeValidINTx True (toInteger (nbits `div` 8)) $
+  \_ (_ :: SNat n) -> toWord (intxUpCast (minBound @(INTx True n)) :: I256)

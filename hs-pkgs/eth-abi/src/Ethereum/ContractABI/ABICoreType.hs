@@ -17,9 +17,8 @@ contract ABI types to support the entire contract ABI specification.
 module Ethereum.ContractABI.ABICoreType
   ( ABICoreType (..)
   -- for working with INTx, BYTEn
-  , Nat, natSing, natVal
-  , ValidINTn, withValidINTxType
-  , isBytesType
+  , SNat, Nat, natSing, natVal
+  , ValidINTn, withSomeValidINTx
   -- ABI type names
   , abiCoreTypeCanonName
   , abiCoreTypeCompactName, decodeAbiCoreTypeCompactName
@@ -29,25 +28,30 @@ module Ethereum.ContractABI.ABICoreType
 
 -- base
 import Control.Exception            (assert)
-import Data.Char                    (isDigit, toUpper)
+import Data.Char                    (isDigit)
 import Data.Coerce                  (coerce)
-import GHC.TypeLits                 (KnownNat (natSing), Nat, SNat, fromSNat, natVal, withSomeSNat)
+import GHC.TypeLits
+    ( KnownNat (natSing)
+    , Nat
+    , SNat
+    , fromSNat
+    , natVal
+    , type (<=)
+    , withKnownNat
+    , withSomeSNat
+    )
 import Numeric                      (showHex)
 import Text.ParserCombinators.ReadP qualified as RP
 -- template-haskell
 import Language.Haskell.TH          qualified as TH
+-- constraints
+import Data.Constraint              (Dict, (\\))
+import Data.Constraint.Unsafe       (unsafeAxiom)
 --
 import Internal.Data.Type.Bool
 
 
 {- * ABICoreType and their utilities -}
-
--- | A constraint that restricts what Nat values are valid for 'INTx' and 'BYTESn'.
---   Note: It is valid from 1 to 32.
-class KnownNat n => ValidINTn n
-
--- | A top-level splice that declares all the valid INTx n values.
-flip foldMap [1..32] $ \i -> [d| instance ValidINTn $(TH.litT (TH.numTyLit i)) |]
 
 -- | Contract ABI core types.
 data ABICoreType where
@@ -75,30 +79,29 @@ instance Eq ABICoreType where
   (BYTESn' _) == _             = False
   (ARRAY' _)  == _             = False
 
--- | It returns true for @[BYTESn' 1]@ type.
-isBytesType :: ABICoreType -> Bool
-isBytesType (ARRAY' (BYTESn' (n :: SNat n))) = fromSNat n == 1
-isBytesType _                                = False
+-- | A constraint that restricts what Nat values are valid for 'INTx' and 'BYTESn'.
+--   Note: It is valid from 1 to 32.
+type ValidINTn n = (KnownNat n, ValidINTn_ n)
 
--- | Work with the INTx type information corresponding to signedness and data size during runtime.
-withValidINTxType :: Bool -> Integer -> (ABICoreType -> a) -> Maybe a
-withValidINTxType sval nval f =
+-- | A helper constraint to avoid KnownNat to be super class which may cause issues when unsafeAxiom.
+class ValidINTn_ n
+
+-- | A top-level splice that declares all the valid INTx n values.
+flip foldMap [1 .. 32] $ \i -> [d| instance ValidINTn_ $(TH.litT (TH.numTyLit i)) |]
+
+-- | Work with the INTx signedness and data byte-size during runtime.
+withSomeValidINTx :: forall r. ()
+                  => Bool -> Integer
+                  -> (forall s n. (KnownBool s, ValidINTn n, 1 <= n, n <= 32) => SBool s -> SNat n -> r)
+                  -> Maybe r
+withSomeValidINTx sval nval f =
   toKnownSBool sval $ \s ->
   withSomeSNat nval $ \maybeSn -> maybeSn >>=
-  \sn -> let n = fromSNat sn
-             -- this makes template haskell code shorter
-             g :: forall i -> ValidINTn i => Maybe ABICoreType
-             g i = Just (INTx' s (natSing @i))
-             -- using template haskell to generate 32 cases for all @INTx' s n@
-         in f <$> $(TH.caseE (TH.varE 'n) -- case n of
-               -- @$i -> Just INTx' s (natSing @$i)@
-               (map (\i -> TH.match
-                           (TH.litP (TH.integerL i))
-                           (TH.normalB (TH.varE 'g `TH.appE` TH.litE (TH.integerL i)))
-                           []) [1..32]
-                -- @_ -> Nothing@
-                ++ [ TH.match TH.wildP (TH.normalB (TH.conE 'Nothing)) [] ]
-               ))
+  \sn -> withSomeValidINTn sn >>=
+  \validINTn -> withKnownNat sn (Just (f s sn) \\ validINTn)
+  where withSomeValidINTn :: forall n. SNat n -> Maybe (Dict (ValidINTn_ n, 1 <= n, n <= 32))
+        withSomeValidINTn sn = let n = fromSNat sn
+                               in if n >= 1 && n <= 32 then Just unsafeAxiom else Nothing
 
 -- | Canonical names for the core types used for computing the function selectors.
 abiCoreTypeCanonName :: ABICoreType -> String
@@ -106,7 +109,7 @@ abiCoreTypeCanonName BOOL'       = "bool"
 abiCoreTypeCanonName (INTx' s n) = (if fromSBool s then "int" else "uint") <> show (natVal n * 8)
 abiCoreTypeCanonName ADDR'       = "address"
 abiCoreTypeCanonName (BYTESn' n) = "bytes" ++ show (natVal n)
-abiCoreTypeCanonName (ARRAY' a)  = if isBytesType a then "bytes" else abiCoreTypeCanonName a ++ "[]"
+abiCoreTypeCanonName (ARRAY' a)  = abiCoreTypeCanonName a ++ "[]"
 
 -- | Compact but unambiguous names for the core types..
 abiCoreTypeCompactName :: ABICoreType -> String
@@ -136,7 +139,7 @@ decodeAbiCoreTypeCompactName part = case results of
             _ -> RP.pfail
         parseINTx s = do
           digits <- RP.many1 $ RP.satisfy isDigit
-          maybe RP.pfail pure (withValidINTxType s (read digits) id)
+          maybe RP.pfail pure (withSomeValidINTx s (read digits) INTx')
         results = RP.readP_to_S (RP.manyTill parseOne RP.eof) part
 
 instance Show ABICoreType where show = abiCoreTypeCanonName
@@ -147,7 +150,7 @@ instance Show ABICoreType where show = abiCoreTypeCanonName
 newtype WORD = WORD Integer deriving newtype (Eq)
 
 instance Show WORD where
-    show (WORD a) = "0x" ++ fmap toUpper (showHex a "")
+  show (WORD a) = "0x" ++ showHex a ""
 
 -- | Convert from an integer to a word.
 integerToWord :: Integer -> WORD

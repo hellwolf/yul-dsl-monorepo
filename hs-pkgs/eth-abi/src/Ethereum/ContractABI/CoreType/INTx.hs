@@ -16,8 +16,10 @@ Ethereum contract ABI assorted integer types.
 -}
 
 module Ethereum.ContractABI.CoreType.INTx
-  ( INTx, ValidINTx, intxSign, intxNBits
-    -- *** Assorted INTx Types
+  ( INTx, ValidINTx
+  , intxSign, intxNBits
+  , intxUpCast, intxSafeCast
+    -- == Assorted INTx Types
   , U8,U16,U24,U32,U40,U48,U56,U64
   , U72,U80,U88,U96,U104,U112,U120,U128
   , U136,U144,U152,U160,U168,U176,U184,U192
@@ -33,6 +35,8 @@ import Data.Bits                         (shift)
 import Data.Coerce                       (coerce)
 import Data.Maybe                        (fromJust)
 import Data.Proxy                        (Proxy (Proxy))
+import GHC.TypeError                     (Assert, ErrorMessage (Text), TypeError)
+import GHC.TypeLits                      (type (+), type (<=), type (<=?))
 -- cereal
 import Data.Serialize                    qualified as S
 -- eth-abi
@@ -57,7 +61,36 @@ intxSign = fromSBool (boolSing @s)
 intxNBits :: forall a (s :: Bool) (n :: Nat). (a ~ INTx s n, ValidINTn n) => Int
 intxNBits = fromEnum (8 * natVal (Proxy @n))
 
-{- * Type class instances -}
+-- | Integer up-casting cases.
+intxUpCast :: forall (s1 :: Bool) (n1 :: Nat)  (s2 :: Bool) (n2 :: Nat).
+              ( KnownBool s1, KnownBool s2, ValidINTn n1, ValidINTn n2
+                -- this must be true in any case
+              , n1 <= n2
+                -- now check signedness
+              , Assert (
+                  -- same signedness
+                  (s1 && s2) ||
+                  (Not s1 && Not s2) ||
+                  -- for unsigned input, output can be signed but with larger data size
+                  -- Note: (<=?) maybe not work reliably, you may always fallback to intxSafeCast.
+                  (Not s1 && s2 && (n1 + 1 <=? n2)))
+                (TypeError (Text "Cannot safely up-cast intx")))
+           => INTx s1 n1 -> INTx s2 n2
+intxUpCast (INT x) = fromInteger x
+
+-- | Safe integer casting.
+intxSafeCast :: forall (s1 :: Bool) (n1 :: Nat) (s2 :: Bool) (n2 :: Nat).
+                (KnownBool s1, KnownBool s2, ValidINTn n1, ValidINTn n2)
+             => INTx s1 n1 -> Maybe (INTx s2 n2)
+intxSafeCast (INT x) = fromInteger x
+
+------------------------------------------------------------------------------------------------------------------------
+-- Type class instances
+------------------------------------------------------------------------------------------------------------------------
+
+--
+-- ABITypeable
+--
 
 instance forall s n. ValidINTx s n => ABITypeable (INTx s n) where
   type instance ABITypeDerivedOf (INTx s n) = INTx s n
@@ -67,7 +100,9 @@ instance forall s n. ValidINTx s n => ABITypeCodec (INTx s n) where
   abiEncoder (INT x) = S.put x
   abiDecoder = fmap INT S.get
 
-{- **  Num hierarchy classes for (Maybe INTx s n) -}
+--
+--  Num hierarchy classes for (Maybe INTx s n)
+--
 
 instance ValidINTx s n => Bounded (Maybe (INTx s n)) where
   minBound = Just . INT $
@@ -114,7 +149,9 @@ instance ValidINTx s n => Integral (Maybe (INTx s n)) where
   quotRem (Just (INT a)) (Just (INT b)) = let (c, d) = quotRem a b in (Just (INT c), Just (INT d))
   quotRem _              _              = (Nothing, Nothing)
 
-{-  ** Num hierarchy classes for (INTx s n) -}
+--
+-- Num hierarchy classes for (INTx s n)
+--
 
 instance ValidINTx s n => Bounded (INTx s n) where
   minBound = fromJust minBound
@@ -135,7 +172,9 @@ instance ValidINTx s n => Integral (INTx s n) where
   toInteger = toInteger . Just
   quotRem a b = let (a', b') = quotRem (Just a) (Just b) in (fromJust a', fromJust b')
 
-{- ** ABIWordValue instances -}
+--
+-- ABIWordValue instances
+--
 
 instance ValidINTx s n => ABIWordValue (INTx s n) where
   fromWord w = let maxVal = coerce (maxBound @(INTx s n))
@@ -156,12 +195,16 @@ instance ValidINTx s n => ABIWordValue (INTx s n) where
                         else integerToWord (a + 1 `shift` intxNBits @(INTx s n))
                    else integerToWord a
 
-{- ** Show instances -}
+--
+-- Show instances
+--
 
 instance ValidINTx s n => Show (INTx s n) where
   show (INT a) = show a
 
-{- * Assorted Fixed-Precision Integer Aliases -}
+------------------------------------------------------------------------------------------------------------------------
+-- Assorted Fixed-Precision Integer Aliases
+------------------------------------------------------------------------------------------------------------------------
 
 -- Note: Code generation command
 -- sh$ for i in `seq 1 32`;do echo "type U$((i*8)) = INTx False $i;type I$((i*8)) = INTx True $i";done

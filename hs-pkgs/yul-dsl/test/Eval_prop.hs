@@ -23,7 +23,7 @@ test_coerce_two_vals_unit_hlist a b = a == a' && b == b' &&
   where (a', b') = evalYulCat (YulExtendType @MkPure @(NP [p, q]) @(p, q)) (a :* b :* Nil)
         (a'' :* b'' :* Nil) = evalYulCat (YulReduceType @MkPure @(p, q) @(NP [p, q])) (a, b)
 --
-test_coerce_commutative :: forall p q r. (p ~ ADDR, q ~ U32, r ~ BOOL) => p -> q -> r -> Bool
+test_coerce_commutative :: forall p q r. (p ~ ADDR, q ~ U160, r ~ BOOL) => p -> q -> r -> Bool
 test_coerce_commutative a b c = a == a' && b == b' && c == c' &&
                                 a == a'' && b == b'' && c == c''
   where ((a',b'),c') = evalYulCat (YulCoerceType @MkPure @(p, (q, r)) @((p, q), r)) (a, (b, c))

@@ -13,13 +13,13 @@ import YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
 
 
 cmp_builtins = mk_builtin "__cmp_" $ \part full ->
-  let (op, typ) = break (== '_') part
-      cleanf = "__cleanup_t" <> typ
+  let (op, typ) = break (== '_') part -- e.g.: __cmp_lt_t_uint256
+      clean_f = "__cleanup" <> typ
   in ( [ "function " <> T.pack full <> "(x, y) -> b {"
-       , "  b := " <> T.pack op <> "(" <> T.pack cleanf <> "(x), " <> T.pack cleanf <> "(y))"
+       , " b := " <> T.pack op <> "(" <> T.pack clean_f <> "(x), " <> T.pack clean_f <> "(y))"
        , "}"
        ]
-     , [ cleanf
+     , [ clean_f
        , op])
 
 append_checked_maybe_variants op@(safeOpPrefix, _) =
@@ -28,9 +28,9 @@ append_checked_maybe_variants op@(safeOpPrefix, _) =
      -- checked operator that reverts
      , mk_builtin ("__checked_" <> opname) $ \part full ->
          ( [ "function " <> T.pack full <> "(x, y) -> result {"
-           , "  let failed := false"
-           , "  result, failed := " <> T.pack (safeOpPrefix <> part) <> "(x, y)"
-           , "  if eq(failed, true) { panic_error_0x11() }"
+           , " let failed := false"
+           , " result, failed := " <> T.pack (safeOpPrefix <> part) <> "(x, y)"
+           , " if eq(failed, true) { panic_error_0x11() }"
            , "}"
            ]
          , [ safeOpPrefix <> part
@@ -39,14 +39,14 @@ append_checked_maybe_variants op@(safeOpPrefix, _) =
      -- maybe type wrapped operator
      , mk_builtin ("__maybe_" <> opname) $ \part full ->
          ( [ "function " <> T.pack full <> "(tx, x, ty, y) -> t, result {"
-           , "  t := iszero(or(iszero(tx), iszero(ty)))"
-           , "  if eq(t, true) {" -- both Just values
-           , "    result, t := " <> T.pack (safeOpPrefix <> part) <> "(x, y)"
-           , "    if eq(t, true) {" -- t: failed
-           , "      result := 0"
-           , "    }"
-           , "    t := iszero(t)" -- flip t: not failed / Just value
-           , "  }"
+           , " t := iszero(or(iszero(tx), iszero(ty)))"
+           , " if eq(t, true) {" -- both Just values
+           , "   result, t := " <> T.pack (safeOpPrefix <> part) <> "(x, y)"
+           , "   if eq(t, true) {" -- t: failed
+           , "     result := 0"
+           , "   }"
+           , "   t := iszero(t)" -- flip t: not failed / Just value
+           , " }"
            , "}"
            ]
          , [ safeOpPrefix <> part
@@ -57,10 +57,10 @@ safe_add_uintn = mk_builtin "__safe_add_t_uint" $ \part full ->
   let part' = T.pack part
       nbits = read part :: Int
   in ( [ "function " <> T.pack full <> "(x, y) -> sum, failed {"
-       , "  x := __cleanup_t_uint" <> part' <> "(x)"
-       , "  y := __cleanup_t_uint" <> part' <> "(y)"
-       , "  sum := add(x, y)"
-       , "  if "
+       , " x := __cleanup_t_uint" <> part' <> "(x)"
+       , " y := __cleanup_t_uint" <> part' <> "(y)"
+       , " sum := add(x, y)"
+       , " if "
          <> (if nbits < 256 then "gt(sum, " <> max_uint_val nbits <> ")" else "gt(x, sum)")
          <> " { failed := true }"
        , "}"
@@ -72,21 +72,19 @@ safe_add_intn = mk_builtin "__safe_add_t_int" $ \part full ->
   let part' = T.pack part
       nbits = read part :: Int
   in ( [ "function " <> T.pack full <> "(x, y) -> sum, failed {"
-       , "  x := __cleanup_t_int" <> part' <> "(x)"
-       , "  y := __cleanup_t_int" <> part' <> "(y)"
-       , "  sum := add(x, y)"
-       , "  if or("
-       , (if nbits < 256
-          then "    sgt(sum, " <> max_int_val nbits <> "),\n" <>
-               "    slt(sum, " <> min_int_val nbits <> ")"
-          else "    and(sge(x, 0), slt(sum, y)),\n" <>
-               "    and(slt(x, 0), sge(sum, y))"
-         )
-       , "  ) { failed := true }"
+       , " x := __cleanup_t_int" <> part' <> "(x)"
+       , " y := __cleanup_t_int" <> part' <> "(y)"
+       , " sum := add(x, y)"
+       , " if or("
+       ] ++ ( if nbits < 256
+              then [ "  sgt(sum, " <> max_int_val nbits <> "),"
+                   , "  slt(sum, " <> min_int_val nbits <> ")" ]
+              else [ "  and(sge(x, 0), slt(sum, y)),"
+                   , "  and(slt(x, 0), sge(sum, y))" ]) ++
+       [ " ) { failed := true }"
        , "}"
        ]
      , [ "__cleanup_t_int" <> part
-       , "sge"
        ])
 
 safe_sub_uintn = mk_builtin "__safe_sub_t_uint" $ \part full ->
@@ -112,18 +110,15 @@ safe_sub_intn = mk_builtin "__safe_sub_t_int" $ \part full ->
        , "  y := __cleanup_t_int" <> part' <> "(y)"
        , "  diff := sub(x, y)"
        , "  if or("
-       , (if nbits < 256
-          then "    slt(diff, " <> min_int_val nbits <> "),\n" <>
-               "    sgt(diff, " <> max_int_val nbits <> ")"
-          else "    and(sge(y, 0), sgt(diff, x)),\n" <>
-               "    and(slt(y, 0), slt(diff, x))"
-         )
-       , "  ) { failed := true }"
+       ] ++ (if nbits < 256
+             then [ "    slt(diff, " <> min_int_val nbits <> "),"
+                  , "    sgt(diff, " <> max_int_val nbits <> ")" ]
+             else [ "    and(sge(y, 0), sgt(diff, x)),"
+                  , "    and(slt(y, 0), slt(diff, x))" ] ) ++
+       [ "  ) { failed := true }"
        , "}"
        ]
-     , [ "__cleanup_t_int" <> part
-       , "sge"
-       ])
+     , [ "__cleanup_t_int" <> part ] )
 
 exports :: [BuiltInEntry]
 exports =

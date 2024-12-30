@@ -27,7 +27,7 @@ import YulDSL.Effects.LinearSMC.YulPort
 -- $fnl_functions
 -- = Create Linear Functions With @fn'l@
 
-class LinearFnKind (ie :: PortEffect) (oe :: PortEffect) (fe :: LinearEffect) | ie oe -> fe where
+class LinearFnLike (ie :: PortEffect) (oe :: PortEffect) (fnEff :: LinearEffect) | ie oe -> fnEff where
   -- | Define a `YulCat` morphism from a yul port diagram.
   fn'l :: forall f xs b.
           ( YulO2 (NP xs) b
@@ -37,13 +37,54 @@ class LinearFnKind (ie :: PortEffect) (oe :: PortEffect) (fe :: LinearEffect) | 
           )
        => String
        -> (forall r. YulO1 r => P'x ie r (NP xs) ⊸ P'x oe r b)
-       -> Fn fe (CurryNP (NP xs) b)
+       -> Fn fnEff (CurryNP (NP xs) b)
 
-instance forall vd. LinearFnKind (VersionedPort 0) (VersionedPort vd) (VersionedInputOutput vd) where
+instance forall vd. LinearFnLike (VersionedPort 0) (VersionedPort vd) (VersionedInputOutput vd) where
   fn'l fid f = MkFn (MkFnCat fid (decode'lvv f))
 
-instance forall vd. LinearFnKind PurePort (VersionedPort vd) (PureInputVersionedOutput vd) where
+instance forall vd. LinearFnLike PurePort (VersionedPort vd) (PureInputVersionedOutput vd) where
   fn'l fid f = MkFn (MkFnCat fid (decode'lpv f))
+
+-- $calll_functions
+-- = Call functions with linear port
+
+call'l :: forall f x xs b g' r v1 vn vd.
+          ( YulO4 x (NP xs) b r
+          , UncurryNP'Fst f ~ (x:xs)
+          , UncurryNP'Snd f ~ b
+          , v1 + vd ~ vn
+          , LiftFunction (CurryNP (NP xs) b) (P'V v1 r) (P'V vn r) One ~ g'
+          , CurryingNP xs b (P'V v1 r) (P'V vn r) (YulCat'LVV v1 v1 r ()) One
+          , LiftFunction b (YulCat'LVV v1 v1 r ()) (P'V vn r) One ~ P'V vn r b
+          )
+       => Fn (VersionedInputOutput vd) f
+       -> (P'V v1 r x ⊸ g')
+call'l (MkFn f) x =
+  dup2'l x &
+  \(x', x'') -> curryingNP @xs @b @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r ()) @One $
+  \(MkYulCat'LVV fxs) -> encode'lvv
+                         (YulJmp (UserDefinedYulCat (fnId f, fnCat f)))
+                         (cons'l x' (fxs (discard x'')))
+
+-- instance LinearCallLike PurePort (PureInputVersionedOutput vd) v1 vd where
+--   call'l :: forall f x xs b g' r vn.
+--             ( YulO4 x (NP xs) b r
+--             , UncurryNP'Fst f ~ (x:xs)
+--             , UncurryNP'Snd f ~ b
+--             , v1 + vd ~ vn
+--             , LiftFunction (CurryNP (NP xs) b) (P'V v1 r) (P'V vn r) One ~ g'
+--             , CurryingNP xs b (P'V v1 r) (P'V vn r) (YulCat'LVV v1 v1 r ()) One
+--             , LiftFunction b (YulCat'LVV v1 v1 r ()) (P'V vn r) One ~ P'V vn r b
+--             )
+--          => Fn (PureInputVersionedOutput vd) f
+--          -> (P'P r x ⊸ g')
+--   call'l (MkFn f) x =
+--     dup2'l x &
+--     \(x', x'') ->
+--       curryingNP @xs @b @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r ()) @One $
+--       \(MkYulCat'LVV fxs) -> encode'lvv
+--                              (YulJmp (UserDefinedYulCat (fnId f, fnCat f)))
+--                              (cons'l x' (fxs (discard x'')))
 
 class PurifiableLinearFn (eff :: LinearEffect) where
   purify'l :: Fn eff f ⊸ PureFn f
@@ -201,27 +242,6 @@ yulmonad'lp :: forall f xs b f1 b1 r vd m1 m1b m2 m2b.
 yulmonad'lp f = let !(MkYulCat'LPM f') = uncurryingNP @f1 @xs @b1 @m1 @m1b @m2 @m2b @One f (MkYulCat'LPP id)
   in \xs -> mkUnit xs
   & \(xs', u) -> runYulMonad u (f' xs')
-
---
--- call'l
---
-
-call'l :: forall f x xs b g' r v1 vd vn.
-          ( YulO4 x (NP xs) b r
-          , UncurryNP'Fst f ~ (x:xs)
-          , UncurryNP'Snd f ~ b
-          , v1 + vd ~ vn
-          , LiftFunction (CurryNP (NP xs) b) (P'V v1 r) (P'V vn r) One ~ g'
-          , CurryingNP xs b (P'V v1 r) (P'V vn r) (YulCat'LVV v1 v1 r ()) One
-          , LiftFunction b (YulCat'LVV v1 v1 r ()) (P'V vn r) One ~ P'V vn r b
-          )
-       => Fn (VersionedInputOutput vd) f
-       -> (P'V v1 r x ⊸ g')
-call'l (MkFn f) x =
-   dup2'l x & \(x', x'') ->
-       curryingNP
-       @xs @b @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r ()) @One
-       (\(MkYulCat'LVV fxs) -> encode'lvv (YulJmp (UserDefinedYulCat (fnId f, fnCat f))) (cons'l x' (fxs (discard x''))))
 
 --
 -- pattern matching

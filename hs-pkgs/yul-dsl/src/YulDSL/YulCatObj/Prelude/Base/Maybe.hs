@@ -19,6 +19,7 @@ type MaybeYulNum a = ( ABITypeable a
 
 instance MaybeYulNum a => ABITypeable (Maybe a) where
   type instance ABITypeDerivedOf (Maybe a) = NP [BOOL, ABITypeDerivedOf a]
+  type instance ABITypeValueSize (Maybe a) = 32
 
   abiToCoreType (Just x) = true :* abiToCoreType x :* Nil
   abiToCoreType Nothing  = false :* 0 :* Nil

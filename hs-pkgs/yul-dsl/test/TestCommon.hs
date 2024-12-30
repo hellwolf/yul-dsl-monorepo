@@ -4,15 +4,14 @@
 module TestCommon where
 
 import Data.Functor         ((<&>))
-import Data.Maybe           (fromJust)
 -- quickcheck
 import Test.QuickCheck
 
 import Ethereum.ContractABI
 
 instance Arbitrary ADDR where
-  arbitrary = chooseBoundedIntegral (minBound @U256, maxBound @U256)
-              <&> fromJust . toAddr . toInteger
+  arbitrary = chooseBoundedIntegral (minBound @U160, maxBound @U160)
+              <&> addrFromU160
 
 deriving newtype instance Arbitrary BOOL
 

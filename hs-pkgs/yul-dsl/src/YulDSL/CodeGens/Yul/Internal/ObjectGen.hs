@@ -19,8 +19,8 @@ import YulDSL.CodeGens.Yul.Internal.Variable
 compile_fn_dispatcher :: HasCallStack
                       => Indenter -> ScopedFn -> CGState (Maybe Code)
 compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, _)))) (_ :: FnCat eff a b)) = do
-  let abidec_builtin = "__abidec_dispatcher_" <> abiTypeCompactName @a
-      abienc_builtin = "__abienc_dispatcher_" <> abiTypeCompactName @b
+  let abidec_builtin = "__abidec_dispatcher_c_" <> abiTypeCompactName @a
+      abienc_builtin = "__abienc_from_stack_c_" <> abiTypeCompactName @b
   vars_a <- cg_create_vars @a
   vars_b <- cg_create_vars @b
   unless (null vars_a) $ cg_use_builtin abidec_builtin
@@ -36,7 +36,7 @@ compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, 
         ind' ( (if not (null vars_b) then spread_vars vars_b <> " := " else "") <>
                T.pack fname <> "(" <> spread_vars vars_a <> ")"
              ) <>
-        -- call the abi decoder for outputs
+        -- call the abi encoder for outputs
         ( if not (null vars_b) then
             ind' "let memPos := __allocate_unbounded()" <>
             ind' ( "let memEnd := " <> T.pack abienc_builtin <> "(memPos, " <> spread_vars vars_b <> ")" ) <>
@@ -96,7 +96,7 @@ compile_object ind (MkYulObject { yulObjectName = oname
         code_fns <- mapM (compile_scoped_fn ind''') sfns
 
         -- dependencies
-        deps_codes <- compile_deps ind (not . (`elem` map (anyFnId . unScopedFn) sfns))
+        deps_codes <- compile_deps ind''' (not . (`elem` map (anyFnId . unScopedFn) sfns))
 
         builtin_codes <- cg_gen_builtin_codes ind'''
 

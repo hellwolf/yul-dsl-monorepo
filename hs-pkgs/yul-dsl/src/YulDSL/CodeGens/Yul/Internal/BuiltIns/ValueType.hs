@@ -1,22 +1,17 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 {-# LANGUAGE OverloadedStrings #-}
-module YulDSL.CodeGens.Yul.Internal.BuiltIns.ValueType (exports) where
+module YulDSL.CodeGens.Yul.Internal.BuiltIns.ValueType
+  ( exports
+  , value_cleanup_builtin_name
+  , validate_value_builtin_name
+  ) where
+-- yul-dsl
+import YulDSL.Core
 -- text
 import Data.Text.Lazy                               qualified as T
 --
 import YulDSL.CodeGens.Yul.Internal.BuiltInRegistra
-
-raw_boolean_operators =
-  [ const_builtin  "eq" []
-  , const_builtin  "gt" []
-  , const_builtin  "lt" []
-  , const_builtin  "le" [ "function le(a, b) -> r { r := iszero(gt(a, b)) }" ]
-  , const_builtin  "ge" [ "function ge(a, b) -> r { r := iszero(lt(a, b)) }" ]
-  , const_builtin "sgt" []
-  , const_builtin "slt" []
-  , const_builtin "sle" [ "function sle(a, b) -> r { r := iszero(sgt(a, b)) }" ]
-  , const_builtin "sge" [ "function sge(a, b) -> r { r := iszero(slt(a, b)) }" ]
-  ]
+import YulDSL.CodeGens.Yul.Internal.Variable
 
 cleanup_bool = const_builtin "__cleanup_t_bool"
   [ "function __cleanup_t_bool(value) -> cleaned { cleaned := iszero(iszero(value)) }" ]
@@ -46,20 +41,37 @@ cleanup_address = const_builtin_with_deps "__cleanup_t_address"
   [ "__cleanup_t_uint160" ]
 
 validate_value = mk_builtin "__validate_t_" $ \part full ->
-  let cleanupf = "__cleanup_t_" <> part
+  let cleanup_f = "__cleanup_t_" <> part
   in ( [ "function " <> T.pack full <> "(value) {"
-       <> " if iszero(eq(value, " <> T.pack cleanupf <> "(value))) { revert(0, 0) }"
+       <> " if neq(value, " <> T.pack cleanup_f <> "(value)) { revert(0, 0) }"
        <> " }"
        ]
-     , [ cleanupf ]
+     , [ cleanup_f
+       ]
      )
+
+keccak256 = mk_builtin "__keccak_c_" $ \part full ->
+  let types = decodeAbiCoreTypeCompactName part
+      vars  = gen_vars (length types)
+      abienc_builtin = "__abienc_from_stack_c_" <> part
+  in ( [ "function " <> T.pack full <> "(" <> spread_vars vars <> ") -> hash {"
+       , " let memPos := __allocate_unbounded()"
+       , " let memEnd := " <> T.pack abienc_builtin <> "(memPos, " <> spread_vars vars <> ")"
+       , " hash := keccak256(memPos, sub(memEnd, memPos))"
+       , "}"
+       ]
+     , [ abienc_builtin ])
 
 exports :: [BuiltInEntry]
 exports =
-  raw_boolean_operators ++
   [ cleanup_bool
   , cleanup_uintn
   , cleanup_intn
   , cleanup_address
   , validate_value
+  , keccak256
   ]
+
+value_cleanup_builtin_name t = "__cleanup_t_" ++ abiCoreTypeCanonName t
+
+validate_value_builtin_name t = "__validate_t_" ++ abiCoreTypeCanonName t

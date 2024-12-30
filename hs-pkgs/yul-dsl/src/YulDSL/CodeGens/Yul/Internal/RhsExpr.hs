@@ -74,7 +74,7 @@ build_code_block g = pure $
 assign_vars :: HasCallStack
             => Indenter -> [Var] -> [RhsExpr] -> Code
 assign_vars ind vars rexprs = gen_assert_msg ("assign_vars" ++ show(length vars, length rexprs))
-                              (True || length vars == length rexprs) $ T.unlines $
+                              (length vars == length rexprs) $ T.unlines $
   zipWith
   (\a b -> ind (a <> " := " <> b))
   (fmap unVar vars)

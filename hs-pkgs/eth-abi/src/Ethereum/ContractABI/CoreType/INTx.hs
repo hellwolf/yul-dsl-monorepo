@@ -8,7 +8,6 @@ Maintainer  : hellwolf@yolc.dev
 Stability   : experimental
 Portability : GHC2024
 
-
 = Description
 
 Ethereum contract ABI assorted integer types.
@@ -46,7 +45,7 @@ import Ethereum.ContractABI.ABITypeCodec
 import Internal.Data.Type.Bool
 
 
--- | ABI integer value types, where @s@ is for signess and @n@ is the multiple of 8 bits
+-- | ABI integer value types, where @s@ is for signess and @n@ is byte-size of the value.
 newtype INTx (s :: Bool) (n :: Nat) = INT Integer
   deriving newtype (Eq, Ord, Enum)
 
@@ -94,6 +93,7 @@ intxSafeCast (INT x) = fromInteger x
 
 instance forall s n. ValidINTx s n => ABITypeable (INTx s n) where
   type instance ABITypeDerivedOf (INTx s n) = INTx s n
+  type instance ABITypeValueSize (INTx s n) = n
   abiTypeInfo = [INTx' (boolSing @s) (natSing @n)]
 
 instance forall s n. ValidINTx s n => ABITypeCodec (INTx s n) where

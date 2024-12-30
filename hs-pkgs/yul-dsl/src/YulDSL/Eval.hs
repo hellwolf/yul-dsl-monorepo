@@ -29,7 +29,7 @@ import YulDSL.Core.YulCat
 import YulDSL.Core.YulCatObj
 
 
-newtype EvalData = MkEvalData { store_map :: M.Map ADDR WORD
+newtype EvalData = MkEvalData { store_map :: M.Map B32 WORD
                               }
                  deriving Show
 

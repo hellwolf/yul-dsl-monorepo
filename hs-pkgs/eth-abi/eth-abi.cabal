@@ -39,6 +39,7 @@ library
                       Ethereum.ContractABI.CoreType.INTx
                       Ethereum.ContractABI.CoreType.BYTESn
                       Ethereum.ContractABI.ABITypeCoercible
+                      Ethereum.ContractABI.ExtendedType.REF
                       Ethereum.ContractABI.ExtendedType.TUPLEn
                       Ethereum.ContractABI.ExtendedType.SELECTOR
                       Ethereum.ContractABI

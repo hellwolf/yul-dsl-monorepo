@@ -17,7 +17,7 @@ contract ABI types to support the entire contract ABI specification.
 module Ethereum.ContractABI.ABICoreType
   ( ABICoreType (..)
   -- for working with INTx, BYTEn
-  , SNat, Nat, natSing, natVal
+  , SNat, Nat, natSing, natVal, fromSNat
   , ValidINTn, withSomeValidINTx
   -- ABI type names
   , abiCoreTypeCanonName

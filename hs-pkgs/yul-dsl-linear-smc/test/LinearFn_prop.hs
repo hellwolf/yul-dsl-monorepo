@@ -39,7 +39,7 @@ bar3 = fn'l "bar3" $ yulmonad'lp @(U256 -> U256 -> U256 -> U256)
   x3' <- impure x3
   pure (x1' + x2' + x3')
 
-fooSPut = fn'l "fooSPut" $ yulmonad'lv @(ADDR -> U256 -> ())
+fooSPut = fn'l "fooSPut" $ yulmonad'lv @(B32 -> U256 -> ())
   \addr val -> LVM.do
   sput_ addr val
 
@@ -64,7 +64,7 @@ call4 = fn'l "call4" $
     \x1 x2 x3 x4 -> call'l foo4 x1 x2 x3 x4
 
 callSPut = fn'l "callSPut" $
-  uncurry'lv @(ADDR -> U256 -> ())
+  uncurry'lv @(B32 -> U256 -> ())
     \addr var -> call'l fooSPut addr var
 
 tests = describe "Ethereum.ContractsABI.YulDSL.Linear" $ do

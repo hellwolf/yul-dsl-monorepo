@@ -43,4 +43,4 @@ mk_num_op :: forall a. ABITypeable a => String -> String
 mk_num_op n = "__checked_" ++ n ++ "_t_" ++ abiTypeCanonName @a
 
 mk_cmp_op :: forall a s n. (a ~ INTx s n, ValidINTx s n) => String -> String
-mk_cmp_op op = "__cmp_" ++ (if fromBoolKind @s then 's':op else op)  ++ "_" ++ abiTypeCanonName @a
+mk_cmp_op op = "__cmp_" ++ (if fromBoolKind @s then 's':op else op)  ++ "_t_" ++ abiTypeCanonName @a

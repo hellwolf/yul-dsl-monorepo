@@ -125,7 +125,8 @@ TODOs & Future Plans
 >
 > YOU DON'T NEED TO LOOK AT THIS DIRTY LAUNDRY!
 >
-> Legend for unclosed items:
+> Legend for items:
+> * ⭐,🌟 - Highlighted feature.
 > * 🟢 - Planned and low uncertainty;
 > * 🟠 - Planned with some design decisions to be made;
 > * 🔴 - Likely deferred to the future versions;
@@ -134,44 +135,62 @@ TODOs & Future Plans
 **TODOs for 0.1.0.0**
 
 - eth-abi
-  - CoreType:
+  - CoreType
     - [x] NP (N-ary Product, type-level recursive-friendly alternative to tuple type)
     - [x] BOOL
     - [x] INTx s n
+    - [x] BYTESn
     - [x] ADDR
-  - ExtendedType:
-    - [ ] 🟠 REF, NamedSlot
+  - ExtendedType
+    - [ ] 🟠 REF, storage or memory reference
 - yul-dsl
-  - Value primitives:
-    - [x] PatternMatchable `Maybe Num`
-    - [ ] 🟢 All `Num` and `Maybe Num` built-ins
-    - [ ] 🟢 `YulCast`, casting values between value types.
-  - Impure primitives:
-    - [ ] 🟠 `YulCall`, external function calls.
-  - Yul CodeGen
-    - [x] Function generator completion
+  - YulCat
+    - Value type functions
+      - All integer number types: U8, U16.. U256; I8, I16, .. I256.
+      - [-] ⭐ Safe number handling with
+        1) checked number operations,
+        2) number operations over optional values,
+        3) pattern matching of optional (Haskell `Maybe` type) values
+        4) type-safe upCast, and safeCast to optional values.
+        - [ ] 🟢 `YulCast`, casting values between value types.
+        - [x] 🟢 All `Num` and `Maybe Num` built-ins
+    - ⭐ Pattern matching support of optional number values.
+    - Haskell native if-then-else expression through "RebindableSyntax".
+    - yulKeccak256 for supported types.
+    - Exception
+      - `revert0`, solidity-equivalent of `revert()`
+    - Impurity and side effects
+      - [x] `YulSGet`, `YulSPut` for raw storage operations.
+      - [ ] 🟠 `YulCall`, external function calls.
+  - CodeGen
+    - [x] Function generator for any YulCat
     - Object generator:
       - [x] Dispatcher generator
-    - Built-ins:
-      - [x] ABICodec
+    - Yul built-ins generators
+      - [-] 🟢 Full arithmetic support
+      - [-] 🟢 Full ABICodec support
+  - Evaluator
+    - `evalFn` to evaluate a single YulCat morphism.
 - yul-dsl-linear-smc
-  - [ ] 🟢 ifThenElse for port.
-  - [ ] 🟢 Complete the Num classes: mul, abs, sig, etc.
-  - [ ] 🟠 More storage combinators.
+  - [x] 🌟🌟🌟 Linear type sefety through Linearly Versioned Monad.
+    - [x] 🟠 More storage combinators.
+  - [-] ⭐ Compile linear port expressions to yul-dsl
+    - [ ] 🟢 ifThenElse for port.
+    - [ ] 🟢 Complete the Num classes: mul, abs, sig, etc.
 - yol-suite
   - YOLC
-    - Singleton program factory:
+    - Singleton program factory
       - [x] Program interface, e.g. `interface IERC20Program`
       - [x] Program factory, e.g. `function createERC20Program()`
-    - Contract verification support:
+    - Contract verification support
       - [ ] 🟢 EIP-1967 compatible "stunt contract" generator. A stunt contract includes both:
             a) the program's interface necessary to interact with the program via EIP-1967-aware explorers,
             b) a copy of Haskell main source code in a block of solidity comments.
   - CLI:
-    - [x] `yolc`, a MVP in shells script, prepares YOLC project and invoke YOLC builder.
-  - Developer communication:
+    - [x] ⭐ `yolc`, a MVP in shells script, prepares YOLC project and invoke YOLC builder.
+  - Developer communication
     - [ ] 🟠 Annotated ERC20 demo
-  - Software distributions:
+  - Software distributions
     - [ ] 🟢 Nix flake
       - Rudimentary github dev console
 
@@ -179,30 +198,37 @@ TODOs & Future Plans
 
 - eth-abi
   - CoreType
-    - [ ] 🟢 BYTESn, complete support
     - [ ] 🟠 ARRAY a
     - [ ] 🟠 BYTES
     - [ ] 🟠 STRING
   - ExtendedType
-    - [ ] 🟠 TUPLEn
-    - [ ] 🟠 STRUCT with named fields
     - [ ] 🟠 SELECTOR
-  - ABITypeCodec
+    - [ ] 🟠 TUPLEn, STRUCT with named fields, etc.
+  - ABICodec
     - [ ] 🟢 Compatibility with the solidity abi-spec
 - yul-dsl
-  - Composite type support
-    - [ ] 🟢 array length built-in.
-    - [ ] 🟠 Maybe support of non WordValues
-  - Other built-ins:
-    - [ ] 🟢 contracts ABI serialization built-ins.
-  - Control flow primitives:
-    - [ ] 🟠 `YulMapArray`, tight loop over an array.
-  - Yul CodeGen:
+  - YulCat
+    - Value type
+    - [ ] 🟢 yulKeccak256 evaluation function using ABICodec from eth-abi
+    - Composite type support
+      - [x] 🟢 array length built-in.
+      - [ ] 🟠 Maybe support of non WordValues
+    - Control flow
+      - [ ] 🟠 `YulMapArray`, tight loop over an array.
+    - Exception
+      - [ ] 🟢 `revertWithError`
+      - [ ] 🟢 `revertWithMessage`
+    - Type safety
+      - ❓ further encode partial functions in type
+  - CodeGen
     - [ ] ❓ Fn autoId (instead of using yulCatDigest.)
     - Function Gen:
       - [ ] 🟠 Fix the implementation for all embeddable values.
     - Object builder:
       - [ ] 🟠 constructor support.
+  - Evaluator
+    - [ ] 🟢 handling exception
+    - [ ] 🟢 test coverage, and check against foundry results
 - yol-suite
   - YOLC
     - [ ] 🟠 Solidity struct generator for types.

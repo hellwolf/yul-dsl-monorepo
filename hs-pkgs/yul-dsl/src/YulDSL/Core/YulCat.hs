@@ -30,9 +30,12 @@ module YulDSL.Core.YulCat
   , (>.>), (<.<)
   , yulJmpUserDefined, yulJmpBuiltIn
   , yulNumLt, yulNumLe, yulNumGt, yulNumGe, yulNumEq, yulNumNe
-  , yulRevert
-  , IfThenElse (ifThenElse), PatternMatchable (inCase, match), PatternMatchableYulCat
+  , yulRevert, yulKeccak256
+  , Referenceable (yulRefGet, yulRefPut)
   , digestYulCat
+  , module Control.IfThenElse
+  , module Control.PatternMatchable
+  , PatternMatchableYulCat
   ) where
 
 -- base
@@ -118,9 +121,9 @@ data YulCat (eff :: k) a b where
   -- * Effectful Primitives
   --
   -- ^ Get storage word.
-  YulSGet :: forall eff a. (IsNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff ADDR a
+  YulSGet :: forall eff a. (IsNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff B32 a
   -- ^ Put storage word.
-  YulSPut :: forall eff a. (IsNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff (ADDR, a) ()
+  YulSPut :: forall eff a. (IsNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff (B32, a) ()
 
 -- | Existential wrapper of the 'YulCat'.
 data AnyYulCat = forall eff a b. YulO2 a b => MkAnyYulCat (YulCat eff a b)
@@ -165,16 +168,24 @@ yulNumGe = yulJmpBuiltIn (yulNumCmp @a (False, True , True ))
 yulNumEq = yulJmpBuiltIn (yulNumCmp @a (False, True , False))
 yulNumNe = yulJmpBuiltIn (yulNumCmp @a (True , False, True ))
 
+-- | Revert without any message.
+yulRevert :: forall eff a b. YulO2 a b => YulCat eff a b
+yulRevert = YulDis >.> yulJmpBuiltIn ("__revert_c_" ++ abiTypeCompactName @b, error "revert(0, 0)")
+
+yulKeccak256 :: forall eff a. YulO1 a => YulCat eff a B32
+yulKeccak256 = yulJmpBuiltIn ("__keccak_c_" ++ abiTypeCompactName @a, error "TODO: keccak_c")
+
+-- | Type class for building referenceable values.
+class Referenceable a where
+  yulRefGet :: REF a -> YulCat eff B32 a
+  yulRefPut :: REF a -> YulCat eff (B32, a) ()
+
 -- ^ 'IfThenElse' instance for 'YulCat' objects.
 instance YulO2 a r => IfThenElse (YulCat eff r BOOL) (YulCat eff r a) where
   ifThenElse c a b = YulFork c YulId >.> YulITE a b
 
 -- | Type alias of 'PatternMatchable' p for 'YulCat' objects.
 type PatternMatchableYulCat eff p a = PatternMatchable (YulCat eff (p a)) (p a) (p (YulCat eff (p a) a)) YulCatObj
-
--- | Revert without any message.
-yulRevert :: forall eff a b. YulO2 a b => YulCat eff a b
-yulRevert = YulDis >.> yulJmpBuiltIn ("__revert_" ++ abiTypeCompactName @b, error "revert(0, 0)")
 
 ------------------------------------------------------------------------------------------------------------------------
 -- NP Helpers

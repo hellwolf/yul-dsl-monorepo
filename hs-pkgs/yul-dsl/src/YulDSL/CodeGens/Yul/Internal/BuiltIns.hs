@@ -12,3 +12,6 @@ default_builtins =
   YulDSL.CodeGens.Yul.Internal.BuiltIns.ValueType.exports ++
   YulDSL.CodeGens.Yul.Internal.BuiltIns.Arithmetic.exports ++
   YulDSL.CodeGens.Yul.Internal.BuiltIns.ABICodec.exports
+
+prelude_builtins :: [String]
+prelude_builtins = fmap fst YulDSL.CodeGens.Yul.Internal.BuiltIns.Runtime.prelude

@@ -18,7 +18,9 @@ import YulDSL.CodeGens.Yul.Internal.Variable
 
 compile_fn_dispatcher :: HasCallStack
                       => Indenter -> ScopedFn -> CGState (Maybe Code)
-compile_fn_dispatcher ind (ExternalFn _ sel@(SELECTOR (_, Just (FuncSig (fname, _)))) (_ :: FnCat eff a b)) = do
+compile_fn_dispatcher ind (ExternalFn _
+                           sel@(SELECTOR (_, Just (FuncSig (fname, _))))
+                           (_ :: NamedYulCat eff a b)) = do
   let abidec_builtin = "__abidec_dispatcher_c_" <> abiTypeCompactName @a
       abienc_builtin = "__abienc_from_stack_c_" <> abiTypeCompactName @b
   vars_a <- cg_create_vars @a
@@ -62,10 +64,8 @@ compile_dispatchers ind fns = cbracket_m ind "/* dispatcher */" $ \ind' -> do
 compile_deps :: HasCallStack
              => Indenter -> (String -> Bool) -> CGState [Code]
 compile_deps ind fidFilter = do
-  deps <- fmap (\(i, c) -> case c of (MkAnyYulCat cat) -> MkAnyFnCat (MkFnCat i cat))
-          . filter (\(i, _) -> fidFilter i)
-          <$> cg_list_dependent_cats
-  mapM (\case (MkAnyFnCat f) -> compile_fn ind f) deps
+  deps <- filter (\(i, _) -> fidFilter i) <$> cg_list_dependent_cats
+  mapM (\(i, (MkAnyYulCat cat)) -> compile_fn ind (i, cat)) deps
 
 compile_object :: HasCallStack
                => Indenter -> YulObject -> CGState Code
@@ -96,7 +96,7 @@ compile_object ind (MkYulObject { yulObjectName = oname
         code_fns <- mapM (compile_scoped_fn ind''') sfns
 
         -- dependencies
-        deps_codes <- compile_deps ind''' (not . (`elem` map (anyFnId . unScopedFn) sfns))
+        deps_codes <- compile_deps ind''' (not . (`elem` map (\x -> withScopedFn x fst) sfns))
 
         builtin_codes <- cg_gen_builtin_codes ind'''
 

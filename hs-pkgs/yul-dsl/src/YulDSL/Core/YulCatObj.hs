@@ -27,5 +27,5 @@ instance YulCatObj (NP '[])
 instance (YulCatObj x, YulCatObj (NP xs)) => YulCatObj (NP (x:xs))
 instance (YulCatObj a1, YulCatObj a2) => YulCatObj (a1, a2) where yul_prod_objs = Dict
 
--- ^ A built-in yul function has a id and a evaluation function.
+-- | A built-in yul function has a name and a evaluation function.
 type BuiltInYulFunction a b = YulO2 a b => (String, a -> b)

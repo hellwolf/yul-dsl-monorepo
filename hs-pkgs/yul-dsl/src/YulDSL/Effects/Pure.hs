@@ -18,7 +18,6 @@ module YulDSL.Effects.Pure
 -- eth-abi
 import Ethereum.ContractABI
 --
-import YulDSL.Core.Fn
 import YulDSL.Core.YulCat
 import YulDSL.Core.YulCatObj
 
@@ -83,7 +82,7 @@ fn'p :: forall f xs b.
      => String                     -- ^ the function id
      -> YulCat'P (NP xs) b         -- ^ the pure yul categorical value of @NP xs ↝ b@
      -> PureFn (CurryNP (NP xs) b) -- ^ a 'PureFn' of function type @f@
-fn'p fid cat'l = MkFn (MkFnCat fid cat'l)
+fn'p fid cat'l = MkFn (fid, cat'l)
 
 -- | An alias for creating 'PureFn' using 'uncurry\'p' and 'fn\'p'.
 fn :: forall f xs b m.
@@ -115,5 +114,5 @@ call'p :: forall f xs b r m.
           )
        => PureFn f                -- ^ a 'PureFn' of function type @f@
        -> LiftFunction f m m Many -- ^ a currying function type
-call'p (MkFn f) = curryingNP @xs @b @m @m @m @Many
-                  (\xs -> xs >.> yulJmpUserDefined (fnId f, fnCat f))
+call'p (MkFn (fid, cat)) = curryingNP @xs @b @m @m @m @Many
+                           (\xs -> xs >.> YulJmpU (fid, cat))

@@ -17,13 +17,12 @@ References:
 --
 module Ethereum.ContractABI.ExtendedType.REF
   ( REF
-  , ValidSlot, ValidOffset, refAt, refLocation
+  , ValidSlot, ValidOffset, constRef
   ) where
 -- base
 import GHC.TypeLits
 --
 import Ethereum.ContractABI.ABITypeable
-import Ethereum.ContractABI.CoreType.BYTESn
 
 
 -- | A storage or memory reference to type @a@ at the solidity conventional "(slot, offset)".
@@ -36,13 +35,13 @@ type ValidSlot n = (KnownNat n, n <= (2 ^ 248))
 type ValidOffset a n = (KnownNat n, ABITypeValueSize a + n <= 32)
 
 -- | Create a reference at a slot and an offset value.
-refAt :: forall a. forall slot -> forall offset -> (ValidSlot slot, ValidOffset a offset) => REF a
-refAt slot offset = REF ( fromSNat (SNat @slot)
-                        , fromSNat (SNat @offset) )
+constRef :: forall a. forall slot -> forall offset -> (ValidSlot slot, ValidOffset a offset) => REF a
+constRef slot offset = REF ( fromSNat (SNat @slot)
+                           , fromSNat (SNat @offset) )
 
 -- | Create a reference at keccak256 of a location string and an offset value.
-refLocation :: forall a. String -> forall offset -> ValidOffset a offset => REF a
-refLocation loc offset = REF
-                         -- truncate the last byte
-                         ( bytesnToInteger @31 . bytesnFromWord8s . drop 1 . unBYTESn $ stringKeccak256  loc
-                         , fromSNat (SNat @offset) )
+-- refLocation :: forall a. String -> forall offset -> ValidOffset a offset => REF a
+-- refLocation loc offset = REF
+--                          -- truncate the last byte
+--                          ( bytesnToInteger @31 . bytesnFromWord8s . drop 1 . unBYTESn $ stringKeccak256  loc
+--                          , fromSNat (SNat @offset) )

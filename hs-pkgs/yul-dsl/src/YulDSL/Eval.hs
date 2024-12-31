@@ -24,7 +24,6 @@ import Control.Monad.State.Lazy (State, evalState, gets, modify')
 -- eth-abi
 import Ethereum.ContractABI
 --
-import YulDSL.Core.Fn
 import YulDSL.Core.YulCat
 import YulDSL.Core.YulCatObj
 
@@ -64,8 +63,8 @@ evalYulCat' YulExr  (_, b) = pure b
 evalYulCat' YulDis  _  = pure ()
 evalYulCat' YulDup  a  = pure (a, a)
 -- control flow
-evalYulCat' (YulJmp (UserDefinedYulCat  (_, f))) a = evalYulCat' f a
-evalYulCat' (YulJmp (BuiltInYulJmpTarget (_, f))) a = pure (f a)
+evalYulCat' (YulJmpU (_, f)) a = evalYulCat' f a
+evalYulCat' (YulJmpB (_, f)) a = pure (f a)
 evalYulCat' (YulITE ct cf) (BOOL t, a) = if t then evalYulCat' ct a else evalYulCat' cf a
 -- value primitives
 evalYulCat' (YulEmb b)  _ = pure b
@@ -77,4 +76,4 @@ evalYulCat s a = evalState (evalYulCat' s a) initEvalState
 
 evalFn :: forall eff f. YulO2 (NP (UncurryNP'Fst f)) (UncurryNP'Snd f)
        => Fn eff f -> NP (UncurryNP'Fst f) -> UncurryNP'Snd f
-evalFn = evalYulCat . fnCat . unFn
+evalFn = evalYulCat . snd . unFn

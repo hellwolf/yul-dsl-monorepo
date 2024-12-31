@@ -257,6 +257,7 @@ TODOs & Future Plans
 
 **Big Features In Research**
 
+- Linearly Versioned Monad, comparing to other resource management method including monadic regions, CoDensity, etc.
 - Liquid haskell integration.
 - Dependently extended types.
-        - Portable YulDSL artifact for non-Haskell language embedding and cross-languages modules.
+- Portable YulDSL artifact for non-Haskell language embedding and cross-languages modules.

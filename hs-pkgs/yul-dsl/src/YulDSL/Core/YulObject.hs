@@ -13,7 +13,7 @@ documentation](https://docs.soliditylang.org/en/latest/yul.html#specification-of
 -}
 module YulDSL.Core.YulObject
   ( StoragePermission (..)
-  , ScopedFn (ExternalFn, LibraryFn), unScopedFn
+  , ScopedFn (ExternalFn, LibraryFn), withScopedFn
   , pureFn, externalFn, staticFn, libraryFn
   , YulObject (..), mkYulObject
   , emptyCtor
@@ -27,7 +27,6 @@ import Ethereum.ContractABI.CoreType.NP
 -- import Ethereum.ContractABI.CoreType.NP
 import Ethereum.ContractABI.ExtendedType.SELECTOR (SELECTOR, mkTypedSelector)
 --
-import YulDSL.Core.Fn
 import YulDSL.Core.YulCat
 import YulDSL.Core.YulCatObj
 import YulDSL.Effects.Pure
@@ -39,12 +38,16 @@ data StoragePermission = NoStorageAccess
                        | WritableExternalStorage
 
 data ScopedFn where
-  ExternalFn :: forall eff as b. YulO2 (NP as) b => StoragePermission -> SELECTOR -> FnNP eff as b -> ScopedFn
-  LibraryFn  :: forall eff as b. YulO2 (NP as) b => FnNP eff as b -> ScopedFn
+  ExternalFn :: forall k { eff :: k } xs b. YulO2 (NP xs) b
+             => StoragePermission -> SELECTOR -> NamedYulCat eff (NP xs) b -> ScopedFn
+  LibraryFn  :: forall k { eff :: k } xs b. YulO2 (NP xs) b
+             => NamedYulCat eff (NP xs) b -> ScopedFn
 
-unScopedFn :: ScopedFn -> AnyFnCat
-unScopedFn (ExternalFn _ _ f) = MkAnyFnCat f
-unScopedFn (LibraryFn f)      = MkAnyFnCat f
+withScopedFn :: ScopedFn
+             -> (forall k { eff :: k } xs b. (YulO2 (NP xs) b ) => NamedYulCat eff (NP xs) b -> a)
+             -> a
+withScopedFn (ExternalFn _ _ f) g = g f
+withScopedFn (LibraryFn f)      g = g f
 
 pureFn :: forall f as b eff.
           ( IsPureEffect eff
@@ -52,7 +55,7 @@ pureFn :: forall f as b eff.
           , UncurryNP'Fst f ~ as
           , UncurryNP'Snd f ~ b
           ) => Fn eff f -> ScopedFn
-pureFn (MkFn f) = ExternalFn NoStorageAccess (mkTypedSelector @(NP as) (fnId f)) f
+pureFn (MkFn f@(fid, _)) = ExternalFn NoStorageAccess (mkTypedSelector @(NP as) fid) f
 
 externalFn :: forall f as b eff.
               ( IsNonPureEffect eff
@@ -60,7 +63,7 @@ externalFn :: forall f as b eff.
               , UncurryNP'Fst f ~ as
               , UncurryNP'Snd f ~ b
               ) => Fn eff f -> ScopedFn
-externalFn (MkFn f) = ExternalFn WritableExternalStorage (mkTypedSelector @(NP as) (fnId f)) f
+externalFn (MkFn f@(fid, _)) = ExternalFn WritableExternalStorage (mkTypedSelector @(NP as) fid) f
 
 staticFn :: forall f as b eff.
             ( IsNonPureEffect eff
@@ -68,7 +71,7 @@ staticFn :: forall f as b eff.
             , UncurryNP'Fst f ~ as
             , UncurryNP'Snd f ~ b
             ) => Fn eff f -> ScopedFn
-staticFn (MkFn f) = ExternalFn ReadOnlyExternalStorage (mkTypedSelector @(NP as) (fnId f)) f
+staticFn (MkFn f@(fid, _)) = ExternalFn ReadOnlyExternalStorage (mkTypedSelector @(NP as) fid) f
 
 libraryFn :: forall f as b eff.
              ( YulO2 (NP as) b
@@ -78,13 +81,13 @@ libraryFn :: forall f as b eff.
 libraryFn (MkFn f) = LibraryFn f
 
 instance Show ScopedFn where
-  show (ExternalFn NoStorageAccess _ f)         = "pure "  <> show_fn_spec f <> "\n" <> show (fnCat f)
-  show (ExternalFn ReadOnlyExternalStorage _ f) = "view "    <> show_fn_spec f <> "\n" <> show (fnCat f)
-  show (ExternalFn WritableExternalStorage _ f) = "external "  <> show_fn_spec f <> "\n" <> show (fnCat f)
-  show (LibraryFn f)                            = "internal "  <> show_fn_spec f <> "\n" <> show (fnCat f)
+  show (ExternalFn NoStorageAccess _ f@(_, cat))         = "pure "  <> show_fn_spec f <> "\n" <> show cat
+  show (ExternalFn ReadOnlyExternalStorage _ f@(_, cat)) = "view "    <> show_fn_spec f <> "\n" <> show cat
+  show (ExternalFn WritableExternalStorage _ f@(_, cat)) = "external "  <> show_fn_spec f <> "\n" <> show cat
+  show (LibraryFn f@(_, cat))                            = "internal "  <> show_fn_spec f <> "\n" <> show cat
 
-show_fn_spec :: forall as b eff. YulO2 (NP as) b => FnNP eff as b -> String
-show_fn_spec f = "fn " <> fnId f <> "(" <> abiTypeCanonName @(NP as) <> ") -> " <> abiTypeCanonName @b
+show_fn_spec :: forall xs b eff. YulO2 (NP xs) b => NamedYulCat eff (NP xs) b -> String
+show_fn_spec (fid, _) = "fn " <> fid <> "(" <> abiTypeCanonName @(NP xs) <> ") -> " <> abiTypeCanonName @b
 
 -- | A Yul Object per spec.
 --

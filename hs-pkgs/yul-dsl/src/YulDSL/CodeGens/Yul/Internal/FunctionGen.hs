@@ -39,7 +39,8 @@ do_compile_cat (MkAnyYulCat (cat :: YulCat eff a b)) = go cat where
   -- - control flows
   go (YulEmb @_ @m @n x) = go_emb @m @n x
   go (YulITE ct cf)      = go_ite ct cf
-  go (YulJmp tgt)        = go_jmp tgt
+  go (YulJmpU t)         = go_jmpu t
+  go (YulJmpB t)         = go_jmpb t
   -- - storage effects
   go (YulSGet)           = go_sget
   go (YulSPut @_ @m)     = go_sput @m
@@ -150,12 +151,17 @@ go_ite ct cf = build_code_block @(BOOL, a) @b $ \ind (code, ba_ins) -> do
          )
        , mk_rhs_vars b_vars )
 
-go_jmp :: forall eff a b. (HasCallStack, YulO2 a b)
-       => YulJmpTarget eff a b -> CGState RhsExprGen
-go_jmp tgt = do
-  fname <- case tgt of
-    (UserDefinedYulCat (depId, depCat))    -> cg_insert_dependent_cat depId (MkAnyYulCat depCat) >> pure depId
-    (BuiltInYulJmpTarget (builtinName, _)) -> cg_use_builtin builtinName >> pure builtinName
+go_jmpu :: forall eff a b. (HasCallStack, YulO2 a b)
+        => NamedYulCat eff a b -> CGState RhsExprGen
+go_jmpu (depId, depCat) = cg_insert_dependent_cat depId (MkAnyYulCat depCat) >> go_jmp @a @b depId
+
+go_jmpb :: forall a b. (HasCallStack, YulO2 a b)
+        => BuiltInYulFunction a b -> CGState RhsExprGen
+go_jmpb (builtinName, _) = cg_use_builtin builtinName >> go_jmp @a @b builtinName
+
+go_jmp :: forall a b. (HasCallStack, YulO2 a b)
+       => String -> CGState RhsExprGen
+go_jmp fname = do
   let callExpr a_ins = T.pack fname <> "(" <> T.intercalate ", " (fmap rhs_expr_to_code a_ins) <> ")"
   if length (abiTypeInfo @b) <= 1
     then build_inline_expr @a (pure . callExpr)
@@ -189,18 +195,18 @@ compile_cat ind acat (a_vars, b_vars) = do
     assign_vars ind b_vars b_outs
 
 compile_fn :: forall a b eff. (HasCallStack, YulO2 a b)
-           => Indenter -> FnCat eff a b -> CGState Code
-compile_fn ind f = do
+           => Indenter -> NamedYulCat eff a b -> CGState Code
+compile_fn ind (fid, cat) = do
   vars_a <- cg_create_vars @a
   vars_b <- cg_create_vars @b
 
   code <- cbracket_m ind
-    ( "function " <> T.pack (fnId f) <>
+    ( "function " <> T.pack fid <>
       "(" <> spread_vars vars_a <> ")" <>
       (if null vars_b then "" else " -> " <> spread_vars vars_b)
     )
     ( \ind' -> do
-        body <- compile_cat ind' (fnCat f) (vars_a, vars_b)
+        body <- compile_cat ind' cat (vars_a, vars_b)
         pure $
           body <>
           ind' "leave"
@@ -211,4 +217,4 @@ compile_fn ind f = do
 
 compile_scoped_fn :: HasCallStack
                   => Indenter -> ScopedFn -> CGState Code
-compile_scoped_fn ind f = case unScopedFn f of MkAnyFnCat f' -> compile_fn ind f'
+compile_scoped_fn ind f = withScopedFn f (compile_fn ind)

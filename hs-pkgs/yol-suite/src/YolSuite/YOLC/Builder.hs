@@ -92,7 +92,7 @@ compile_main_object mo = do
                        errors
 
 ifunc_name :: ScopedFn -> Maybe T.Text
-ifunc_name (ExternalFn perm (SELECTOR (_, Just(FuncSig (fname, _)))) (_ :: FnCat eff a b))
+ifunc_name (ExternalFn perm (SELECTOR (_, Just(FuncSig (fname, _)))) (_ :: NamedYulCat eff a b))
   = Just
     $ "  function " <> T.pack fname
     <> "(" <> T.intercalate ", " argTypes <>") external" <> effect perm

@@ -16,7 +16,7 @@ module YulDSL.CodeGens.YulGen
   , compileYulObject
   ) where
 
-import YulDSL.Core                                 (FnCat, YulO2, YulObject)
+import YulDSL.Core                                 (NamedYulCat, YulO2, YulObject)
 --
 import YulDSL.CodeGens.Yul.Internal.BuiltIns       (default_builtins, prelude_builtins)
 import YulDSL.CodeGens.Yul.Internal.CodeFormatters (Code, init_ind)
@@ -26,7 +26,7 @@ import YulDSL.CodeGens.Yul.Internal.ObjectGen      (compile_object)
 
 
 -- | Compiling a yul function.
-compileFn :: forall eff a b. YulO2 a b => FnCat eff a b -> Code
+compileFn :: forall eff a b. YulO2 a b => NamedYulCat eff a b -> Code
 compileFn fn = gen_code $ do
   mapM_ cg_register_builtin default_builtins
   mapM_ cg_use_builtin prelude_builtins

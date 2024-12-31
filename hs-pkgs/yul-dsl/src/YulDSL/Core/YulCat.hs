@@ -25,10 +25,9 @@ YulCat is designed to be a category. The objects in this category are instances 
 -}
 module YulDSL.Core.YulCat
   ( NonPureEffect, IsPureEffect, IsNonPureEffect
-  , YulJmpTarget(UserDefinedYulCat, BuiltInYulJmpTarget)
-  , YulCat (..), AnyYulCat (..)
+  , NamedYulCat
+  , YulCat (..), AnyYulCat (..), Fn (MkFn, unFn)
   , (>.>), (<.<)
-  , yulJmpUserDefined, yulJmpBuiltIn
   , yulNumLt, yulNumLe, yulNumGt, yulNumGe, yulNumEq, yulNumNe
   , yulRevert, yulKeccak256
   , Referenceable (yulRefGet, yulRefPut)
@@ -73,10 +72,8 @@ type IsNonPureEffect :: k -> Constraint
 type IsNonPureEffect eff = Assert (NonPureEffect eff)
                            (TypeError (Text "non-pure effect expected"))
 
--- | Internal jump targets.
-data YulJmpTarget eff a b
-  = UserDefinedYulCat   (String, YulCat eff a b) -- ^ (Target id, an user-defined morphism)
-  | BuiltInYulJmpTarget (String, a -> b)         -- ^ (Target id, a semantically-equivalent evaluation function)
+-- | Named YulCat morphism.
+type NamedYulCat eff a b = (String, YulCat eff a b)
 
 -- | A GADT-style DSL of Yul that constructs morphisms between objects (YulCatObj) of the "Yul Category".
 --
@@ -113,8 +110,10 @@ data YulCat (eff :: k) a b where
   --
   -- ^ Embed a constant value @b@ and disregard any input object @a@.
   YulEmb :: forall eff a b. YulO2 a b => b %1-> YulCat eff a b
-  -- ^ Jump an internal yul function by reference its identifier along with maybe a definition.
-  YulJmp :: forall eff a b. YulO2 a b => YulJmpTarget eff a b %1-> YulCat eff a b
+  -- ^ Jump to an user-defined morphism.
+  YulJmpU :: forall eff a b. YulO2 a b => NamedYulCat eff a b %1-> YulCat eff a b
+  -- ^ Jump to a built-in yul function
+  YulJmpB :: forall eff a b. YulO2 a b => BuiltInYulFunction a b %1-> YulCat eff a b
   -- ^ If-then-else expression.
   YulITE :: forall eff a b. YulO1 a => YulCat eff a b %1-> YulCat eff a b %1-> YulCat eff (BOOL, a) b
 
@@ -127,6 +126,17 @@ data YulCat (eff :: k) a b where
 
 -- | Existential wrapper of the 'YulCat'.
 data AnyYulCat = forall eff a b. YulO2 a b => MkAnyYulCat (YulCat eff a b)
+
+-- | Yul function wrappers that are in currying function forms.
+--
+--   Note: Fn (a1 -> a2 -> ...aN -> b) ~ FnNP (NP [a1,a2...aN]) b
+data Fn eff f where
+  MkFn :: forall eff f xs b.
+          ( UncurryNP'Fst f ~ xs,
+            UncurryNP'Snd f ~ b,
+            YulO2 (NP xs) b
+          )
+       => { unFn :: NamedYulCat eff (NP (UncurryNP'Fst f)) (UncurryNP'Snd f) } -> Fn eff f
 
 ------------------------------------------------------------------------------------------------------------------------
 -- YulCat Verbial Utilities
@@ -144,14 +154,6 @@ m >.> n = n `YulComp` m
 -- see https://hackage.haskell.org/package/base-4.20.0.1/docs/Control-Category.html
 infixr 1 >.>, <.<
 
--- | Short-hand for 'YulJmp' to user-defined 'YulCat'.
-yulJmpUserDefined :: forall eff a b. YulO2 a b => (String, YulCat eff a b) %1-> YulCat eff a b
-yulJmpUserDefined tgt = YulJmp (UserDefinedYulCat tgt)
-
--- | Short-hand for 'YulJmp' to built-in target.
-yulJmpBuiltIn :: forall eff a b. YulO2 a b => BuiltInYulFunction a b %1-> YulCat eff a b
-yulJmpBuiltIn tgt = YulJmp (BuiltInYulJmpTarget tgt)
-
 -- YulNum Ord operations:
 
 yulNumLt :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
@@ -161,19 +163,19 @@ yulNumGe :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
 yulNumEq :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
 yulNumNe :: forall eff a. YulNumCmp a => YulCat eff (a, a) BOOL
 
-yulNumLt = yulJmpBuiltIn (yulNumCmp @a (True , False, False))
-yulNumLe = yulJmpBuiltIn (yulNumCmp @a (True , True , False))
-yulNumGt = yulJmpBuiltIn (yulNumCmp @a (False, False, True ))
-yulNumGe = yulJmpBuiltIn (yulNumCmp @a (False, True , True ))
-yulNumEq = yulJmpBuiltIn (yulNumCmp @a (False, True , False))
-yulNumNe = yulJmpBuiltIn (yulNumCmp @a (True , False, True ))
+yulNumLt = YulJmpB (yulNumCmp @a (True , False, False))
+yulNumLe = YulJmpB (yulNumCmp @a (True , True , False))
+yulNumGt = YulJmpB (yulNumCmp @a (False, False, True ))
+yulNumGe = YulJmpB (yulNumCmp @a (False, True , True ))
+yulNumEq = YulJmpB (yulNumCmp @a (False, True , False))
+yulNumNe = YulJmpB (yulNumCmp @a (True , False, True ))
 
 -- | Revert without any message.
 yulRevert :: forall eff a b. YulO2 a b => YulCat eff a b
-yulRevert = YulDis >.> yulJmpBuiltIn ("__revert_c_" ++ abiTypeCompactName @b, error "revert(0, 0)")
+yulRevert = YulDis >.> YulJmpB ("__revert_c_" ++ abiTypeCompactName @b, error "revert(0, 0)")
 
 yulKeccak256 :: forall eff a. YulO1 a => YulCat eff a B32
-yulKeccak256 = yulJmpBuiltIn ("__keccak_c_" ++ abiTypeCompactName @a, error "TODO: keccak_c")
+yulKeccak256 = YulJmpB ("__keccak_c_" ++ abiTypeCompactName @a, error "TODO: keccak_c")
 
 -- | Type class for building referenceable values.
 class Referenceable a where
@@ -241,29 +243,28 @@ instance forall x xs b r eff.
 --   * It is deliberately done so for compactness of the string representation of the 'YulCat'.
 --   * It is meant also for strong equality checking of 'YulCat' used in yul object building.
 instance Show (YulCat eff a b) where
-  show (YulReduceType) = "Tred" <> abi_type_name @a <> abi_type_name @b
-  show (YulExtendType) = "Text" <> abi_type_name @a <> abi_type_name @b
-  show (YulCoerceType) = "Tcoe" <> abi_type_name @a <> abi_type_name @b
-  show (YulSplit)      = "Tspl" <> abi_type_name @a
+  show (YulReduceType)    = "Tred" <> abi_type_name @a <> abi_type_name @b
+  show (YulExtendType)    = "Text" <> abi_type_name @a <> abi_type_name @b
+  show (YulCoerceType)    = "Tcoe" <> abi_type_name @a <> abi_type_name @b
+  show (YulSplit)         = "Tspl" <> abi_type_name @a
   --
-  show (YulId)         = "id"
-  show (YulComp cb ac) = "(" <> show ac <> ");(" <> show cb <> ")"
-  show (YulProd ab cd) = "(" <> show ab <> ")×(" <> show cd <> ")"
-  show (YulSwap)       = "σ" <> abi_type_name @a <> abi_type_name @b
-  show (YulFork ab ac) = "(" <> show ab <> ")▵(" <> show ac <> ")"
-  show (YulExl)        = "π₁" <> abi_type_name @a
-  show (YulExr)        = "π₂" <> abi_type_name @a
-  show (YulDis)        = "ε" <> abi_type_name @a
-  show (YulDup)        = "δ" <> abi_type_name @a
+  show (YulId)            = "id"
+  show (YulComp cb ac)    = "(" <> show ac <> ");(" <> show cb <> ")"
+  show (YulProd ab cd)    = "(" <> show ab <> ")×(" <> show cd <> ")"
+  show (YulSwap)          = "σ" <> abi_type_name @a <> abi_type_name @b
+  show (YulFork ab ac)    = "(" <> show ab <> ")▵(" <> show ac <> ")"
+  show (YulExl)           = "π₁" <> abi_type_name @a
+  show (YulExr)           = "π₂" <> abi_type_name @a
+  show (YulDis)           = "ε" <> abi_type_name @a
+  show (YulDup)           = "δ" <> abi_type_name @a
   --
-  show (YulEmb x)      = "{" <> show x <>  "}" -- escape x
-  show (YulJmp tgt)    = case tgt of
-    (UserDefinedYulCat (cid, _))   -> "Ju " <> cid
-    (BuiltInYulJmpTarget (cid, _)) -> "Jb " <> cid
-  show (YulITE a b)    = "?" <> "(" <> show a <> "):(" <> show b <> ")"
+  show (YulEmb x)         = "{" <> show x <>  "}" -- escape x
+  show (YulJmpU (fid, _)) = "Ju " <> fid
+  show (YulJmpB (fid, _)) = "Jb " <> fid
+  show (YulITE a b)       = "?" <> "(" <> show a <> "):(" <> show b <> ")"
   --
-  show (YulSGet)       = "Sget" <> abi_type_name @a
-  show (YulSPut)       = "Sput" <> abi_type_name @a
+  show (YulSGet)          = "Sget" <> abi_type_name @a
+  show (YulSPut)          = "Sput" <> abi_type_name @a
 
 instance Show AnyYulCat where
   show (MkAnyYulCat c) = show c
@@ -273,7 +274,7 @@ digestYulCat :: YulCat eff a b -> String
 digestYulCat = printf "%x" . digest_c8 . B.pack . show
   where c8 _ []     = 0
         c8 n [a]    = (2 ^ n) * toInteger(ord a)
-        c8 n (a:as) =  (2 ^ n) * toInteger(ord a) + c8 (n + 8) as
+        c8 n (a:as) = (2 ^ n) * toInteger(ord a) + c8 (n + 8) as
         digest_c8 bs = go_digest_c8 (B.splitAt 8 bs)
         go_digest_c8 (b, bs') = c8 (0 :: Integer) (B.unpack b) `xorInteger`
                                 if B.length bs' == 0 then 0 else digest_c8 bs'

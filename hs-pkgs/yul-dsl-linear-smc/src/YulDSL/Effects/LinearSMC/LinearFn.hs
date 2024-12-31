@@ -40,10 +40,10 @@ class LinearFnLike (ie :: PortEffect) (oe :: PortEffect) (fnEff :: LinearEffect)
        -> Fn fnEff (CurryNP (NP xs) b)
 
 instance forall vd. LinearFnLike (VersionedPort 0) (VersionedPort vd) (VersionedInputOutput vd) where
-  fn'l fid f = MkFn (MkFnCat fid (decode'lvv f))
+  fn'l fid f = MkFn (fid, decode'lvv f)
 
 instance forall vd. LinearFnLike PurePort (VersionedPort vd) (PureInputVersionedOutput vd) where
-  fn'l fid f = MkFn (MkFnCat fid (decode'lpv f))
+  fn'l fid f = MkFn (fid, decode'lpv f)
 
 -- $calll_functions
 -- = Call functions with linear port
@@ -59,11 +59,11 @@ call'l :: forall f x xs b g' r v1 vn vd.
           )
        => Fn (VersionedInputOutput vd) f
        -> (P'V v1 r x ⊸ g')
-call'l (MkFn f) x =
+call'l (MkFn t) x =
   dup2'l x &
   \(x', x'') -> curryingNP @xs @b @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r ()) @One $
   \(MkYulCat'LVV fxs) -> encode'lvv
-                         (YulJmp (UserDefinedYulCat (fnId f, fnCat f)))
+                         (YulJmpU t)
                          (cons'l x' (fxs (discard x'')))
 
 -- instance LinearCallLike PurePort (PureInputVersionedOutput vd) v1 vd where

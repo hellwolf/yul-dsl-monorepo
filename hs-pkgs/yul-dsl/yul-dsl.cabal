@@ -44,7 +44,6 @@ library
                     YulDSL.Core.YulCatObj
                     YulDSL.Core.YulNum
                     YulDSL.Core.YulCat
-                    YulDSL.Core.Fn
                     YulDSL.Core.YulObject
                     YulDSL.Core
                     YulDSL.YulCatObj.Prelude.Base.Maybe

@@ -21,17 +21,23 @@ safety to the practice of EVM programming.
 
 -}
 module YulDSL.Core.YulCat
-  ( NonPureEffect, IsPureEffect, IsNonPureEffect
-  , NamedYulCat
-  , YulCat (..), AnyYulCat (..), Fn (MkFn, unFn)
+  ( -- * Effect Classification
+    IsEffectNotPure, MayEffectWorld, PureEffect, StaticEffect, OmniEffect
+    -- * YulCat, the Categorical DSL of Yul
+  , YulCat (..), NamedYulCat, Fn (MkFn, unFn), AnyYulCat (..)
   , (>.>), (<.<)
+    -- * YulCat Pure Verbs
   , yulNumLt, yulNumLe, yulNumGt, yulNumGe, yulNumEq, yulNumNe
-  , yulRevert, yulKeccak256
-  , Referenceable (yulRefGet, yulRefPut)
-  , yulCatCompactShow, yulCatFingerprint
+  , yulKeccak256
+    -- * YulCat Exceptions
+  , yulRevert
+    -- * YulCat Control Flows
   , module Control.IfThenElse
   , module Control.PatternMatchable
   , PatternMatchableYulCat
+  , Referenceable (yulRefGet, yulRefPut)
+    -- * YulCat Stringify Functions
+  , yulCatCompactShow, yulCatFingerprint
   ) where
 
 -- base
@@ -57,24 +63,33 @@ import YulDSL.Core.YulNum
 -- The Cat
 ------------------------------------------------------------------------------------------------------------------------
 
--- | An open type family for marking effects non-pure, in order to access some restricted YulCat morphisms.
-type family NonPureEffect (eff :: k) :: Bool
+-- | An open type family for declaring a effect non-pure.
+type family IsEffectNotPure (eff :: k) :: Bool
 
--- | Test if an effect can be used for pure morphisms.
-type IsPureEffect :: k -> Constraint
-type IsPureEffect eff = Assert (Not (NonPureEffect eff))
-                        (TypeError (Text "pure effect expected"))
+-- | An open type family for declaring a effect may change the state of the world.
+type family MayEffectWorld (eff :: k) :: Bool
 
--- | Test if an effect can be used for non pure morphisms.
-type IsNonPureEffect :: k -> Constraint
-type IsNonPureEffect eff = Assert (NonPureEffect eff)
-                           (TypeError (Text "non-pure effect expected"))
+-- | Test if an effect can be used for morphisms that are pure.
+type PureEffect :: k -> Constraint
+type PureEffect eff = Assert (Not (IsEffectNotPure eff) && Not (MayEffectWorld eff)) -- (F, F)
+                      (TypeError (Text "pure effect expected"))
 
--- -- | An open type family for marking effects non-pure, in order to access some restricted YulCat morphisms.
--- type family NonStaticEffect (eff :: k) :: Bool
+-- | Test if an effect can be used for morphisms that are pure.
+type NonPureEffect :: k -> Constraint
+type NonPureEffect eff = Assert (IsEffectNotPure eff) -- (T, -)
+                         (TypeError (Text "non-pure effect expected"))
 
--- | Named YulCat morphism.
-type NamedYulCat eff a b = (String, YulCat eff a b)
+-- | Test if an effect can be used for morphisms that are non-pure but cannot change world.
+type StaticEffect :: k -> Constraint
+type StaticEffect eff = Assert (IsEffectNotPure eff && Not (MayEffectWorld eff)) -- (T, F)
+                        (TypeError (Text "static effect expected"))
+
+-- | Test if an effect can be used for morphisms that are non-pure and may change world.
+type OmniEffect :: k -> Constraint
+type OmniEffect eff = Assert (IsEffectNotPure eff && MayEffectWorld eff) -- (T, T)
+                      (TypeError (Text "omni effect expected"))
+
+-- Note: IsNonsenseEffect eff = Not (IsEffectNotPure eff) && CanEffectWorld eff -- (F, T)
 
 -- | A GADT-style DSL of Yul that constructs morphisms between objects (YulCatObj) of the "Yul Category".
 --
@@ -121,9 +136,23 @@ data YulCat (eff :: k) a b where
   -- * Storage Primitives
   --
   -- ^ Get storage word.
-  YulSGet :: forall eff a. (IsNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff B32 a
+  YulSGet :: forall eff a. (NonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff B32 a
   -- ^ Put storage word.
-  YulSPut :: forall eff a. (IsNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff (B32, a) ()
+  YulSPut :: forall eff a. (NonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff (B32, a) ()
+
+-- | Named YulCat morphism.
+type NamedYulCat eff a b = (String, YulCat eff a b)
+
+-- | Yul function wrappers that are in currying function forms.
+--
+--   Note: Fn (a1 -> a2 -> ...aN -> b) ~ FnNP (NP [a1,a2...aN]) b
+data Fn eff f where
+  MkFn :: forall eff f xs b.
+          ( UncurryNP'Fst f ~ xs,
+            UncurryNP'Snd f ~ b,
+            YulO2 (NP xs) b
+          )
+       => { unFn :: NamedYulCat eff (NP (UncurryNP'Fst f)) (UncurryNP'Snd f) } -> Fn eff f
 
 -- | Existential wrapper of the 'YulCat'.
 data AnyYulCat = forall eff a b. YulO2 a b => MkAnyYulCat (YulCat eff a b)
@@ -139,17 +168,6 @@ m >.> n = n `YulComp` m
 -- Same precedence as (>>>) (<<<);
 -- see https://hackage.haskell.org/package/base-4.20.0.1/docs/Control-Category.html
 infixr 1 >.>, <.<
-
--- | Yul function wrappers that are in currying function forms.
---
---   Note: Fn (a1 -> a2 -> ...aN -> b) ~ FnNP (NP [a1,a2...aN]) b
-data Fn eff f where
-  MkFn :: forall eff f xs b.
-          ( UncurryNP'Fst f ~ xs,
-            UncurryNP'Snd f ~ b,
-            YulO2 (NP xs) b
-          )
-       => { unFn :: NamedYulCat eff (NP (UncurryNP'Fst f)) (UncurryNP'Snd f) } -> Fn eff f
 
 ------------------------------------------------------------------------------------------------------------------------
 -- YulCat Pure "Verbs"
@@ -244,7 +262,7 @@ instance forall x xs b r eff.
                     (\xs -> cb (YulFork x xs >.> YulCoerceType))
 
 ------------------------------------------------------------------------------------------------------------------------
--- Stringify Functions
+-- YulCat Stringify Functions
 ------------------------------------------------------------------------------------------------------------------------
 
 -- | Compact and unique representation of 'YulCat', which can be used for generate its fingerprint.
@@ -270,7 +288,7 @@ yulCatCompactShow = go
     go (YulDis @_ @a)              = "ε" <> abi_type_name (Proxy :: Proxy a)
     go (YulDup @_ @a)              = "δ" <> abi_type_name (Proxy :: Proxy a)
     --
-    go (YulEmb @_ @a @b x)         = "{" <> escape x <> "}" <> abi_type_name2 (Proxy :: Proxy (a, b))
+    go (YulEmb @_ @a @b x)         = "{" <> show x <> "}" <> abi_type_name2 (Proxy :: Proxy (a, b))
     go (YulJmpU @_ @a @b (fid, _)) = "Ju " <> fid <> abi_type_name2 (Proxy :: Proxy (a, b))
     go (YulJmpB @_ @a @b (fid, _)) = "Jb " <> fid <> abi_type_name2 (Proxy :: Proxy (a, b))
     go (YulITE a b)                = "?" <> "(" <> go a <> "):(" <> go b <> ")"
@@ -283,7 +301,7 @@ yulCatCompactShow = go
     abi_type_name2 :: forall a b. (ABITypeable a, ABITypeable b) => Proxy (a, b) -> String
     abi_type_name2 _ = abi_type_name (Proxy :: Proxy a) ++ abi_type_name (Proxy :: Proxy b)
     -- TODO escape the value of x
-    escape x = show x
+    -- escape = show
 
 -- | Obtain the finger print of a 'YulCat'.
 yulCatFingerprint :: YulCat eff a b -> String

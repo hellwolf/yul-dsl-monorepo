@@ -50,28 +50,28 @@ withScopedFn (ExternalFn _ _ f) g = g f
 withScopedFn (LibraryFn f)      g = g f
 
 pureFn :: forall f as b eff.
-          ( IsPureEffect eff
+          ( PureEffect eff
           , YulO2 (NP as) b
           , UncurryNP'Fst f ~ as
           , UncurryNP'Snd f ~ b
           ) => Fn eff f -> ScopedFn
 pureFn (MkFn f@(fid, _)) = ExternalFn NoStorageAccess (mkTypedSelector @(NP as) fid) f
 
-externalFn :: forall f as b eff.
-              ( IsNonPureEffect eff
-              , YulO2 (NP as) b
-              , UncurryNP'Fst f ~ as
-              , UncurryNP'Snd f ~ b
-              ) => Fn eff f -> ScopedFn
-externalFn (MkFn f@(fid, _)) = ExternalFn WritableExternalStorage (mkTypedSelector @(NP as) fid) f
-
 staticFn :: forall f as b eff.
-            ( IsNonPureEffect eff
+            ( StaticEffect eff
             , YulO2 (NP as) b
             , UncurryNP'Fst f ~ as
             , UncurryNP'Snd f ~ b
             ) => Fn eff f -> ScopedFn
 staticFn (MkFn f@(fid, _)) = ExternalFn ReadOnlyExternalStorage (mkTypedSelector @(NP as) fid) f
+
+externalFn :: forall f as b eff.
+              ( OmniEffect eff
+              , YulO2 (NP as) b
+              , UncurryNP'Fst f ~ as
+              , UncurryNP'Snd f ~ b
+              ) => Fn eff f -> ScopedFn
+externalFn (MkFn f@(fid, _)) = ExternalFn WritableExternalStorage (mkTypedSelector @(NP as) fid) f
 
 libraryFn :: forall f as b eff.
              ( YulO2 (NP as) b
@@ -118,4 +118,4 @@ mkYulObject name ctor afns = MkYulObject { yulObjectName = name
                                          }
 
 emptyCtor :: AnyYulCat
-emptyCtor = MkAnyYulCat (YulDis @MkPure @())
+emptyCtor = MkAnyYulCat (YulDis @Pure @())

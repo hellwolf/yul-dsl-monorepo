@@ -1,10 +1,12 @@
 module YulDSL.Effects.LinearSMC.YulPort
-  ( -- $linear_port_defs
-    PortEffect (PurePort, VersionedPort)
-  , P'x, P'V, P'P
-    -- $general_ops
+  ( -- * Yul Port Definitions
+    -- $LinearPortDefs
+    PortEffect (PurePort, VersionedPort), P'x, P'V, P'P
+    -- * General Yul Port Operations
+    -- $GeneralOps
   , emb'l, const'l, dup2'l
-    -- $abi_ops
+    -- * Type Operations
+    -- $TypeOps
   , coerce'l, cons'l, uncons'l
   ) where
 -- linear-base
@@ -18,15 +20,16 @@ import Control.Category.Constrained.YulDSL ()
 import Data.MPOrd
 
 
--- $linear_port_defs
--- = Yul Port Definitions
+------------------------------------------------------------------------------------------------------------------------
+-- $LinearPortDefs
+------------------------------------------------------------------------------------------------------------------------
 
 -- | Various types of port effects for the yul port API.
 data PortEffect = PurePort          -- ^ Pure port that does not need to be versioned
                 | VersionedPort Nat -- ^ Linearly versioned port
 
-type instance NonPureEffect PurePort = False
-type instance NonPureEffect (VersionedPort v) = True
+type instance IsEffectNotPure (eff :: PortEffect) = True
+type instance MayEffectWorld  (eff :: PortEffect) = True
 
 -- | Linear port of yul categories with the port effect kind, aka. yul ports.
 type P'x (eff :: PortEffect) = P (YulCat eff)
@@ -37,11 +40,12 @@ type P'P = P'x PurePort
 -- | Linear port of yul category with linearly versioned data, aka. versioned yul ports.
 type P'V v = P'x (VersionedPort v)
 
--- $ general_ops
--- = General Yul Port Operations
+------------------------------------------------------------------------------------------------------------------------
+-- $GeneralOps
 --
 -- Note: Yul ports are defined above as "P'*", and a "yul port diagram" is a linear function from input yul port to a
 -- output yul port.
+------------------------------------------------------------------------------------------------------------------------
 
 -- | Embed a free value to a yul port diagram that discards any input yul ports.
 emb'l :: forall a b eff r. YulO3 a b r => a -> (P'x eff r b ⊸ P'x eff r a)
@@ -55,8 +59,9 @@ const'l = flip (ignore . discard)
 dup2'l :: forall a eff r. YulO2 a r => P'x eff r a ⊸ (P'x eff r a, P'x eff r a)
 dup2'l = split . copy
 
--- $abi_ops
--- = 'ABITypeable' Specific Operations
+------------------------------------------------------------------------------------------------------------------------
+-- $TypeOps
+------------------------------------------------------------------------------------------------------------------------
 
 -- | Coerce input yul port to an ABI coercible output yul port.
 coerce'l :: forall a b eff r. (YulO3 a b r, ABITypeCoercible a b) => P'x eff r a ⊸ P'x eff r b
@@ -70,6 +75,7 @@ cons'l x xs = coerce'l (merge (x, xs))
 uncons'l :: forall x xs eff r. YulO3 x (NP xs) r => P'x eff r (NP (x:xs)) ⊸ (P'x eff r x, P'x eff r (NP xs))
 uncons'l = split . coerce'l
 
+------------------------------------------------------------------------------------------------------------------------
 
 --
 -- 'MPEq' instance for the yul ports.
@@ -99,3 +105,5 @@ instance (YulNum a, YulO1 r) => AddIdentity (P'V v r a) where
 
 instance (YulNum a, YulO1 r) => AdditiveGroup (P'V v r a) where
   a - b = encode (YulJmpB (yulNumSub @a)) (merge (a, b))
+
+-- FIXME other number instances

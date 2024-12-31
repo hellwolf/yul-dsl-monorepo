@@ -13,7 +13,7 @@ References:
 
 - https://docs.soliditylang.org/en/v0.8.28/internals/layout_in_storage.html
 
-|-}
+-}
 --
 module Ethereum.ContractABI.ExtendedType.REF
   ( REF

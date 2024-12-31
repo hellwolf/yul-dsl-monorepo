@@ -1,11 +1,21 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 module YulDSL.Effects.LinearSMC.LinearYulCat
-  ( LinearEffect (PureInputVersionedOutput, VersionedInputOutput)
-    -- $yul_port_diagrams
+  ( -- * Linear Effect Kind
+    -- $LinearEffectKind
+    LinearEffect (PureInputVersionedOutput, VersionedInputOutput), purifyLinearEffect
+    -- * Yul Port Diagrams
+    -- $YulPortDiagrams
   , YulCat'LVV (MkYulCat'LVV), YulCat'LPV (MkYulCat'LPV), YulCat'LPP (MkYulCat'LPP)
-  , decode'lvv, decode'lpv, encode'lvv
+  , decode'lvv, decode'lpv
+  , uncurry'lvv, uncurry'lpv
+  , encode'lvv
+    -- * Pattern Matching Of Yul Ports
+    -- $PatternMatching
+  , match'l
   ) where
 -- base
-import GHC.TypeLits
+import GHC.TypeLits                     (type (+))
+import Prelude                          qualified as BasePrelude
 -- linear-base
 import Control.Category.Linear          (P, decode, discard, encode, ignore, split)
 import Prelude.Linear
@@ -16,6 +26,10 @@ import YulDSL.Core
 import YulDSL.Effects.LinearSMC.YulPort
 
 
+------------------------------------------------------------------------------------------------------------------------
+-- $LinearEffectKind
+------------------------------------------------------------------------------------------------------------------------
+
 -- | Various types of linear effects for the yul category.
 --
 -- Note that the pure input pure output linear effect is included. For that, use the pure effect from the 'YulDSL.core'
@@ -23,11 +37,26 @@ import YulDSL.Effects.LinearSMC.YulPort
 data LinearEffect = PureInputVersionedOutput Nat -- ^ Pure input ports, versioned output ports
                   | VersionedInputOutput Nat     -- ^ Versioned input and output ports
 
-type instance NonPureEffect (PureInputVersionedOutput vd) = True
-type instance NonPureEffect (VersionedInputOutput vd) = True
+-- | Judging if the linear effect is static from its number of version changes.
+type family IsLinearEffectNonStatic (vd :: Nat) where
+  IsLinearEffectNonStatic 0 = False
+  IsLinearEffectNonStatic vd = True
 
--- $yul_port_diagrams
--- = Yul Port Diagrams
+type instance IsEffectNotPure (eff :: LinearEffect) = True
+type instance MayEffectWorld (PureInputVersionedOutput vd) = IsLinearEffectNonStatic vd
+type instance MayEffectWorld (VersionedInputOutput vd) = IsLinearEffectNonStatic vd
+
+-- | Purify some linear effect kind.
+class PurifiableLinearFn (eff :: LinearEffect) where
+  purifyLinearEffect :: Fn eff f ⊸ PureFn f
+  purifyLinearEffect = UnsafeLinear.coerce
+
+-- Linear effects without data version changes are pure effects:
+instance PurifiableLinearFn (VersionedInputOutput 0)
+instance PurifiableLinearFn (PureInputVersionedOutput 0)
+
+------------------------------------------------------------------------------------------------------------------------
+-- $YulPortDiagrams
 --
 -- A yul port diagram is a morphism in the yul category represented by one input yul port and one output yul port.
 --
@@ -36,6 +65,7 @@ type instance NonPureEffect (VersionedInputOutput vd) = True
 --
 -- Additionally, they are data types instead of type synonyms because of GHC's lack of type-level lambda support. As a
 -- result, each of them also comes with an unYulCat function to unwrap them linearly.
+------------------------------------------------------------------------------------------------------------------------
 
 -- | Yul port diagram for versioned input and outputs.
 newtype YulCat'LVV v1 vn r a b = MkYulCat'LVV (P'V v1 r a ⊸ P'V vn r b)
@@ -47,32 +77,72 @@ newtype YulCat'LPV vn r a b = MkYulCat'LPV (P'P r a ⊸ P'V vn r b)
 newtype YulCat'LPP r a b = MkYulCat'LPP (P'P r a ⊸ P'P r b)
 
 decode'lvv :: forall a b vd. YulO2 a b
-           => (forall r. YulO1 r => P'V 0 r a ⊸ P'V vd r b)
-           -> YulCat (VersionedInputOutput vd) a b
+  => (forall r. YulO1 r => P'V 0 r a ⊸ P'V vd r b)
+  -> YulCat (VersionedInputOutput vd) a b
 decode'lvv f = decode (h f) -- an intermediate function to fight the multiplicity hell
   where h :: (forall r. YulO1 r => P'V 0 r a ⊸ P'V vn r b)
           ⊸ (forall r. YulO1 r => P (YulCat oe) r a ⊸ P (YulCat oe) r b)
         h = UnsafeLinear.coerce {- using Unsafe coerce to convert effect after type-checking -}
 
 decode'lpv :: forall a b vd. YulO2 a b
-           => (forall r. YulO1 r => P'P r a ⊸ P'V vd r b)
-           -> YulCat (PureInputVersionedOutput vd) a b
+  => (forall r. YulO1 r => P'P r a ⊸ P'V vd r b)
+  -> YulCat (PureInputVersionedOutput vd) a b
 decode'lpv f = decode (h f) -- an intermediate function to fight the multiplicity hell
   where h :: (forall r. YulO1 r => P'P r a ⊸ P'V vd r b)
           ⊸ (forall r. YulO1 r => P (YulCat oe) r a ⊸ P (YulCat oe) r b)
         h = UnsafeLinear.coerce {- using Unsafe coerce to convert effect after type-checking -}
 
+uncurry'lvv :: forall f xs b r vd m1 m1b m2 m2b.
+  ( YulO3 (NP xs) b r
+  --
+  , UncurryNP'Fst f ~ xs
+  , UncurryNP'Snd f ~ b
+  --
+  , P'V  0 r ~ m1
+  , P'V vd r ~ m1b
+  , YulCat'LVV 0  0 r (NP xs) ~ m2
+  , YulCat'LVV 0 vd r (NP xs) ~ m2b
+  --
+  , LiftFunction b m2 m2b One ~ m2b b
+  --
+  , UncurryingNP f xs b m1 m1b m2 m2b One
+  )
+  => LiftFunction f m1 m1b One      -- ^ @LiftFunction           f  m1 m1b One@
+  -> (P'V 0 r (NP xs) ⊸ P'V vd r b) -- ^ @LiftFunction (NP xs -> b) m1 m1b One@
+uncurry'lvv f = let !(MkYulCat'LVV f') = uncurryingNP @f @xs @b @m1 @m1b @m2 @m2b @One f (MkYulCat'LVV id)
+               in f'
+
+uncurry'lpv :: forall f xs b r vd m1 m1b m2 m2b.
+  ( YulO3 (NP xs) b r
+  --
+  , UncurryNP'Fst f ~ xs
+  , UncurryNP'Snd f ~ b
+  --
+  , P'P    r ~ m1
+  , P'V vd r ~ m1b
+  , YulCat'LPP r (NP xs)    ~ m2
+  , YulCat'LPV vd r (NP xs) ~ m2b
+  --
+  , LiftFunction b m2 m2b One ~ m2b b
+  --
+  , UncurryingNP f xs b m1 m1b m2 m2b One
+  )
+  => LiftFunction f m1 m1b One
+  -> (P'P r (NP xs) ⊸ P'V vd r b)
+uncurry'lpv f = let !(MkYulCat'LPV f') = (uncurryingNP @f @xs @b @m1 @m1b @m2 @m2b @One f (MkYulCat'LPP id))
+                in f'
+
 encode'lvv :: forall a b r vd v1. YulO3 a b r
-           => YulCat (VersionedInputOutput vd) a b
-           -> (P'V v1 r a ⊸ P'V (v1 + vd) r b)
+  => YulCat (VersionedInputOutput vd) a b
+  -> (P'V v1 r a ⊸ P'V (v1 + vd) r b)
 encode'lvv cat x = -- ghc can infer it; annotating for readability and double checking expected types
   let cat' = UnsafeLinear.coerce cat :: YulCat (VersionedPort v1) a b
   in UnsafeLinear.coerce @(P'V v1 r b) @(P'V (v1 + vd) r b)
      (encode cat' x)
 
---
+------------------------------------------------------------------------------------------------------------------------
 -- (P'V ⊸ P'V ⊸ ... P'V) <-> YulCat'LVV ⊸ YulCat'LVV
---
+------------------------------------------------------------------------------------------------------------------------
 
 instance forall x v1 vn r a.
          ( YulO3 x r a
@@ -115,9 +185,9 @@ instance forall x xs b r a v1 vn.
   curryingNP cb x = curryingNP @xs @b @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r a) @One
                     (\(MkYulCat'LVV fxs) -> cb (MkYulCat'LVV (\a -> (cons'l x (fxs a)))))
 
---
+------------------------------------------------------------------------------------------------------------------------
 -- (P'P ⊸ P'P ⊸ ... P'V) <=> YulCat'LPP ⊸ YulCat'LPV
---
+------------------------------------------------------------------------------------------------------------------------
 
 instance forall x vd r a.
          ( YulO3 x r a
@@ -158,3 +228,26 @@ instance forall x xs b r a v1 vn.
          ) => CurryingNP (x:xs) b (P'P r) (P'V vn r) (YulCat'LVV v1 v1 r a) One where
   curryingNP cb x = curryingNP @xs @b @(P'P r) @(P'V vn r) @(YulCat'LVV v1 v1 r a) @One
                     (\(MkYulCat'LVV fxs) -> cb (MkYulCat'LVV (\a -> (cons'l (UnsafeLinear.coerce x) (fxs a)))))
+
+------------------------------------------------------------------------------------------------------------------------
+-- $PatternMatching
+------------------------------------------------------------------------------------------------------------------------
+
+match'l :: forall p r a b va vd.
+  ( YulO4 r a b (p a)
+  , BasePrelude.Functor p
+  , PatternMatchableYulCat (VersionedInputOutput 0) p a
+  )
+  => P'V va r (p a)
+  ⊸ (forall r1. YulO1 r1 => p (P'V va r1 (p a) ⊸ P'V va r1 a) ⊸ (P'V 0 r1 (p a) ⊸ P'V vd r1 b))
+  -> P'V (va + vd) r b
+match'l p f = let c = match (YulId :: YulCat (VersionedInputOutput 0) (p a) (p a))
+                      \cs -> UnsafeLinear.coerce
+                             @(YulCat (VersionedInputOutput vd) (p a) b)
+                             @(YulCat (VersionedInputOutput 0) (p a) b)
+                             (decode'lvv (f (BasePrelude.fmap encode'lvv cs)))
+                  c' = UnsafeLinear.coerce
+                       @(YulCat (VersionedInputOutput 0) (p a) b)
+                       @(YulCat (VersionedInputOutput vd) (p a) b)
+                       c
+              in encode'lvv c' p

@@ -142,41 +142,55 @@ TODOs & Future Plans
     - [x] BYTESn
     - [x] ADDR
   - ExtendedType
-    - [ ] 🟠 REF, storage or memory reference
+    - [ ] 🚧 🟠 REF, storage or memory reference
 - yul-dsl
   - YulCat
-    - Value type functions
-      - All integer number types: U8, U16.. U256; I8, I16, .. I256.
-      - [-] ⭐ Safe number handling with
-        1) checked number operations,
-        2) number operations over optional values,
-        3) pattern matching of optional (Haskell `Maybe` type) values
-        4) type-safe upCast, and safeCast to optional values.
+    - Value functions
+      - [x] All integer number types: U8, U16.. U256; I8, I16, .. I256.
+      - [x] All fixed size bytes types: B1, B2... B32.
+      - [ ] 🚧 ⭐ Safe number handling with
+        1. checked number operations,
+        2. number operations over optional values,
+        3. pattern matching of optional (Haskell `Maybe` type) values
+        4. type-safe upCast, and safeCast to optional values.
         - [ ] 🟢 `YulCast`, casting values between value types.
         - [x] 🟢 All `Num` and `Maybe Num` built-ins
-    - ⭐ Pattern matching support of optional number values.
-    - Haskell native if-then-else expression through "RebindableSyntax".
-    - yulKeccak256 for supported types.
-    - Exception
-      - `revert0`, solidity-equivalent of `revert()`
-    - Impurity and side effects
+      - [x] yulKeccak256 for supported types.
+    - Side Effects
       - [x] `YulSGet`, `YulSPut` for raw storage operations.
-      - [ ] 🟠 `YulCall`, external function calls.
+    - Exceptions
+      - [x] `revert0`, solidity-equivalent of `revert()`
+    - Control flows
+      - [x] Haskell native if-then-else expression through "RebindableSyntax".
+      - [x] ⭐ Pattern matching support of optional number values.
+    - Yul Object
+      - [x] Function export modifiers resembling solidity: `pureFn, staticFn, externalFn`.
+    - Type safety
+      - [x] Type-level purity classification: `IsEffectNotPure, MayEffectWorld`.
+  - Working with pure effect
+    - [x] Build pure functions `fn`. ⚠️ This will be replaced with `$fn`.
+    - [x] Call pure functions `callFn`.
   - CodeGen
-    - [x] Function generator for any YulCat
-    - Object generator:
-      - [x] Dispatcher generator
+    - [x] Yul code generator for any YulCat
+    - [x] Yul object dispatcher generator for exported functions.
     - Yul built-ins generators
-      - [-] 🟢 Full arithmetic support
-      - [-] 🟢 Full ABICodec support
+      - [ ] 🚧 🟢 Full arithmetic support
+      - [ ] 🚧 🟢 Full ABICodec support
   - Evaluator
-    - `evalFn` to evaluate a single YulCat morphism.
+    - `evalFn` to evaluate `Fn` (single YulCat value styled as a function) value.
 - yul-dsl-linear-smc
-  - [x] 🌟🌟🌟 Linear type sefety through Linearly Versioned Monad.
-    - [x] 🟠 More storage combinators.
-  - [-] ⭐ Compile linear port expressions to yul-dsl
-    - [ ] 🟢 ifThenElse for port.
-    - [ ] 🟢 Complete the Num classes: mul, abs, sig, etc.
+  - [x] 🌟🌟🌟 Linear safety for side effects
+    - Compile expression sof linear _data ports_ to YulCat
+    - Working with _versioned data port_ through `YulMonad`, a "Linearly Versioned Monad."
+    - [x] Build linear function with `fn'l`. ⚠️ This will be replaced with `$fn'lv, $fn'lp`.
+    - [ ] 🟠 Call `Fn` via yul monad function: `call`.
+  - Working with _data ports_
+    - [x] 🟢 match'l for pattern matching data ports.
+    - [ ] 🟢 ifThenElse through pattern matching on BOOL data port.
+    - [ ] 🟢 Num classes for data ports: mul, abs, sig, etc.
+  - Working with storage:
+    - [ ] 🟢 Low-level storage functions for input data ports, `sget, sput`.
+    - [ ] 🟠 Storage functions working with `Referenceable` types.
 - yol-suite
   - YOLC
     - Singleton program factory
@@ -184,15 +198,15 @@ TODOs & Future Plans
       - [x] Program factory, e.g. `function createERC20Program()`
     - Contract verification support
       - [ ] 🟢 EIP-1967 compatible "stunt contract" generator. A stunt contract includes both:
-            a) the program's interface necessary to interact with the program via EIP-1967-aware explorers,
-            b) a copy of Haskell main source code in a block of solidity comments.
-  - CLI:
+        1. the program's interface necessary to interact with the program via EIP-1967-aware explorers,
+        2. a copy of Haskell main source code in a block of solidity comments.
+  - CLI
     - [x] ⭐ `yolc`, a MVP in shells script, prepares YOLC project and invoke YOLC builder.
   - Developer communication
     - [ ] 🟠 Annotated ERC20 demo
   - Software distributions
-    - [ ] 🟢 Nix flake
-      - Rudimentary github dev console
+    - [x] Nix flake
+    - [ ] 🟢 Rudimentary github dev console
 
 **TODOs for 0.2.0.0**
 
@@ -208,20 +222,24 @@ TODOs & Future Plans
     - [ ] 🟢 Compatibility with the solidity abi-spec
 - yul-dsl
   - YulCat
-    - Value type
-    - [ ] 🟢 yulKeccak256 evaluation function using ABICodec from eth-abi
-    - Composite type support
-      - [x] 🟢 array length built-in.
-      - [ ] 🟠 Maybe support of non WordValues
-    - Control flow
-      - [ ] 🟠 `YulMapArray`, tight loop over an array.
-    - Exception
+    - Value functions
+      - [ ] 🟢 yulKeccak256 evaluation function using ABICodec from eth-abi.
+      - [ ] 🟢 array length built-in.
+      - [ ] 🟠 Maybe support of non word values.
+    - Side effects
+      - [ ] 🟠 `YulCall`, external function calls.
+    - Exceptions
       - [ ] 🟢 `revertWithError`
-      - [ ] 🟢 `revertWithMessage`
+      - [x] 🟢 `revertWithMessage`
+    - Control flows
+      - [ ] 🟠 `YulMapArray`, tight loop over an array.
+    - Yul object
+      - [ ] 🟢 Refactor it, incling decoupling external name for selector from function id.
     - Type safety
-      - ❓ further encode partial functions in type
+      - ❓ further encode total functions in type
+  - Working with pure effect
+    - [ ] 🟠 `$fn` template haskell for generating automatic unique function id.
   - CodeGen
-    - [ ] ❓ Fn autoId (instead of using yulCatDigest.)
     - Function Gen:
       - [ ] 🟠 Fix the implementation for all embeddable values.
     - Object builder:
@@ -229,6 +247,9 @@ TODOs & Future Plans
   - Evaluator
     - [ ] 🟢 handling exception
     - [ ] 🟢 test coverage, and check against foundry results
+- yul-dsl-linear-smc
+  - Working with _versioned data port_ through `YulMonad`, a "Linearly Versioned Monad."
+    - [ ] 🟢 Build YulMonad functions: with versioned input `$fn'lv`, with pure input `$fn'lp`
 - yol-suite
   - YOLC
     - [ ] 🟠 Solidity struct generator for types.
@@ -242,7 +263,8 @@ TODOs & Future Plans
       - [ ] 🔴 Full stunt contract generator.
   - CLI
     - [ ] 🔴 Use 'THSH' to mix shell scripting and publish its haskell binary.
-  - Software distributions:
+  - Developer communication
+  - Software distributions
     - [ ] better github dev console
     - [ ] yolc.dev playground
 - attila

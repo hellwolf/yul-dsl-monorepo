@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-|
 
 Copyright   : (c) 2023-2024 Miao, ZhiCheng
@@ -8,7 +7,7 @@ Stability   : experimental
 
 = Description
 
-This module provides a system for evaluation of a YulCat morphism semantically.
+This module provides an evaluator for YulDSL.
 
 -}
 

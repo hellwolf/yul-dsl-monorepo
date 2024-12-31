@@ -29,13 +29,6 @@ import Control.LinearlyVersionedMonad
 import Data.LinearContext
 import Data.TupleN                    (ConvertibleTupleN, TupleNtoNP, fromTupleNtoNP)
 
---------------------------------------------------------------------------------
--- pure
---------------------------------------------------------------------------------
-
--- | Lift a value into a LVM.
-pure :: forall ctx v a. a ⊸ LVM ctx v v a
-pure a = MkLVM (Dict, , a)
 
 --------------------------------------------------------------------------------
 -- embed

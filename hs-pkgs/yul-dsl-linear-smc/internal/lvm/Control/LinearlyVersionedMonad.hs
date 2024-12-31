@@ -24,8 +24,8 @@ monads." arXiv preprint arXiv:2001.10274 (2020).]
 -}
 module Control.LinearlyVersionedMonad
   ( -- $linear_safety
-    LVM (MkLVM), unLVM
-  , runLVM, (>>=), (>>), (=<<)
+    LVM (MkLVM), unLVM, runLVM
+  , pure, (>>=), (>>), (=<<)
   ) where
 
 -- base
@@ -60,6 +60,10 @@ unLVM (MkLVM fa) = fa
 -- | Run a linearly versioned monad.
 runLVM :: forall a va vb ctx. ctx ⊸ LVM ctx va vb a ⊸ (ctx, a)
 runLVM ctx m = let !(lp, ctx', a) = unLVM m ctx in lseq lp (ctx', a)
+
+-- | Lift a value into a LVM.
+pure :: forall ctx v a. a ⊸ LVM ctx v v a
+pure a = MkLVM (Dict, , a)
 
 -- | Monad bind operator for 'LVM', working with the QualifiedDo syntax.
 --

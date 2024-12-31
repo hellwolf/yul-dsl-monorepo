@@ -1,4 +1,16 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+
+Copyright   : (c) 2023-2024 Miao, ZhiCheng
+License     : LGPL-3
+Maintainer  : hellwolf@yolc.dev
+Stability   : experimental
+
+= Description
+
+This module defines the 'Num' instance from base library for 'YulNum' objects.
+
+-}
 module YulDSL.YulCatObj.Prelude.Base.Num where
 
 --

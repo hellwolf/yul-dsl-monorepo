@@ -31,7 +31,7 @@ instance forall x'p x'v xs'p xs'v v r.
   impure (x :* xs) = LVM.do
     x' <- impure x
     xs' <- impure xs
-    pure (x' :* xs')
+    LVM.pure (x' :* xs')
 
 impureN :: forall v r tpl'p tpl'v.
            ( ConvertibleTupleN tpl'p
@@ -43,4 +43,4 @@ impureN :: forall v r tpl'p tpl'v.
         => tpl'p ⊸ YulMonad v v r tpl'v
 impureN tpl'p = LVM.do
   np'v :: TupleNtoNP tpl'v <- impure (fromTupleNtoNP tpl'p)
-  pure (fromNPtoTupleN np'v)
+  LVM.pure (fromNPtoTupleN np'v)

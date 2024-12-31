@@ -43,19 +43,19 @@ uncurry_fn4 = fn @(U256 -> U256 -> U256 -> U256 -> U256) ""
   where f a b = a + b
 
 call_fn0 = fn @(U256) ""
-  do call'p uncurry_fn0
+  do callFn uncurry_fn0
 
 call_fn1 = fn @(U256 -> U256) ""
-  \a -> call'p uncurry_fn1 a
+  \a -> callFn uncurry_fn1 a
 
 call_fn2 = fn @(U256 -> U256) ""
-  \a -> call'p uncurry_fn2 a a
+  \a -> callFn uncurry_fn2 a a
 
 call_fn3 = fn @(U256 -> U256) ""
-  \a -> call'p uncurry_fn3 a a a
+  \a -> callFn uncurry_fn3 a a a
 
 call_fn4 = fn @(U256 -> U256) ""
-  \a -> call'p uncurry_fn4 a a a a
+  \a -> callFn uncurry_fn4 a a a a
 
 test_simple_fn :: Gen Bool
 test_simple_fn = chooseInteger (0, toInteger (maxBound @U32)) <&>
@@ -68,10 +68,6 @@ test_simple_fn = chooseInteger (0, toInteger (maxBound @U32)) <&>
     , evalFn call_fn4 (x :* Nil) == x + x + x + x
     ]
   ) . fromInteger
-
---------------------------------------------------------------------------------
--- Inline uncurry'p
---------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
 -- Pattern matching for Maybe
@@ -89,6 +85,8 @@ test_maybe_fn = and
   , evalFn maybe_num_fn2 (Just 255 :* Just 1 :* Nil) == 0
   , evalFn maybe_num_fn2 (Just 128 :* Just 128 :* Nil) == 0
   ]
+
+--------------------------------------------------------------------------------
 
 -- | "YulDSL.Core.Fn" tests.
 tests = describe "YulDSL.Core.Fn" $ do

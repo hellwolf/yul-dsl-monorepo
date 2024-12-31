@@ -6,7 +6,6 @@ Maintainer  : hellwolf@yolc.dev
 Stability   : experimental
 
 -}
-
 module YulDSL.Core
   ( module Ethereum.ContractABI
   , module YulDSL.Core.YulCatObj
@@ -15,15 +14,11 @@ module YulDSL.Core
   , module YulDSL.Core.YulObject
   , module YulDSL.Effects.Pure
   ) where
-
-
 import Ethereum.ContractABI
 
+import YulDSL.Core.YulCat
 import YulDSL.Core.YulCatObj
 import YulDSL.Core.YulNum
-
-import YulDSL.Core.YulCat
-
 import YulDSL.Core.YulObject
 
 import YulDSL.Effects.Pure

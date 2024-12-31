@@ -1,7 +1,21 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-module YulDSL.YulCatObj.Prelude.Base.Maybe () where
+{-|
+
+Copyright   : (c) 2023-2024 Miao, ZhiCheng
+License     : LGPL-3
+Maintainer  : hellwolf@yolc.dev
+Stability   : experimental
+
+= Description
+
+This module defines the 'Num' instance from base library for Maybe 'YulNum' objects.
+
+-}
+module YulDSL.YulCatObj.Prelude.Base.Maybe
+  ( MaybeYulNum
+  ) where
 
 -- eth-abi
 import Ethereum.ContractABI
@@ -10,6 +24,9 @@ import YulDSL.Core.YulCat
 import YulDSL.Core.YulCatObj
 import YulDSL.Core.YulNum
 
+--
+-- Maybe (INTx s n) being a YulNum
+--
 
 type MaybeYulNum a = ( ABITypeable a
                      , ABITypeable (ABITypeDerivedOf a)
@@ -33,11 +50,18 @@ instance MaybeYulNum a => ABITypeCodec (Maybe a)
 instance (MaybeYulNum a, Show a) => YulCatObj (Maybe a)
 
 instance ValidINTx s n => YulNum (Maybe (INTx s n)) where
-  yulNumAdd = (mk_builtin_name @(INTx s n) "add", uncurry (+))
-  yulNumMul = (mk_builtin_name @(INTx s n) "mul", uncurry (*))
-  yulNumSub = (mk_builtin_name @(INTx s n) "sub", uncurry (-))
-  yulNumAbs = (mk_builtin_name @(INTx s n) "abs", abs)
-  yulNumSig = (mk_builtin_name @(INTx s n) "sig", signum)
+  yulNumAdd = (mk_maybe_op @(INTx s n) "add", uncurry (+))
+  yulNumMul = (mk_maybe_op @(INTx s n) "mul", uncurry (*))
+  yulNumSub = (mk_maybe_op @(INTx s n) "sub", uncurry (-))
+  yulNumAbs = (mk_maybe_op @(INTx s n) "abs", abs)
+  yulNumSig = (mk_maybe_op @(INTx s n) "sig", signum)
+
+mk_maybe_op :: forall a. ABITypeable a => String -> String
+mk_maybe_op n = "__maybe_" ++ n ++ "_t_" ++ abiTypeCanonName @a
+
+--
+-- PatternMatchable instance
+--
 
 instance ( YulCat eff r ~ m
          , YulO2 r a, YulCatObj (ABITypeDerivedOf a), MaybeYulNum a
@@ -57,6 +81,3 @@ instance ( YulCat eff r ~ m
                          >.> YulExl @_ @(ABITypeDerivedOf a) @_
                          >.> YulExtendType
                  in ifThenElse b (f (Just n)) (f Nothing)
-
-mk_builtin_name :: forall a. ABITypeable a => String -> String
-mk_builtin_name n = "__maybe_" ++ n ++ "_t_" ++ abiTypeCanonName @a

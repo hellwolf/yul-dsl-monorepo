@@ -96,7 +96,7 @@ compile_object ind (MkYulObject { yulObjectName = oname
         code_fns <- mapM (compile_scoped_fn ind''') sfns
 
         -- dependencies
-        deps_codes <- compile_deps ind''' (not . (`elem` map (\x -> withScopedFn x fst) sfns))
+        deps_codes <- compile_deps ind''' (not . (`elem` map (`withScopedFn` fst) sfns))
 
         builtin_codes <- cg_gen_builtin_codes ind'''
 

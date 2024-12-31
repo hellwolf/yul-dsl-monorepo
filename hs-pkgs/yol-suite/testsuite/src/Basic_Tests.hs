@@ -8,7 +8,7 @@ embUnit'p = fn @(I256 -> ()) "embUnit$p" $ \_ -> YulEmb ()
 
 embTrue'p = fn @(BOOL) "embTrue$p" $ YulEmb true
 
-embTrue'l = fn'l "embTrue$l" $ yulmonad'lp @(BOOL) (embed true)
+embTrue'l = fn'l "embTrue$l" $ yulmonad'p @(BOOL) (embed true)
 
 revertIfTrue = fn @(BOOL -> U256 -> U256) "revertIfTrue"
   $ \t x -> if t then yulRevert else x
@@ -17,7 +17,7 @@ revertIfTrue = fn @(BOOL -> U256 -> U256) "revertIfTrue"
 rangeSum'p = fn @(U256 -> U256 -> U256 -> U256) "rangeSum$p"
   \from step until -> let j = from + step
                       in from + if j <= until
-                                then call'p rangeSum'p j step until
+                                then callFn rangeSum'p j step until
                                 else 0
 
 -- rangeSum'l = fn'l "rangeSum$l" $
@@ -29,6 +29,6 @@ object = mkYulObject "BasicTests" emptyCtor
   [ pureFn embUnit'p
   , pureFn embTrue'p
   , pureFn revertIfTrue
-  , pureFn (purify'l embTrue'l)
+  , pureFn (purifyLinearEffect embTrue'l)
   , pureFn rangeSum'p
   ]

@@ -14,6 +14,10 @@ contract ERC20ProgramTest is Test {
     token = createERC20Program();
   }
 
+  function testBalanceOfIsViewFunction() external view {
+    assertEq(token.balanceOf(ALICE), 0);
+  }
+
   function testMintAndTransfer(uint128 x1, uint128 x2) external {
     uint256 mintAmount = uint256(x1) + uint256(x2);
     assertEq(token.balanceOf(ALICE), 0, "alice init balance is wrong");

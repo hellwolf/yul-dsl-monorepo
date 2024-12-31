@@ -5,21 +5,21 @@ import Prelude.YulDSL
 
 -- | ERC20 balance storage location for the account.
 erc20_balance_storage_of = fn'l "erc20_balance_storage_of" $
-  uncurry'lv @(ADDR -> B32)
+  uncurry'lvv @(ADDR -> B32)
   \acc -> encode yulKeccak256 acc -- FIXME pure function
 
 -- | ERC20 balance of the account.
-erc20_balance_of = fn'l "balanceOf" $ yulmonad'lv @(ADDR -> U256)
+erc20_balance_of = fn'l "balanceOf" $ yulmonad'v @(ADDR -> U256)
   \account -> LVM.do
     sget (call'l erc20_balance_storage_of account)
 
-erc20_mint = fn'l "mint" $ yulmonad'lp @(ADDR -> U256 -> BOOL)
+erc20_mint = fn'l "mint" $ yulmonad'p @(ADDR -> U256 -> BOOL)
   \account'p amount'p -> LVM.do
   (account, amount) <- impureN (account'p, amount'p)
   sput (call'l erc20_balance_storage_of account) amount
   embed true
 
-erc20_transfer = fn'l "transfer" $ yulmonad'lp @(ADDR -> ADDR -> U256 -> BOOL)
+erc20_transfer = fn'l "transfer" $ yulmonad'p @(ADDR -> ADDR -> U256 -> BOOL)
   \from'p to'p amount'p -> LVM.do
 
   -- data generate 0 block: update sender balance
@@ -37,7 +37,7 @@ erc20_transfer = fn'l "transfer" $ yulmonad'lp @(ADDR -> ADDR -> U256 -> BOOL)
   embed true
 
 object = mkYulObject "ERC20" emptyCtor
-  [ externalFn erc20_balance_of
+  [ staticFn erc20_balance_of
   , externalFn erc20_mint
   , externalFn erc20_transfer
   ]

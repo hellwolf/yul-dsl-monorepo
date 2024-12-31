@@ -1,6 +1,7 @@
 module YulDSL.Effects.LinearSMC
   ( module YulDSL.Effects.LinearSMC.YulPort
   , module YulDSL.Effects.LinearSMC.YulMonad
+  , module YulDSL.Effects.LinearSMC.LinearYulCat
   , module YulDSL.Effects.LinearSMC.LinearFn
   -- * YulMonad Combinators
   , module YulDSL.Effects.LinearSMC.Impurable
@@ -8,6 +9,7 @@ module YulDSL.Effects.LinearSMC
   ) where
 
 import YulDSL.Effects.LinearSMC.LinearFn
+import YulDSL.Effects.LinearSMC.LinearYulCat
 import YulDSL.Effects.LinearSMC.YulMonad
 import YulDSL.Effects.LinearSMC.YulPort
 --

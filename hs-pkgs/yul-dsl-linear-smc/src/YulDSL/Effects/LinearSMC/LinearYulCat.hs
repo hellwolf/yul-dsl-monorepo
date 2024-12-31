@@ -2,7 +2,7 @@
 module YulDSL.Effects.LinearSMC.LinearYulCat
   ( -- * Linear Effect Kind
     -- $LinearEffectKind
-    LinearEffect (PureInputVersionedOutput, VersionedInputOutput), purifyLinearEffect
+    LinearEffect (PureInputVersionedOutput, VersionedInputOutput)
     -- * Yul Port Diagrams
     -- $YulPortDiagrams
   , YulCat'LVV (MkYulCat'LVV), YulCat'LPV (MkYulCat'LPV), YulCat'LPP (MkYulCat'LPP)
@@ -42,18 +42,11 @@ type family IsLinearEffectNonStatic (vd :: Nat) where
   IsLinearEffectNonStatic 0 = False
   IsLinearEffectNonStatic vd = True
 
+-- ^ A linear effect is always not pure.
 type instance IsEffectNotPure (eff :: LinearEffect) = True
-type instance MayEffectWorld (PureInputVersionedOutput vd) = IsLinearEffectNonStatic vd
+
 type instance MayEffectWorld (VersionedInputOutput vd) = IsLinearEffectNonStatic vd
-
--- | Purify some linear effect kind.
-class PurifiableLinearFn (eff :: LinearEffect) where
-  purifyLinearEffect :: Fn eff f ⊸ PureFn f
-  purifyLinearEffect = UnsafeLinear.coerce
-
--- Linear effects without data version changes are pure effects:
-instance PurifiableLinearFn (VersionedInputOutput 0)
-instance PurifiableLinearFn (PureInputVersionedOutput 0)
+type instance MayEffectWorld (PureInputVersionedOutput vd) = IsLinearEffectNonStatic vd
 
 ------------------------------------------------------------------------------------------------------------------------
 -- $YulPortDiagrams

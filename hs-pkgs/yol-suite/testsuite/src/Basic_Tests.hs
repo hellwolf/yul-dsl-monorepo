@@ -29,6 +29,6 @@ object = mkYulObject "BasicTests" emptyCtor
   [ pureFn embUnit'p
   , pureFn embTrue'p
   , pureFn revertIfTrue
-  , pureFn (purifyLinearEffect embTrue'l)
+  , staticFn embTrue'l
   , pureFn rangeSum'p
   ]

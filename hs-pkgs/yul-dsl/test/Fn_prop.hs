@@ -19,42 +19,42 @@ import TestCommon           ()
 --------------------------------------------------------------------------------
 
 dis_any :: forall a. YulO1 a => PureFn (a -> ())
-dis_any = fn "" \_ -> YulEmb ()
+dis_any = fn "dis_any" \_ -> YulEmb ()
 
 --------------------------------------------------------------------------------
 -- Simple functions
 --------------------------------------------------------------------------------
 
 uncurry_fn0 :: PureFn (U256)
-uncurry_fn0 = fn @(U256) "" 42
+uncurry_fn0 = fn @(U256) "uncurry_fn0" 42
 
 uncurry_fn1 :: ValidINTx s n => PureFn (INTx s n -> INTx s n)
-uncurry_fn1 = fn ""
-  \a -> a + a
+uncurry_fn1 =
+  fn "uncurry_fn1" \a -> a + a
 
-uncurry_fn2 = fn @(U256 -> U256 -> U256) ""
+uncurry_fn2 = fn @(U256 -> U256 -> U256) $locId
   \a b -> a + b
 
-uncurry_fn3 = fn @(U256 -> U256 -> U256 -> U256) ""
+uncurry_fn3 = fn @(U256 -> U256 -> U256 -> U256) $locId
   \a b c -> a + b + c
 
-uncurry_fn4 = fn @(U256 -> U256 -> U256 -> U256 -> U256) ""
+uncurry_fn4 = fn @(U256 -> U256 -> U256 -> U256 -> U256) $locId
   \a b c d -> f a b + f c d
   where f a b = a + b
 
-call_fn0 = fn @(U256) ""
+call_fn0 = fn @(U256) $locId
   do callFn uncurry_fn0
 
-call_fn1 = fn @(U256 -> U256) ""
+call_fn1 = fn @(U256 -> U256) $locId
   \a -> callFn uncurry_fn1 a
 
-call_fn2 = fn @(U256 -> U256) ""
+call_fn2 = fn @(U256 -> U256) $locId
   \a -> callFn uncurry_fn2 a a
 
-call_fn3 = fn @(U256 -> U256) ""
+call_fn3 = fn @(U256 -> U256) $locId
   \a -> callFn uncurry_fn3 a a a
 
-call_fn4 = fn @(U256 -> U256) ""
+call_fn4 = fn @(U256 -> U256) $locId
   \a -> callFn uncurry_fn4 a a a a
 
 test_simple_fn :: Gen Bool
@@ -73,7 +73,7 @@ test_simple_fn = chooseInteger (0, toInteger (maxBound @U32)) <&>
 -- Pattern matching for Maybe
 --------------------------------------------------------------------------------
 
-maybe_num_fn2 = fn @(Maybe U8 -> Maybe U8 -> U8) ""
+maybe_num_fn2 = fn @(Maybe U8 -> Maybe U8 -> U8) $locId
   \a b -> match (a + b) \case
     Just x -> x
     Nothing -> 0

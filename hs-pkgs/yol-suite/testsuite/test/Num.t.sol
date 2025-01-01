@@ -186,14 +186,6 @@ contract T is Test {
 
   // test maybe pattern
 
-  function test_add_maybe_int96_with_default(int96 x, int96 y, int96 def) external {
-    if ((x > 0 && y <= type(int96).max - x) || (x <= 0 && y >= type(int96).min - x)) {
-      assertEq(prog.add_maybe_int96_with_default(x, y, def), x + y);
-    } else {
-      assertEq(prog.add_maybe_int96_with_default(x, y, def), def);
-    }
-  }
-
   function test_add_maybe_int96(bool bx, int96 x, bool by, int96 y) external {
     bool bz;
     int96 z;
@@ -208,6 +200,14 @@ contract T is Test {
       }
     } else {
       assertFalse(bz, "test_add_maybe_int96 5");
+    }
+  }
+
+  function test_add_int96_with_default(int96 x, int96 y, int96 def) external {
+    if ((x > 0 && y <= type(int96).max - x) || (x <= 0 && y >= type(int96).min - x)) {
+      assertEq(prog.add_int96_with_default(x, y, def), x + y);
+    } else {
+      assertEq(prog.add_int96_with_default(x, y, def), def);
     }
   }
 }

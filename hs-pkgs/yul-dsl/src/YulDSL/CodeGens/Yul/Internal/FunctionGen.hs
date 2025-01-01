@@ -2,8 +2,8 @@
 {-# LANGUAGE OverloadedStrings   #-}
 module YulDSL.CodeGens.Yul.Internal.FunctionGen
   ( compile_cat
-  , compile_fn
-  , compile_scoped_fn
+  , compile_named_cat
+  , compile_exported_fn
   ) where
 
 -- base
@@ -153,11 +153,13 @@ go_ite ct cf = build_code_block @(BOOL, a) @b $ \ind (code, ba_ins) -> do
 
 go_jmpu :: forall eff a b. (HasCallStack, YulO2 a b)
         => NamedYulCat eff a b -> CGState RhsExprGen
-go_jmpu (depId, depCat) = cg_insert_dependent_cat depId (MkAnyYulCat depCat) >> go_jmp @a @b depId
+go_jmpu (cid, cat) = cg_insert_dependent_cat cid (MkAnyYulCat cat)
+                       >> go_jmp @a @b ("u$" ++ cid)
 
 go_jmpb :: forall a b. (HasCallStack, YulO2 a b)
         => BuiltInYulFunction a b -> CGState RhsExprGen
-go_jmpb (builtinName, _) = cg_use_builtin builtinName >> go_jmp @a @b builtinName
+go_jmpb (builtinName, _) = cg_use_builtin builtinName
+                           >> go_jmp @a @b builtinName
 
 go_jmp :: forall a b. (HasCallStack, YulO2 a b)
        => String -> CGState RhsExprGen
@@ -194,14 +196,14 @@ compile_cat ind acat (a_vars, b_vars) = do
     code <>
     assign_vars ind b_vars b_outs
 
-compile_fn :: forall a b eff. (HasCallStack, YulO2 a b)
+compile_named_cat :: forall a b eff. (HasCallStack, YulO2 a b)
            => Indenter -> NamedYulCat eff a b -> CGState Code
-compile_fn ind (fid, cat) = do
+compile_named_cat ind (cid, cat) = do
   vars_a <- cg_create_vars @a
   vars_b <- cg_create_vars @b
 
   code <- cbracket_m ind
-    ( "function " <> T.pack fid <>
+    ( "function " <> T.pack ("u$" ++ cid) <>
       "(" <> spread_vars vars_a <> ")" <>
       (if null vars_b then "" else " -> " <> spread_vars vars_b)
     )
@@ -215,6 +217,6 @@ compile_fn ind (fid, cat) = do
   cg_reset_for_fn
   pure code
 
-compile_scoped_fn :: HasCallStack
-                  => Indenter -> ScopedFn -> CGState Code
-compile_scoped_fn ind f = withScopedFn f (compile_fn ind)
+compile_exported_fn :: HasCallStack
+                  => Indenter -> ExportedFn -> CGState Code
+compile_exported_fn ind f = withExportedFn f (compile_named_cat ind)

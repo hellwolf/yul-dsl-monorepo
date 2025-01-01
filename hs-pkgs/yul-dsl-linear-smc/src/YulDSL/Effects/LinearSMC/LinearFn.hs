@@ -32,10 +32,10 @@ class CreateLinearFn (iEff :: PortEffect) (oEff :: PortEffect) (fnEff :: LinearE
     -> Fn fnEff (CurryNP (NP xs) b)
 
 instance forall vd. CreateLinearFn (VersionedPort 0) (VersionedPort vd) (VersionedInputOutput vd) where
-  lfn fid f = MkFn (fid, decode'lvv f)
+  lfn cid f = MkFn (cid, decode'lvv f)
 
 instance forall vd. CreateLinearFn PurePort (VersionedPort vd) (PureInputVersionedOutput vd) where
-  lfn fid f = MkFn (fid, decode'lpv f)
+  lfn cid f = MkFn (cid, decode'lpv f)
 
 -- | Call linear function kind.
 class CallLinearFn (fnEff :: LinearEffect) where
@@ -94,8 +94,8 @@ instance CallLinearFn (PureInputVersionedOutput vd) where
     )
     => Fn (PureInputVersionedOutput vd) f
     -> (P'V v1 r x ⊸ g')
-  callLfn'l f x = callLfn'l @(VersionedInputOutput vd) @f
-                  (UnsafeLinear.coerce f) x
+  callLfn'l f = callLfn'l @(VersionedInputOutput vd) @f
+                (UnsafeLinear.coerce f)
 
 -- | Call pure function with pure yul port.
 callFn'l :: forall f x xs b g' r eff.

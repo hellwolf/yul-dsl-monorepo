@@ -47,7 +47,6 @@ stringKeccak256:: String -> BYTESn 32
 stringKeccak256 s = let hash = Hash.hash (Data.ByteString.Char8.pack s) :: Hash.Digest Hash.Keccak_256
                     in BYTESn $ BS.unpack (BA.convert hash :: BS.ByteString)
 
-
 --
 -- Instances
 --

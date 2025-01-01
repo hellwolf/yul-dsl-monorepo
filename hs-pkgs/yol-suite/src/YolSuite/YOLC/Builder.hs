@@ -91,17 +91,17 @@ compile_main_object mo = do
                        (fromString "")
                        errors
 
-ifunc_name :: ScopedFn -> Maybe T.Text
-ifunc_name (ExternalFn perm (SELECTOR (_, Just(FuncSig (fname, _)))) (_ :: NamedYulCat eff a b))
+ifunc_name :: ExportedFn -> Maybe T.Text
+ifunc_name (MkExportedFn (SELECTOR (_, Just(FuncSig (fname, _)))) fnEff (_ :: NamedYulCat eff a b))
   = Just
     $ "  function " <> T.pack fname
-    <> "(" <> T.intercalate ", " argTypes <>") external" <> effect perm
+    <> "(" <> T.intercalate ", " argTypes <>") external" <> effect fnEff
     <> (if null retTypes then ";" else " returns (" <> T.intercalate ", " retTypes <> ");")
     where argTypes = map (T.pack . abiCoreTypeCanonName) (abiTypeInfo @a)
           retTypes = map (T.pack . abiCoreTypeCanonName) (abiTypeInfo @b)
-          effect NoStorageAccess         = " pure"
-          effect ReadOnlyExternalStorage = " view"
-          effect _                       = ""
+          effect PureFnEffect   = " pure"
+          effect StaticFnEffect = " view"
+          effect OmniFnEffect   = ""
 ifunc_name _ = Nothing
 
 -- Compile interface of the build unit.

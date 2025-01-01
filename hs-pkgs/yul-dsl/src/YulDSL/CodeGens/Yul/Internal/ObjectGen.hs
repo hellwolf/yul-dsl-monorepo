@@ -17,10 +17,8 @@ import YulDSL.CodeGens.Yul.Internal.Variable
 
 
 compile_fn_dispatcher :: HasCallStack
-                      => Indenter -> ScopedFn -> CGState (Maybe Code)
-compile_fn_dispatcher ind (ExternalFn _
-                           sel@(SELECTOR (_, Just (FuncSig (fname, _))))
-                           (_ :: NamedYulCat eff a b)) = do
+                      => Indenter -> ExportedFn -> CGState (Maybe Code)
+compile_fn_dispatcher ind (MkExportedFn sel _ ((cid, _) :: NamedYulCat eff a b)) = do
   let abidec_builtin = "__abidec_dispatcher_c_" <> abiTypeCompactName @a
       abienc_builtin = "__abienc_from_stack_c_" <> abiTypeCompactName @b
   vars_a <- cg_create_vars @a
@@ -36,7 +34,8 @@ compile_fn_dispatcher ind (ExternalFn _
         ) <>
         -- call the function
         ind' ( (if not (null vars_b) then spread_vars vars_b <> " := " else "") <>
-               T.pack fname <> "(" <> spread_vars vars_a <> ")"
+               -- TODO: keep in sync with compile_named_cat implementation
+               T.pack ("u$" ++ cid) <> "(" <> spread_vars vars_a <> ")"
              ) <>
         -- call the abi encoder for outputs
         ( if not (null vars_b) then
@@ -45,10 +44,9 @@ compile_fn_dispatcher ind (ExternalFn _
             ind' "return(memPos, sub(memEnd, memPos))"
           else ind' "return(0, 0)"
         )
-compile_fn_dispatcher _ _ = pure Nothing
 
 compile_dispatchers :: HasCallStack
-                    => Indenter -> [ScopedFn] -> CGState Code
+                    => Indenter -> [ExportedFn] -> CGState Code
 compile_dispatchers ind fns = cbracket_m ind "/* dispatcher */" $ \ind' -> do
   cases <- mapM (compile_fn_dispatcher ind') fns
            <&> catMaybes
@@ -65,7 +63,7 @@ compile_deps :: HasCallStack
              => Indenter -> (String -> Bool) -> CGState [Code]
 compile_deps ind fidFilter = do
   deps <- filter (\(i, _) -> fidFilter i) <$> cg_list_dependent_cats
-  mapM (\(i, (MkAnyYulCat cat)) -> compile_fn ind (i, cat)) deps
+  mapM (\(i, (MkAnyYulCat cat)) -> compile_named_cat ind (i, cat)) deps
 
 compile_object :: HasCallStack
                => Indenter -> YulObject -> CGState Code
@@ -93,10 +91,10 @@ compile_object ind (MkYulObject { yulObjectName = oname
         code_dispatcher <- compile_dispatchers ind''' sfns
 
         -- exported functions
-        code_fns <- mapM (compile_scoped_fn ind''') sfns
+        code_fns <- mapM (compile_exported_fn ind''') sfns
 
         -- dependencies
-        deps_codes <- compile_deps ind''' (not . (`elem` map (`withScopedFn` fst) sfns))
+        deps_codes <- compile_deps ind''' (not . (`elem` map (`withExportedFn` fst) sfns))
 
         builtin_codes <- cg_gen_builtin_codes ind'''
 

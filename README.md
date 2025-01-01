@@ -142,8 +142,6 @@ TODOs & Future Plans
     - [x] INTx s n
     - [x] BYTESn
     - [x] ADDR
-  - ExtendedType
-    - [ ] 🚧 🟠 REF, storage or memory reference
 - yul-dsl
   - YulCat
     - Value functions
@@ -159,6 +157,7 @@ TODOs & Future Plans
       - [x] yulKeccak256 for supported types.
     - Side Effects
       - [x] `YulSGet`, `YulSPut` for raw storage operations.
+      - [ ] 🟠 `YulCall`, external function calls.
     - Exceptions
       - [x] `revert0`, solidity-equivalent of `revert()`
     - Control flows
@@ -192,7 +191,6 @@ TODOs & Future Plans
     - [ ] 🟢 Num classes for data ports: mul, abs, sig, etc.
   - Working with storage:
     - [ ] 🟢 Low-level storage functions for input data ports, `sget, sput`.
-    - [ ] 🟠 Storage functions working with `Referenceable` types.
 - yol-suite
   - YOLC
     - Singleton program factory
@@ -218,6 +216,7 @@ TODOs & Future Plans
     - [ ] 🟠 BYTES
     - [ ] 🟠 STRING
   - ExtendedType
+    - [ ] 🟠 REF, storage or memory reference
     - [ ] 🟠 SELECTOR
     - [ ] 🟠 TUPLEn, STRUCT with named fields, etc.
   - ABICodec
@@ -228,8 +227,6 @@ TODOs & Future Plans
       - [ ] 🟢 yulKeccak256 evaluation function using ABICodec from eth-abi.
       - [ ] 🟢 array length built-in.
       - [ ] 🟠 Maybe support of non word values.
-    - Side effects
-      - [ ] 🟠 `YulCall`, external function calls.
     - Exceptions
       - [ ] 🟢 `revertWithError`
       - [x] 🟢 `revertWithMessage`
@@ -251,7 +248,8 @@ TODOs & Future Plans
     - [ ] 🟢 test coverage, and check against foundry results
 - yul-dsl-linear-smc
   - Working with _versioned data port_ through `YulMonad`, a "Linearly Versioned Monad."
-    - [ ] 🟢 Build YulMonad functions: with versioned input `$fn'lv`, with pure input `$fn'lp`
+    - [ ] 🟢 Build YulMonad functions: `$yulMonadV` for versioned inputs, and `$yulMonadP` for pure inputs.
+    - [ ] 🟠 Storage functions working with `Referenceable` types.
 - yol-suite
   - YOLC
     - [ ] 🟠 Solidity struct generator for types.

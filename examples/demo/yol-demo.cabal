@@ -23,8 +23,9 @@ common yol-module-options
                           OverloadedStrings
                           UnicodeSyntax
                           RebindableSyntax
-                          LinearTypes
                           ImpredicativeTypes
+                          LinearTypes
+                          TemplateHaskell
     mixins:               base hiding (Prelude),
                           base (Prelude as Prelude.Base)
     build-depends:        base >= 4.13 && < 666,

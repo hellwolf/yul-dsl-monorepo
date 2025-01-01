@@ -17,11 +17,10 @@ module YulDSL.Effects.Pure
     PureEffectKind (Pure, Total), PureFn, YulCat'P
     -- * Build And Call PureFn
     -- $PureFn
-  , pfn, fn, callFn
+  , fn, callFn
     -- * Technical Notes
     -- $yulCatVal
   ) where
-
 -- eth-abi
 import Ethereum.ContractABI
 --
@@ -56,7 +55,7 @@ type YulCat'P = YulCat Pure
 --
 -- @
 --   -- Use type application to resolve the type @f@:
---   bar = fn_ "bar" $ uncurry'p @(U256 -> U256)
+--   bar = fn "bar" $ uncurry'p @(U256 -> U256)
 --     \a -> a + a
 -- @
 --
@@ -69,7 +68,7 @@ type YulCat'P = YulCat Pure
 --   * @f = λ x1' -> λ x2' -> ... λ xn' -> Pure (NP xs ↝ b)@
 --
 -- It returns: @Pure (NP xs ↝ b)@
-pfn :: forall f xs b m.
+fn :: forall f xs b m.
        ( YulO2 (NP xs) b
        , UncurryNP'Fst f ~ xs
        , UncurryNP'Snd f ~ b
@@ -78,25 +77,11 @@ pfn :: forall f xs b m.
        , UncurryingNP f xs b m m m m Many
        , LiftFunction b m m Many ~ m b
        )
-    => String                     -- ^ the function id
+    => String
     -> LiftFunction f m m Many    -- ^ uncurrying function type
     -> PureFn (CurryNP (NP xs) b) -- ^ result type, or its short form @m b@
-pfn fid f = MkFn (fid, uncurryingNP @f @xs @b @m @m @m @m f YulId)
-
--- | TODO: Make $fn a template haskell splice to generate unique function id automatically
-fn :: forall f xs b m.
-      ( YulO2 (NP xs) b
-      , UncurryNP'Fst f ~ xs
-      , UncurryNP'Snd f ~ b
-      , CurryNP (NP xs) b ~ f
-      , YulCat'P (NP xs) ~ m
-      , UncurryingNP f xs b m m m m Many
-      , LiftFunction b m m Many ~ m b
-      )
-   => String                  -- ^ the function id
-   -> LiftFunction f m m Many -- ^ the pure yul categorical value of @NP xs ↝ b@
-   -> PureFn f                -- ^ a 'PureFn' of function type @f@
-fn = pfn
+fn cid f = let cat = uncurryingNP @f @xs @b @m @m @m @m f YulId
+           in MkFn (cid, cat)
 
 -- | Call a 'PureFn' by currying it with pure yul categorical values of @r ↝ xn@ until a pure yul categorical value of
 -- @r ↝ b@ is returned.
@@ -111,9 +96,8 @@ callFn :: forall f xs b r m.
           )
        => PureFn f                -- ^ a 'PureFn' of function type @f@
        -> LiftFunction f m m Many -- ^ a currying function type
-callFn (MkFn (fid, cat)) = curryingNP @xs @b @m @m @m @Many
-                           (\xs -> xs >.> YulJmpU (fid, cat))
-
+callFn (MkFn (cid, cat)) = curryingNP @xs @b @m @m @m @Many
+                           (\xs -> xs >.> YulJmpU (cid, cat))
 
 -- $yulCatVal
 --

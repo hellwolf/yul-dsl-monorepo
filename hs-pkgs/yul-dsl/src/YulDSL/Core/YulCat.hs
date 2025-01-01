@@ -24,7 +24,7 @@ module YulDSL.Core.YulCat
   ( -- * Effect Classification
     IsEffectNotPure, MayEffectWorld, PureEffect, StaticEffect, OmniEffect
     -- * YulCat, the Categorical DSL of Yul
-  , YulCat (..), NamedYulCat, Fn (MkFn, unFn), AnyYulCat (..)
+  , YulCat (..), NamedYulCat, locId, Fn (MkFn, unFn), AnyYulCat (..)
   , (>.>), (<.<)
     -- * YulCat Pure Verbs
   , yulNumLt, yulNumLe, yulNumGt, yulNumGe, yulNumEq, yulNumNe
@@ -39,16 +39,20 @@ module YulDSL.Core.YulCat
     -- * YulCat Stringify Functions
   , yulCatCompactShow, yulCatFingerprint
   ) where
-
 -- base
-import Data.Char                (ord)
 import Data.Kind                (Constraint)
 import Data.Proxy               (Proxy (Proxy))
-import GHC.Integer              (xorInteger)
 import GHC.TypeError            (Assert, ErrorMessage (Text), TypeError)
 import Text.Printf              (printf)
+-- template-haskell
+import Language.Haskell.TH      qualified as TH
 -- bytestring
-import Data.ByteString.Char8    qualified as B
+import Data.ByteString          qualified as BS
+import Data.ByteString.Char8    qualified as BS_Char8
+-- memory
+import Data.ByteArray           qualified as BA
+-- crypton
+import Crypto.Hash              qualified as Hash
 -- eth-abi
 import Ethereum.ContractABI
 --
@@ -142,6 +146,16 @@ data YulCat (eff :: k) a b where
 
 -- | Named YulCat morphism.
 type NamedYulCat eff a b = (String, YulCat eff a b)
+
+-- | Automatically generate a source location based id using template haskell.
+locId :: TH.Q TH.Exp
+locId = do
+  loc <- TH.location
+  let modname = TH.loc_module loc
+      -- normalize module name: replace "."
+      modname' = fmap (\x -> if x `elem` "." then '_' else x) modname
+      (s1, s2) = TH.loc_start loc
+  TH.litE (TH.StringL (modname' ++ "_" ++ show s1 ++ "_" ++ show s2))
 
 -- | Yul function wrappers that are in currying function forms.
 --
@@ -292,8 +306,8 @@ yulCatCompactShow = go
     go (YulDup @_ @a)              = "δ" <> abi_type_name (Proxy :: Proxy a)
     --
     go (YulEmb @_ @a @b x)         = "{" <> show x <> "}" <> abi_type_name2 (Proxy :: Proxy (a, b))
-    go (YulJmpU @_ @a @b (fid, _)) = "Ju " <> fid <> abi_type_name2 (Proxy :: Proxy (a, b))
-    go (YulJmpB @_ @a @b (fid, _)) = "Jb " <> fid <> abi_type_name2 (Proxy :: Proxy (a, b))
+    go (YulJmpU @_ @a @b (cid, _)) = "Ju " <> cid <> abi_type_name2 (Proxy :: Proxy (a, b))
+    go (YulJmpB @_ @a @b (cid, _)) = "Jb " <> cid <> abi_type_name2 (Proxy :: Proxy (a, b))
     go (YulITE a b)                = "?" <> "(" <> go a <> "):(" <> go b <> ")"
     --
     go (YulSGet @_ @a)             = "Sg" <> abi_type_name (Proxy :: Proxy a)
@@ -306,14 +320,11 @@ yulCatCompactShow = go
     -- TODO escape the value of x
     -- escape = show
 
--- | Obtain the finger print of a 'YulCat'.
+-- | Obtain the sha1 finger print of a 'YulCat'.
 yulCatFingerprint :: YulCat eff a b -> String
-yulCatFingerprint = printf "%x" . digest_c8 . B.pack . show
-  where c8 (_ :: Int) [] = 0
-        c8 n (x:xs)      = (2 ^ n) * toInteger (ord x) + c8 (n + 8) xs
-        digest_c8 bs = go_digest_c8 (B.splitAt 8 bs)
-        go_digest_c8 (b, bs') = c8 0 (B.unpack b) `xorInteger`
-                                if B.length bs' == 0 then 0 else digest_c8 bs'
+yulCatFingerprint = concatMap (printf "%02x") . BS.unpack . BA.convert . hash . show
+  where hash s = Hash.hash (BS_Char8.pack s) :: Hash.Digest Hash.Keccak_256
 
 instance Show (YulCat eff a b) where show = yulCatCompactShow
 deriving instance Show AnyYulCat
+deriving instance Show (Fn eff f)

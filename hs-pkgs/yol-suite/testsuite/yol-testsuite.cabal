@@ -22,7 +22,7 @@ common yol-module-options
                           QualifiedDo
                           ImpredicativeTypes
                           LinearTypes
-
+                          TemplateHaskell
 common base-mixins-options
     mixins:               base hiding (Prelude),
                           base (Prelude as Prelude.Base)

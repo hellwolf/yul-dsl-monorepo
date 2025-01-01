@@ -12,9 +12,9 @@ documentation](https://docs.soliditylang.org/en/latest/yul.html#specification-of
 
 -}
 module YulDSL.Core.YulObject
-  ( StoragePermission (..)
-  , ScopedFn (ExternalFn, LibraryFn), withScopedFn
-  , pureFn, externalFn, staticFn, libraryFn
+  ( FnEffect (PureFnEffect, StaticFnEffect, OmniFnEffect)
+  , ExportedFn (MkExportedFn), withExportedFn
+  , pureFn,staticFn, omniFn
   , YulObject (..), mkYulObject
   , emptyCtor
   ) where
@@ -25,69 +25,64 @@ import Data.List                                  (intercalate)
 import Ethereum.ContractABI.ABITypeable           (abiTypeCanonName)
 import Ethereum.ContractABI.CoreType.NP
 -- import Ethereum.ContractABI.CoreType.NP
-import Ethereum.ContractABI.ExtendedType.SELECTOR (SELECTOR, mkTypedSelector)
+import Ethereum.ContractABI.ExtendedType.SELECTOR
 --
 import YulDSL.Core.YulCat
 import YulDSL.Core.YulCatObj
 import YulDSL.Effects.Pure
 
 
--- |  type for the external function call.
-data StoragePermission = NoStorageAccess
-                       | ReadOnlyExternalStorage
-                       | WritableExternalStorage
+-- | Type for the exported yul function.
+data FnEffect = PureFnEffect
+              | StaticFnEffect
+              | OmniFnEffect
 
-data ScopedFn where
-  ExternalFn :: forall k { eff :: k } xs b. YulO2 (NP xs) b
-             => StoragePermission -> SELECTOR -> NamedYulCat eff (NP xs) b -> ScopedFn
-  LibraryFn  :: forall k { eff :: k } xs b. YulO2 (NP xs) b
-             => NamedYulCat eff (NP xs) b -> ScopedFn
+-- | Exported yul function.
+data ExportedFn where
+  MkExportedFn :: forall k { eff :: k } xs b. YulO2 (NP xs) b
+               => SELECTOR -> FnEffect -> NamedYulCat eff (NP xs) b -> ExportedFn
 
-withScopedFn :: ScopedFn
-             -> (forall k { eff :: k } xs b. (YulO2 (NP xs) b ) => NamedYulCat eff (NP xs) b -> a)
-             -> a
-withScopedFn (ExternalFn _ _ f) g = g f
-withScopedFn (LibraryFn f)      g = g f
+withExportedFn :: ExportedFn
+  -> (forall k { eff :: k } xs b. (YulO2 (NP xs) b ) => NamedYulCat eff (NP xs) b -> a)
+  -> a
+withExportedFn (MkExportedFn _ _ f) g = g f
 
 pureFn :: forall f as b eff.
-          ( PureEffect eff
-          , YulO2 (NP as) b
-          , UncurryNP'Fst f ~ as
-          , UncurryNP'Snd f ~ b
-          ) => Fn eff f -> ScopedFn
-pureFn (MkFn f@(fid, _)) = ExternalFn NoStorageAccess (mkTypedSelector @(NP as) fid) f
+  ( PureEffect eff
+  , YulO2 (NP as) b
+  , UncurryNP'Fst f ~ as
+  , UncurryNP'Snd f ~ b
+  ) => String -> Fn eff f -> ExportedFn
+pureFn fname (MkFn f) = MkExportedFn (mkTypedSelector @(NP as) fname) PureFnEffect f
 
 staticFn :: forall f as b eff.
-            ( StaticEffect eff
-            , YulO2 (NP as) b
-            , UncurryNP'Fst f ~ as
-            , UncurryNP'Snd f ~ b
-            ) => Fn eff f -> ScopedFn
-staticFn (MkFn f@(fid, _)) = ExternalFn ReadOnlyExternalStorage (mkTypedSelector @(NP as) fid) f
+  ( StaticEffect eff
+  , YulO2 (NP as) b
+  , UncurryNP'Fst f ~ as
+  , UncurryNP'Snd f ~ b
+  ) => String -> Fn eff f -> ExportedFn
+staticFn fname (MkFn f) = MkExportedFn (mkTypedSelector @(NP as) fname) StaticFnEffect f
 
-externalFn :: forall f as b eff.
-              ( OmniEffect eff
-              , YulO2 (NP as) b
-              , UncurryNP'Fst f ~ as
-              , UncurryNP'Snd f ~ b
-              ) => Fn eff f -> ScopedFn
-externalFn (MkFn f@(fid, _)) = ExternalFn WritableExternalStorage (mkTypedSelector @(NP as) fid) f
+omniFn :: forall f as b eff.
+  ( OmniEffect eff
+  , YulO2 (NP as) b
+  , UncurryNP'Fst f ~ as
+  , UncurryNP'Snd f ~ b
+  ) => String -> Fn eff f -> ExportedFn
+omniFn fname (MkFn f) = MkExportedFn (mkTypedSelector @(NP as) fname) OmniFnEffect f
 
-libraryFn :: forall f as b eff.
-             ( YulO2 (NP as) b
-             , UncurryNP'Fst f ~ as
-             , UncurryNP'Snd f ~ b
-             ) => Fn eff f -> ScopedFn
-libraryFn (MkFn f) = LibraryFn f
+instance Show ExportedFn where
+  show (MkExportedFn s PureFnEffect   cat) = "pure "   <> show_fn_spec s cat
+  show (MkExportedFn s StaticFnEffect cat) = "static " <> show_fn_spec s cat
+  show (MkExportedFn s OmniFnEffect   cat) = "omni "   <> show_fn_spec s cat
 
-instance Show ScopedFn where
-  show (ExternalFn NoStorageAccess _ f@(_, cat))         = "pure "  <> show_fn_spec f <> "\n" <> show cat
-  show (ExternalFn ReadOnlyExternalStorage _ f@(_, cat)) = "view "    <> show_fn_spec f <> "\n" <> show cat
-  show (ExternalFn WritableExternalStorage _ f@(_, cat)) = "external "  <> show_fn_spec f <> "\n" <> show cat
-  show (LibraryFn f@(_, cat))                            = "internal "  <> show_fn_spec f <> "\n" <> show cat
-
-show_fn_spec :: forall xs b eff. YulO2 (NP xs) b => NamedYulCat eff (NP xs) b -> String
-show_fn_spec (fid, _) = "fn " <> fid <> "(" <> abiTypeCanonName @(NP xs) <> ") -> " <> abiTypeCanonName @b
+show_fn_spec :: forall xs b eff. YulO2 (NP xs) b => SELECTOR -> NamedYulCat eff (NP xs) b -> String
+show_fn_spec (SELECTOR (sig, fsig)) cat@(cid, _) =
+  let fspec = case fsig of
+                Just (FuncSig (fname, _)) -> fname ++ "," ++ show sig ++ "," ++ cid
+                Nothing                   -> show sig ++ "," ++ cid
+  in "fn " <> fspec <> "(" <> abiTypeCanonName @(NP xs) <> ") -> " <> abiTypeCanonName @b <> "\n" <>
+     show cat
 
 -- | A Yul Object per spec.
 --
@@ -96,7 +91,7 @@ show_fn_spec (fid, _) = "fn " <> fid <> "(" <> abiTypeCanonName @(NP xs) <> ") -
 --   * Specification: https://docs.soliditylang.org/en/latest/yul.html#specification-of-yul-object
 data YulObject = MkYulObject { yulObjectName :: String
                              , yulObjectCtor :: AnyYulCat  -- FIXME support constructor
-                             , yulObjectSFns :: [ScopedFn] -- scoped functions
+                             , yulObjectSFns :: [ExportedFn] -- scoped functions
                              , yulSubObjects :: [YulObject]
                              -- , TODO support object data
                              }
@@ -109,7 +104,7 @@ instance Show YulObject where
 
 mkYulObject :: String
             -> AnyYulCat
-            -> [ScopedFn]
+            -> [ExportedFn]
             -> YulObject
 mkYulObject name ctor afns = MkYulObject { yulObjectName = name
                                          , yulObjectCtor = ctor

@@ -3,12 +3,12 @@ module YulDSL.Effects.LinearSMC.LinearYulCat
   ( -- * Linear Effect Kind
     -- $LinearEffectKind
     LinearEffect (PureInputVersionedOutput, VersionedInputOutput)
+  , LinearEffectVersionDelta, IsLinearEffectNonStatic
     -- * Yul Port Diagrams
     -- $YulPortDiagrams
   , YulCat'LVV (MkYulCat'LVV), YulCat'LPV (MkYulCat'LPV), YulCat'LPP (MkYulCat'LPP)
-  , decode'lvv, decode'lpv
+  , decode'lvv, decode'lpv, encode'lvv, encode'lpp
   , uncurry'lvv, uncurry'lpv
-  , encode'lvv
     -- * Pattern Matching Of Yul Ports
     -- $PatternMatching
   , match'l
@@ -37,8 +37,13 @@ import YulDSL.Effects.LinearSMC.YulPort
 data LinearEffect = PureInputVersionedOutput Nat -- ^ Pure input ports, versioned output ports
                   | VersionedInputOutput Nat     -- ^ Versioned input and output ports
 
--- | Judging if the linear effect is static from its number of version changes.
-type family IsLinearEffectNonStatic (vd :: Nat) where
+-- | Extract Linear effect version delta.
+type family LinearEffectVersionDelta (eff :: LinearEffect) :: Nat where
+  LinearEffectVersionDelta (VersionedInputOutput vd) = vd
+  LinearEffectVersionDelta (PureInputVersionedOutput vd) = vd
+
+-- | Judging if the linear effect is static from its version delta.
+type family IsLinearEffectNonStatic (vd :: Nat) :: Bool where
   IsLinearEffectNonStatic 0 = False
   IsLinearEffectNonStatic vd = True
 
@@ -85,46 +90,6 @@ decode'lpv f = decode (h f) -- an intermediate function to fight the multiplicit
           ⊸ (forall r. YulO1 r => P (YulCat oe) r a ⊸ P (YulCat oe) r b)
         h = UnsafeLinear.coerce {- using Unsafe coerce to convert effect after type-checking -}
 
-uncurry'lvv :: forall f xs b r vd m1 m1b m2 m2b.
-  ( YulO3 (NP xs) b r
-  --
-  , UncurryNP'Fst f ~ xs
-  , UncurryNP'Snd f ~ b
-  --
-  , P'V  0 r ~ m1
-  , P'V vd r ~ m1b
-  , YulCat'LVV 0  0 r (NP xs) ~ m2
-  , YulCat'LVV 0 vd r (NP xs) ~ m2b
-  --
-  , LiftFunction b m2 m2b One ~ m2b b
-  --
-  , UncurryingNP f xs b m1 m1b m2 m2b One
-  )
-  => LiftFunction f m1 m1b One      -- ^ @LiftFunction           f  m1 m1b One@
-  -> (P'V 0 r (NP xs) ⊸ P'V vd r b) -- ^ @LiftFunction (NP xs -> b) m1 m1b One@
-uncurry'lvv f = let !(MkYulCat'LVV f') = uncurryingNP @f @xs @b @m1 @m1b @m2 @m2b @One f (MkYulCat'LVV id)
-               in f'
-
-uncurry'lpv :: forall f xs b r vd m1 m1b m2 m2b.
-  ( YulO3 (NP xs) b r
-  --
-  , UncurryNP'Fst f ~ xs
-  , UncurryNP'Snd f ~ b
-  --
-  , P'P    r ~ m1
-  , P'V vd r ~ m1b
-  , YulCat'LPP r (NP xs)    ~ m2
-  , YulCat'LPV vd r (NP xs) ~ m2b
-  --
-  , LiftFunction b m2 m2b One ~ m2b b
-  --
-  , UncurryingNP f xs b m1 m1b m2 m2b One
-  )
-  => LiftFunction f m1 m1b One
-  -> (P'P r (NP xs) ⊸ P'V vd r b)
-uncurry'lpv f = let !(MkYulCat'LPV f') = (uncurryingNP @f @xs @b @m1 @m1b @m2 @m2b @One f (MkYulCat'LPP id))
-                in f'
-
 encode'lvv :: forall a b r vd v1. YulO3 a b r
   => YulCat (VersionedInputOutput vd) a b
   -> (P'V v1 r a ⊸ P'V (v1 + vd) r b)
@@ -133,8 +98,16 @@ encode'lvv cat x = -- ghc can infer it; annotating for readability and double ch
   in UnsafeLinear.coerce @(P'V v1 r b) @(P'V (v1 + vd) r b)
      (encode cat' x)
 
+encode'lpp :: forall a b r eff. YulO3 a b r
+  => YulCat (eff :: PureEffectKind) a b
+  -> (P'P r a ⊸ P'P r b)
+encode'lpp cat x = -- ghc can infer it; annotating for readability and double checking expected types
+  let cat' = UnsafeLinear.coerce cat :: YulCat PurePort a b
+  in UnsafeLinear.coerce @(P'P r b) @(P'P r b)
+     (encode cat' x)
+
 ------------------------------------------------------------------------------------------------------------------------
--- (P'V ⊸ P'V ⊸ ... P'V) <-> YulCat'LVV ⊸ YulCat'LVV
+-- (P'V v1 r x1 ⊸ P'V v1 r x2 ⊸ ... P'V vn r b) <=> YulCat'LVV v1 vn r (NP xs) b
 ------------------------------------------------------------------------------------------------------------------------
 
 instance forall x v1 vn r a.
@@ -165,6 +138,27 @@ instance forall x xs b g v1 vn r a.
                     in g xxs2
     )
 
+-- | Convert a currying function to a yul port diagram of versioned input output.
+uncurry'lvv :: forall f xs b r vd m1 m1b m2 m2b.
+  ( YulO3 (NP xs) b r
+  --
+  , UncurryNP'Fst f ~ xs
+  , UncurryNP'Snd f ~ b
+  --
+  , P'V  0 r ~ m1
+  , P'V vd r ~ m1b
+  , YulCat'LVV 0  0 r (NP xs) ~ m2
+  , YulCat'LVV 0 vd r (NP xs) ~ m2b
+  --
+  , LiftFunction b m2 m2b One ~ m2b b
+  --
+  , UncurryingNP f xs b m1 m1b m2 m2b One
+  )
+  => LiftFunction f m1 m1b One      -- ^ @LiftFunction           f  m1 m1b One@
+  -> (P'V 0 r (NP xs) ⊸ P'V vd r b) -- ^ @LiftFunction (NP xs -> b) m1 m1b One@
+uncurry'lvv f = let !(MkYulCat'LVV f') = uncurryingNP @f @xs @b @m1 @m1b @m2 @m2b @One f (MkYulCat'LVV id)
+                in f'
+
 instance forall x v1 vn r a.
          ( YulO3 x r a
          , LiftFunction (CurryNP (NP '[]) x) (P'V v1 r) (P'V vn r) One ~ P'V vn r x
@@ -179,7 +173,7 @@ instance forall x xs b r a v1 vn.
                     (\(MkYulCat'LVV fxs) -> cb (MkYulCat'LVV (\a -> (cons'l x (fxs a)))))
 
 ------------------------------------------------------------------------------------------------------------------------
--- (P'P ⊸ P'P ⊸ ... P'V) <=> YulCat'LPP ⊸ YulCat'LPV
+-- (P'P r x1 ⊸ P'P r x2 ⊸ ... P'V vd r b) <=> YulCat'LPV vd r (NP xs) b
 ------------------------------------------------------------------------------------------------------------------------
 
 instance forall x vd r a.
@@ -209,6 +203,27 @@ instance forall x xs b g vd r a.
                     in g xxs2
     )
 
+-- | Convert a currying function to a yul port diagram of pure input and versioned output.
+uncurry'lpv :: forall f xs b r vd m1 m1b m2 m2b.
+  ( YulO3 (NP xs) b r
+  --
+  , UncurryNP'Fst f ~ xs
+  , UncurryNP'Snd f ~ b
+  --
+  , P'P    r ~ m1
+  , P'V vd r ~ m1b
+  , YulCat'LPP r (NP xs)    ~ m2
+  , YulCat'LPV vd r (NP xs) ~ m2b
+  --
+  , LiftFunction b m2 m2b One ~ m2b b
+  --
+  , UncurryingNP f xs b m1 m1b m2 m2b One
+  )
+  => LiftFunction f m1 m1b One
+  -> (P'P r (NP xs) ⊸ P'V vd r b)
+uncurry'lpv f = let !(MkYulCat'LPV f') = (uncurryingNP @f @xs @b @m1 @m1b @m2 @m2b @One f (MkYulCat'LPP id))
+                in f'
+
 instance forall x v1 vn r a.
          ( YulO3 x r a
          , LiftFunction (CurryNP (NP '[]) x) (P'P r) (P'V vn r) One ~ P'V vn r x
@@ -221,6 +236,23 @@ instance forall x xs b r a v1 vn.
          ) => CurryingNP (x:xs) b (P'P r) (P'V vn r) (YulCat'LVV v1 v1 r a) One where
   curryingNP cb x = curryingNP @xs @b @(P'P r) @(P'V vn r) @(YulCat'LVV v1 v1 r a) @One
                     (\(MkYulCat'LVV fxs) -> cb (MkYulCat'LVV (\a -> (cons'l (UnsafeLinear.coerce x) (fxs a)))))
+
+------------------------------------------------------------------------------------------------------------------------
+-- YulCat'LPP ==> (P'P ⊸ P'P ⊸ ... P'P)
+------------------------------------------------------------------------------------------------------------------------
+
+instance forall x r a.
+         ( YulO3 x r a
+         , LiftFunction (CurryNP (NP '[]) x) (P'P r) (P'P r) One ~ P'P r x
+         ) => CurryingNP '[] x (P'P r) (P'P r) (YulCat'LPP r a) One where
+  curryingNP cb = cb (MkYulCat'LPP (\a -> coerce'l (discard a)))
+
+instance forall x xs b r a.
+         ( YulO5 x (NP xs) b r a
+         , CurryingNP xs b (P'P r) (P'P r) (YulCat'LPP r a) One
+         ) => CurryingNP (x:xs) b (P'P r) (P'P r) (YulCat'LPP r a) One where
+  curryingNP cb x = curryingNP @xs @b @(P'P r) @(P'P r) @(YulCat'LPP r a) @One
+                    (\(MkYulCat'LPP fxs) -> cb (MkYulCat'LPP (\a -> (cons'l (UnsafeLinear.coerce x) (fxs a)))))
 
 ------------------------------------------------------------------------------------------------------------------------
 -- $PatternMatching

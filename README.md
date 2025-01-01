@@ -1,7 +1,8 @@
 Yolc - A Safe, Expressive, Fun Language for Ethereum
 ====================================================
 
-The main motivation behind Yolc is to strike a balance between these values for building Ethereum smart contracts:
+The main motivation behind Yolc is to strike a balance between the following values for building Ethereum smart
+contracts:
 
 *Safe*
 
@@ -11,7 +12,7 @@ Yolc is purely functional with linear type safety, made for the Ethereum virtual
 
 *Expressive*
 
-YulDSL provides an EDSL called 'YulDSL' for transpiling Haskell code to Solidiy/Yul code.
+Yolc embeds itself in the Haskell language before being compiled into Solidity/Yul code.
 
 > Why does *expressiveness* matter? Read more [here](#).
 
@@ -180,10 +181,11 @@ TODOs & Future Plans
     - `evalFn` to evaluate `Fn` (single YulCat value styled as a function) value.
 - yul-dsl-linear-smc
   - [x] 🌟🌟🌟 Linear safety for side effects
-    - Compile expression sof linear _data ports_ to YulCat
-    - Working with _versioned data port_ through `YulMonad`, a "Linearly Versioned Monad."
-    - [x] Build linear function with `fn'l`. ⚠️ This will be replaced with `$fn'lv, $fn'lp`.
-    - [ ] 🟠 Call `Fn` via yul monad function: `call`.
+    - [x] Compile expression sof linear _data ports_ to YulCat
+    - [x] Working with _versioned data port_ through `YulMonad`, a "Linearly Versioned Monad."
+    - [x] Build linear functions with `lfn`. ⚠️ This will be replaced with `$yulMonadV, $yulMonadP`.
+    - [x] Call linear functions with `callLfn'l`
+    - [x] Call pure functions in linear functions with `callFn'l`
   - Working with _data ports_
     - [x] 🟢 match'l for pattern matching data ports.
     - [ ] 🟢 ifThenElse through pattern matching on BOOL data port.

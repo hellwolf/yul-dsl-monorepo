@@ -188,8 +188,11 @@ yulNumEq = YulJmpB (yulNumCmp @a (False, True , False))
 yulNumNe = YulJmpB (yulNumCmp @a (True , False, True ))
 
 -- | Wrapper for built-in keccak256 yul function.
-yulKeccak256 :: forall eff a. YulO1 a => YulCat eff a B32
-yulKeccak256 = YulJmpB ("__keccak_c_" ++ abiTypeCompactName @a, error "TODO: keccak_c")
+yulB_Keccak256 :: forall eff a. YulO1 a => YulCat eff a B32
+yulB_Keccak256 = YulJmpB ("__keccak_c_" ++ abiTypeCompactName @a, error "TODO: keccak_c")
+
+yulKeccak256 :: YulO2 r a => YulCat eff r a -> YulCat eff r B32
+yulKeccak256 x = x >.> yulB_Keccak256
 
 ------------------------------------------------------------------------------------------------------------------------
 -- YulCat Exceptions

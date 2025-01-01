@@ -6,7 +6,7 @@ import Prelude        ()
 import Prelude.YulDSL
 
 
-num_add_just = fn'l "add2"
+num_add_just = lfn "add2"
   ( uncurry'lvv @(U256 -> U256 -> U256)
     \x1 x2 -> x1 + x2
   )

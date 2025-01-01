@@ -12,7 +12,7 @@ contract BasicProgramTest is Test {
     _p = createBasicTestsProgram();
   }
 
-  function testEmbeddings() external {
+  function testEmbeddings() external view {
     _p.embUnit$p(42);
     assertTrue(_p.embTrue$p(), "embTrue$p");
     assertTrue(_p.embTrue$l(), "embTrue$l");
@@ -24,7 +24,8 @@ contract BasicProgramTest is Test {
     assertEq(_p.revertIfTrue(false, 42), 42);
   }
 
-  function testRangeSum() external {
+  function testRangeSum() external view {
     assertEq(_p.rangeSum$p(0, 1, 10), 55, "result1");
+    assertEq(_p.rangeSum$l(0, 1, 11), 66, "result1");
   }
 }

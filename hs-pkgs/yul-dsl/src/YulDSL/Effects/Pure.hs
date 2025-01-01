@@ -17,7 +17,7 @@ module YulDSL.Effects.Pure
     PureEffectKind (Pure, Total), PureFn, YulCat'P
     -- * Build And Call PureFn
     -- $PureFn
-  , fn_, fn, callFn
+  , pfn, fn, callFn
     -- * Technical Notes
     -- $yulCatVal
   ) where
@@ -69,7 +69,7 @@ type YulCat'P = YulCat Pure
 --   * @f = λ x1' -> λ x2' -> ... λ xn' -> Pure (NP xs ↝ b)@
 --
 -- It returns: @Pure (NP xs ↝ b)@
-fn_ :: forall f xs b m.
+pfn :: forall f xs b m.
        ( YulO2 (NP xs) b
        , UncurryNP'Fst f ~ xs
        , UncurryNP'Snd f ~ b
@@ -81,9 +81,9 @@ fn_ :: forall f xs b m.
     => String                     -- ^ the function id
     -> LiftFunction f m m Many    -- ^ uncurrying function type
     -> PureFn (CurryNP (NP xs) b) -- ^ result type, or its short form @m b@
-fn_ fid f = MkFn (fid, uncurryingNP @f @xs @b @m @m @m @m f YulId)
+pfn fid f = MkFn (fid, uncurryingNP @f @xs @b @m @m @m @m f YulId)
 
--- | TODO: $fn a template haskell splice to generate unique function id automatically
+-- | TODO: Make $fn a template haskell splice to generate unique function id automatically
 fn :: forall f xs b m.
       ( YulO2 (NP xs) b
       , UncurryNP'Fst f ~ xs
@@ -96,7 +96,7 @@ fn :: forall f xs b m.
    => String                  -- ^ the function id
    -> LiftFunction f m m Many -- ^ the pure yul categorical value of @NP xs ↝ b@
    -> PureFn f                -- ^ a 'PureFn' of function type @f@
-fn = fn_ -- TODO, make it a template haskell splice
+fn = pfn
 
 -- | Call a 'PureFn' by currying it with pure yul categorical values of @r ↝ xn@ until a pure yul categorical value of
 -- @r ↝ b@ is returned.

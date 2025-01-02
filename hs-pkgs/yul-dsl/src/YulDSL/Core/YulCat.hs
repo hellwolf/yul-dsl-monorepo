@@ -130,12 +130,16 @@ data YulCat (eff :: k) a b where
   --
   -- ^ Embed a constant value @b@ and disregard any input object @a@.
   YulEmb :: forall eff a b. YulO2 a b => b %1-> YulCat eff a b
-  -- ^ Jump to an user-defined morphism.
-  YulJmpU :: forall eff a b. YulO2 a b => NamedYulCat eff a b %1-> YulCat eff a b
-  -- ^ Jump to a built-in yul function
-  YulJmpB :: forall eff a b. YulO2 a b => BuiltInYulFunction a b %1-> YulCat eff a b
   -- ^ If-then-else expression.
   YulITE :: forall eff a b. YulO2 a b => YulCat eff a b %1-> YulCat eff a b %1-> YulCat eff (BOOL, a) b
+  -- ^ Jump to an user-defined morphism.
+  YulJmpU :: forall eff a b. YulO2 a b => NamedYulCat eff a b %1-> YulCat eff a b
+  -- ^ Jump to a built-in yul function.
+  YulJmpB :: forall eff a b. YulO2 a b => BuiltInYulFunction a b %1-> YulCat eff a b
+  -- ^ Call an external contract at the address along with a possible msgValue.
+  YulCall :: forall eff a b. YulO2 a b => YulCat eff (NP [ADDR, U256, a]) b
+  -- TODO: YulSCall
+  -- TODO: YulDCall
 
   -- * Storage Primitives
   --
@@ -306,9 +310,10 @@ yulCatCompactShow = go
     go (YulDup @_ @a)              = "δ" <> abi_type_name (Proxy :: Proxy a)
     --
     go (YulEmb @_ @a @b x)         = "{" <> show x <> "}" <> abi_type_name2 (Proxy :: Proxy (a, b))
+    go (YulITE a b)                = "?" <> "(" <> go a <> "):(" <> go b <> ")"
     go (YulJmpU @_ @a @b (cid, _)) = "Ju " <> cid <> abi_type_name2 (Proxy :: Proxy (a, b))
     go (YulJmpB @_ @a @b (cid, _)) = "Jb " <> cid <> abi_type_name2 (Proxy :: Proxy (a, b))
-    go (YulITE a b)                = "?" <> "(" <> go a <> "):(" <> go b <> ")"
+    go (YulCall @_ @a @b)          = "C" <> abi_type_name2 (Proxy :: Proxy (a, b))
     --
     go (YulSGet @_ @a)             = "Sg" <> abi_type_name (Proxy :: Proxy a)
     go (YulSPut @_ @a)             = "Sp" <> abi_type_name (Proxy :: Proxy a)

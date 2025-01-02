@@ -233,7 +233,9 @@ TODOs & Future Plans
     - Control flows
       - [ ] 🟠 `YulMapArray`, tight loop over an array.
     - Yul object
-      - [ ] 🟢 Refactor it, incling decoupling external name for selector from function id.
+    - Side Effects
+      - [ ] 🟢 `YulStaticCall`, static external calls.
+      - [ ] 🟢 `YulDelegateCall`, delegate external calls.
     - Type safety
       - ❓ further encode total functions in type
   - Working with pure effect

@@ -41,6 +41,7 @@ do_compile_cat (MkAnyYulCat (cat :: YulCat eff a b)) = go cat where
   go (YulITE ct cf)      = go_ite ct cf
   go (YulJmpU t)         = go_jmpu t
   go (YulJmpB t)         = go_jmpb t
+  go (YulCall @_ @m @n)  = go_call @m @n 'c'
   -- - storage effects
   go (YulSGet)           = go_sget
   go (YulSPut @_ @m)     = go_sput @m
@@ -173,6 +174,10 @@ go_jmp fname = do
            declare_vars ind b_vars <>
            ind (T.intercalate ", " (fmap unVar b_vars) <> " := " <> callExpr a_ins)
          , mk_rhs_vars b_vars )
+
+go_call :: forall a b. (HasCallStack, YulO2 a b)
+        => Char -> CGState RhsExprGen
+go_call _ = error "TODO"
 
 go_sget :: HasCallStack
         => CGState RhsExprGen

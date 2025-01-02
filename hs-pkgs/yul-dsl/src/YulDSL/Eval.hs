@@ -64,6 +64,7 @@ evalYulCat' YulDup  a  = pure (a, a)
 -- control flow
 evalYulCat' (YulJmpU (_, f)) a = evalYulCat' f a
 evalYulCat' (YulJmpB (_, f)) a = pure (f a)
+evalYulCat' (YulCall) _ = error "YulCall not supported"
 evalYulCat' (YulITE ct cf) (BOOL t, a) = if t then evalYulCat' ct a else evalYulCat' cf a
 -- value primitives
 evalYulCat' (YulEmb b)  _ = pure b

@@ -1,8 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes    #-}
 {-# LANGUAGE FunctionalDependencies #-}
 module YulDSL.Effects.LinearSMC.LinearFn
-  ( -- * Build LinearFn And Call SomeFn Linearly
-    lfn, callFn'l, callFn'lpp
+  ( -- * Build Linear Yul Functions
+    CreateLinearFn (lfn)
+    -- * Call Yul Functions Linearly
+  , LinearlyCallableFn, CallFnLinearly (callFn'l)
+  , callFn'lpp
   ) where
 -- base
 import GHC.TypeLits                          (type (+))
@@ -21,7 +24,7 @@ import YulDSL.Effects.LinearSMC.YulPort
 -- lfn
 ------------------------------------------------------------------------------------------------------------------------
 
--- | Create linear function kind.
+-- | Create linear kind of yul functions.
 class CreateLinearFn (iEff :: PortEffect) (oEff :: PortEffect) (fnEff :: LinearEffectKind)
       | iEff oEff -> fnEff where
   -- | Define a `YulCat` morphism from a yul port diagram.
@@ -46,9 +49,8 @@ instance forall vd. CreateLinearFn PurePort (VersionedPort vd) (PureInputVersion
 -- callFn'l
 ------------------------------------------------------------------------------------------------------------------------
 
--- | Call functions with versioned yul port and get versioned yul port.
-class CallFnLinearly fnEff vd | fnEff -> vd where
-  callFn'l :: forall f x xs b g' r v1 vn.
+-- This makes the signature of CallFnLinearly easier to repeat.
+type LinearlyCallableFn f x xs b g' r v1 vd vn =
     ( YulO4 x (NP xs) b r
     , v1 + vd ~ vn
     -- constraint f, using b xs
@@ -61,6 +63,11 @@ class CallFnLinearly fnEff vd | fnEff -> vd where
     -- CurryingNP instance on "NP xs -> b"
     , CurryingNP xs b (P'V v1 r) (P'V vn r) (YulCat'LVV v1 v1 r ()) One
     )
+
+-- | Calling @fnEff@ kind of yul function will increase data version by @vd@.
+class CallFnLinearly fnEff vd | fnEff -> vd where
+  -- | Call functions with versioned yul port and get versioned yul port.
+  callFn'l :: forall f x xs b g' r v1 vn. LinearlyCallableFn f x xs b g' r v1 vd vn
     => Fn fnEff f
     -> (P'V v1 r x ⊸ g')
   -- ^ All other function kinds is coerced into calling as if it is a versioned input output.
@@ -68,19 +75,7 @@ class CallFnLinearly fnEff vd | fnEff -> vd where
                (UnsafeLinear.coerce f)
 
 instance CallFnLinearly (VersionedInputOutput vd) vd where
-  callFn'l :: forall f x xs b g' r v1 vn.
-    ( YulO4 x (NP xs) b r
-    , v1 + vd ~ vn
-    -- constraint f, using b xs
-    , UncurryNP'Fst f ~ (x:xs)
-    , UncurryNP'Snd f ~ b
-    -- constraint b
-    , LiftFunction b (YulCat'LVV v1 v1 r ()) (P'V vn r) One ~ P'V vn r b
-    -- constraint g'
-    , LiftFunction (CurryNP (NP xs) b) (P'V v1 r) (P'V vn r) One ~ g'
-    -- CurryingNP instance on "NP xs -> b"
-    , CurryingNP xs b (P'V v1 r) (P'V vn r) (YulCat'LVV v1 v1 r ()) One
-    )
+  callFn'l :: forall f x xs b g' r v1 vn. LinearlyCallableFn f x xs b g' r v1 vd vn
     => Fn (VersionedInputOutput vd) f
     -> (P'V v1 r x ⊸ g')
   callFn'l (MkFn t) x =

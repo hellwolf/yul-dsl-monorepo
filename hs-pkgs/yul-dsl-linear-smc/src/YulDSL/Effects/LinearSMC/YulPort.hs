@@ -1,7 +1,7 @@
 module YulDSL.Effects.LinearSMC.YulPort
   ( -- * Yul Port Definitions
     -- $LinearPortDefs
-    PortEffect (PurePort, VersionedPort), P'x, P'V, P'P
+    PortEffect (PurePort, VersionedPort), EffectVersionDelta, P'x, P'V, P'P
     -- * General Yul Port Operations
     -- $GeneralOps
   , emb'l, const'l, dup2'l
@@ -27,6 +27,13 @@ import Data.MPOrd
 -- | Various types of port effects for the yul port API.
 data PortEffect = PurePort          -- ^ Pure port that does not need to be versioned
                 | VersionedPort Nat -- ^ Linearly versioned port
+
+type EffectVersionDelta :: eff -> Nat
+type family EffectVersionDelta eff :: Nat where
+  EffectVersionDelta Pure = 0
+  EffectVersionDelta Total = 0
+  EffectVersionDelta PurePort = 0
+  EffectVersionDelta (VersionedPort vd) = vd
 
 type instance IsEffectNotPure (eff :: PortEffect) = True
 type instance MayEffectWorld  (eff :: PortEffect) = True

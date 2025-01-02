@@ -23,7 +23,7 @@ rangeSum'p = fn @(U256 -> U256 -> U256 -> U256) $locId
 rangeSum'l = lfn $locId $
   yulmonad'p @(U256 -> U256 -> U256 -> U256)
   \from'p step'p until'p -> LVM.do
-  impure $ callFn'l rangeSum'p from'p step'p until'p
+  impure $ callFn'lpp rangeSum'p from'p step'p until'p
 
 object = mkYulObject "BasicTests" emptyCtor
   [ pureFn   "embUnit$p" embUnit'p

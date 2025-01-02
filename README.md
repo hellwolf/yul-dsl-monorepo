@@ -183,8 +183,7 @@ TODOs & Future Plans
     - [x] Compile expression sof linear _data ports_ to YulCat
     - [x] Working with _versioned data port_ through `YulMonad`, a "Linearly Versioned Monad."
     - [x] Build linear functions with `lfn`. ⚠️ This will be replaced with `$yulMonadV, $yulMonadP`.
-    - [x] Call linear functions with `callLfn'l`
-    - [x] Call pure functions in linear functions with `callFn'l`
+    - [x] Call functions linearly with `callFn'l`, `callFn'lpp`.`
   - Working with _data ports_
     - [x] 🟢 match'l for pattern matching data ports.
     - [ ] 🟢 ifThenElse through pattern matching on BOOL data port.

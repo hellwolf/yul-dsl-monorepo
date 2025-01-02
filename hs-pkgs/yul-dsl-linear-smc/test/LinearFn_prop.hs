@@ -45,27 +45,27 @@ fooSPut = lfn "fooSPut" $ yulmonad'v @(B32 -> U256 -> ())
 
 call0 = lfn "call0" $
   uncurry'lvv @(() -> U256)
-    \u -> callLfn'l foo0 u
+    \u -> callFn'l foo0 u
 
 call1 = lfn "call1" $
   uncurry'lvv @(U256 -> U256)
-    \x -> callLfn'l foo1 x
+    \x -> callFn'l foo1 x
 
 call2 = lfn "call2" $
   uncurry'lvv @(U256 -> U256 -> U256)
-    \x1 x2 -> callLfn'l foo2 x1 x2
+    \x1 x2 -> callFn'l foo2 x1 x2
 
 call3 = lfn "call3" $
   uncurry'lvv @(U256 -> U256 -> U256 -> U256)
-    \x1 x2 x3 -> callLfn'l foo3 x1 x2 x3
+    \x1 x2 x3 -> callFn'l foo3 x1 x2 x3
 
 call4 = lfn "call4" $
   uncurry'lvv @(U256 -> U256 -> U256 -> U256 -> U256)
-    \x1 x2 x3 x4 -> callLfn'l foo4 x1 x2 x3 x4
+    \x1 x2 x3 x4 -> callFn'l foo4 x1 x2 x3 x4
 
 callSPut = lfn "callSPut" $
   uncurry'lvv @(B32 -> U256 -> ())
-    \addr var -> callLfn'l fooSPut addr var
+    \addr var -> callFn'l fooSPut addr var
 
 tests = describe "Ethereum.ContractsABI.YulDSL.Linear" $ do
   describe "lfn: linear function builder" $ do

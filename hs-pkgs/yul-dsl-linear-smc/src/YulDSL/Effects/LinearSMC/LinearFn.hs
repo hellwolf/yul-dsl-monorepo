@@ -2,7 +2,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 module YulDSL.Effects.LinearSMC.LinearFn
   ( -- * Build LinearFn And Call SomeFn Linearly
-    lfn, callLfn'l, callFn'l
+    lfn, callFn'l, callFn'lpp
   ) where
 -- base
 import GHC.TypeLits                          (type (+))
@@ -17,8 +17,13 @@ import YulDSL.Effects.LinearSMC.LinearYulCat
 import YulDSL.Effects.LinearSMC.YulPort
 
 
+------------------------------------------------------------------------------------------------------------------------
+-- lfn
+------------------------------------------------------------------------------------------------------------------------
+
 -- | Create linear function kind.
-class CreateLinearFn (iEff :: PortEffect) (oEff :: PortEffect) (fnEff :: LinearEffect) | iEff oEff -> fnEff where
+class CreateLinearFn (iEff :: PortEffect) (oEff :: PortEffect) (fnEff :: LinearEffectKind)
+      | iEff oEff -> fnEff where
   -- | Define a `YulCat` morphism from a yul port diagram.
   lfn :: forall f xs b.
     ( YulO2 (NP xs) b
@@ -37,11 +42,14 @@ instance forall vd. CreateLinearFn (VersionedPort 0) (VersionedPort vd) (Version
 instance forall vd. CreateLinearFn PurePort (VersionedPort vd) (PureInputVersionedOutput vd) where
   lfn cid f = MkFn (cid, decode'lpv f)
 
--- | Call linear function kind.
-class CallLinearFn (fnEff :: LinearEffect) where
-  callLfn'l :: forall f x xs b g' r v1 vn vd.
+------------------------------------------------------------------------------------------------------------------------
+-- callFn'l
+------------------------------------------------------------------------------------------------------------------------
+
+-- | Call functions with versioned yul port and get versioned yul port.
+class CallFnLinearly fnEff vd | fnEff -> vd where
+  callFn'l :: forall f x xs b g' r v1 vn.
     ( YulO4 x (NP xs) b r
-    , LinearEffectVersionDelta fnEff ~ vd
     , v1 + vd ~ vn
     -- constraint f, using b xs
     , UncurryNP'Fst f ~ (x:xs)
@@ -55,9 +63,12 @@ class CallLinearFn (fnEff :: LinearEffect) where
     )
     => Fn fnEff f
     -> (P'V v1 r x ⊸ g')
+  -- ^ All other function kinds is coerced into calling as if it is a versioned input output.
+  callFn'l f = callFn'l @(VersionedInputOutput vd) @vd @f
+               (UnsafeLinear.coerce f)
 
-instance CallLinearFn (VersionedInputOutput vd) where
-  callLfn'l :: forall f x xs b g' r v1 vn.
+instance CallFnLinearly (VersionedInputOutput vd) vd where
+  callFn'l :: forall f x xs b g' r v1 vn.
     ( YulO4 x (NP xs) b r
     , v1 + vd ~ vn
     -- constraint f, using b xs
@@ -72,33 +83,18 @@ instance CallLinearFn (VersionedInputOutput vd) where
     )
     => Fn (VersionedInputOutput vd) f
     -> (P'V v1 r x ⊸ g')
-  callLfn'l (MkFn t) x =
+  callFn'l (MkFn t) x =
     dup2'l x &
-    \(x', x'') -> curryingNP @_ @_ @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r ()) @One $
+    \(x', x'') -> curryingNP @xs @b @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r ()) @One $
     \(MkYulCat'LVV fxs) -> encode'lvv (YulJmpU t)
                            (cons'l x' (fxs (discard x'')))
 
-instance CallLinearFn (PureInputVersionedOutput vd) where
-  callLfn'l :: forall f x xs b g' r v1 vn.
-    ( YulO4 x (NP xs) b r
-    , v1 + vd ~ vn
-    -- constraint f, using b xs
-    , UncurryNP'Fst f ~ (x:xs)
-    , UncurryNP'Snd f ~ b
-    -- constraint b
-    , LiftFunction b (YulCat'LVV v1 v1 r ()) (P'V vn r) One ~ P'V vn r b
-    -- constraint g'
-    , LiftFunction (CurryNP (NP xs) b) (P'V v1 r) (P'V vn r) One ~ g'
-    -- CurryingNP instance on "NP xs -> b"
-    , CurryingNP xs b (P'V v1 r) (P'V vn r) (YulCat'LVV v1 v1 r ()) One
-    )
-    => Fn (PureInputVersionedOutput vd) f
-    -> (P'V v1 r x ⊸ g')
-  callLfn'l f = callLfn'l @(VersionedInputOutput vd) @f
-                (UnsafeLinear.coerce f)
+instance CallFnLinearly (PureInputVersionedOutput vd) vd
+instance CallFnLinearly Pure 0
+instance CallFnLinearly Total 0
 
--- | Call pure function with pure yul port.
-callFn'l :: forall f x xs b g' r eff.
+-- | Call pure function with pure yul port and get pure yul port.
+callFn'lpp :: forall f x xs b g' r eff.
   ( YulO4 x (NP xs) b r
   -- constraint f, using b xs
   , UncurryNP'Fst f ~ (x:xs)
@@ -112,7 +108,7 @@ callFn'l :: forall f x xs b g' r eff.
   )
   => Fn (eff :: PureEffectKind) f
   -> (P'P r x ⊸ g')
-callFn'l (MkFn t) x =
+callFn'lpp (MkFn t) x =
   dup2'l x &
   \(x', x'') -> curryingNP @_ @_ @(P'P r) @(P'P r) @(YulCat'LPP r ()) @One $
   \(MkYulCat'LPP fxs) -> encode'lpp (YulJmpU t)

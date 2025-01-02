@@ -2,7 +2,7 @@
 module YulDSL.Effects.LinearSMC.LinearYulCat
   ( -- * Linear Effect Kind
     -- $LinearEffectKind
-    LinearEffect (PureInputVersionedOutput, VersionedInputOutput)
+    LinearEffectKind (PureInputVersionedOutput, VersionedInputOutput)
   , LinearEffectVersionDelta, IsLinearEffectNonStatic
     -- * Yul Port Diagrams
     -- $YulPortDiagrams
@@ -34,11 +34,11 @@ import YulDSL.Effects.LinearSMC.YulPort
 --
 -- Note that the pure input pure output linear effect is included. For that, use the pure effect from the 'YulDSL.core'
 -- directly.
-data LinearEffect = PureInputVersionedOutput Nat -- ^ Pure input ports, versioned output ports
-                  | VersionedInputOutput Nat     -- ^ Versioned input and output ports
+data LinearEffectKind = PureInputVersionedOutput Nat -- ^ Pure input ports, versioned output ports
+                      | VersionedInputOutput Nat     -- ^ Versioned input and output ports
 
 -- | Extract Linear effect version delta.
-type family LinearEffectVersionDelta (eff :: LinearEffect) :: Nat where
+type family LinearEffectVersionDelta (eff :: LinearEffectKind) :: Nat where
   LinearEffectVersionDelta (VersionedInputOutput vd) = vd
   LinearEffectVersionDelta (PureInputVersionedOutput vd) = vd
 
@@ -48,7 +48,7 @@ type family IsLinearEffectNonStatic (vd :: Nat) :: Bool where
   IsLinearEffectNonStatic vd = True
 
 -- ^ A linear effect is always not pure.
-type instance IsEffectNotPure (eff :: LinearEffect) = True
+type instance IsEffectNotPure (eff :: LinearEffectKind) = True
 
 type instance MayEffectWorld (VersionedInputOutput vd) = IsLinearEffectNonStatic vd
 type instance MayEffectWorld (PureInputVersionedOutput vd) = IsLinearEffectNonStatic vd

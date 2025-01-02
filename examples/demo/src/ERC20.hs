@@ -14,11 +14,13 @@ erc20_balance_storage_of = fn @(ADDR -> B32) $locId $
 
 -- | ERC20 balance of the account.
 erc20_balance_of = lfn $locId $ yulmonad'p @(ADDR -> U256)
-  \account -> impure (callFn'l erc20_balance_storage_of account) LVM.>>= sget
+  \account'p -> LVM.do
+  accountS <- impure (callFn'lpp erc20_balance_storage_of account'p)
+  sget accountS
 
 erc20_mint = lfn $locId $ yulmonad'p @(ADDR -> U256 -> BOOL)
   \account'p amount'p -> LVM.do
-  (to, amount) <- impureN (callFn'l erc20_balance_storage_of account'p, amount'p)
+  (to, amount) <- impureN (callFn'lpp erc20_balance_storage_of account'p, amount'p)
   sput to amount
   embed true
 
@@ -27,15 +29,15 @@ erc20_transfer = lfn $locId $ yulmonad'p @(ADDR -> ADDR -> U256 -> BOOL)
 
   -- data generate 0 block: update sender balance
   amount'p <- pass_ amount'p \amount'p -> LVM.do
-    (from'p, fromS) <- pass from'p (\from'p -> impure (callFn'l erc20_balance_storage_of from'p))
     (from, amount) <- impureN (from'p, amount'p)
-    sput_ fromS (callLfn'l erc20_balance_of from - amount) -- TODO: operator for storage references
+    (from, fromS) <- pass from (pure . callFn'l erc20_balance_storage_of)
+    sput_ fromS (callFn'l erc20_balance_of from - amount) -- TODO: operator for storage references
 
   -- data generation 1 block: update receiver balance
   with amount'p \amount'p -> LVM.do
-    (to'p, toS) <- pass to'p (\to'p -> impure (callFn'l erc20_balance_storage_of to'p))
     (to, amount) <- impureN (to'p, amount'p)
-    sput_ toS (callLfn'l erc20_balance_of to + amount)
+    (to, toS) <- pass to (pure . callFn'l erc20_balance_storage_of)
+    sput_ toS (callFn'l erc20_balance_of to + amount)
 
   embed true
 

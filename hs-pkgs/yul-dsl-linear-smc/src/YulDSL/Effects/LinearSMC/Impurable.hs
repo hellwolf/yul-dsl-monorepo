@@ -1,8 +1,9 @@
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE UndecidableInstances   #-}
 module YulDSL.Effects.LinearSMC.Impurable
-  ( Impurable (impure), impureN
+  ( Impurable (impure'l), impure, impureN
   ) where
+-- base
+import Data.Type.Equality                (type (~))
 -- yul-dsl
 import YulDSL.Core
 -- linear-base
@@ -14,33 +15,35 @@ import YulDSL.Effects.LinearSMC.YulMonad
 import YulDSL.Effects.LinearSMC.YulPort
 
 
-class Impurable xs'p xs'v v r | xs'v -> xs'p where
+class Impurable x'p x'v | x'v -> x'p where
   -- | Safe operation that impures a pure yul port to a versioned yul port.
-  impure :: forall. xs'p ⊸ YulMonad v v r xs'v
+  impure'l :: forall. x'p ⊸ x'v
 
-instance forall a v r. Impurable (P'P r a) (P'V v r a) v r where
-  impure x = pure (UnsafeLinear.coerce x)
+instance forall a v r. Impurable (P'P r a) (P'V v r a) where
+  impure'l = UnsafeLinear.coerce
 
-instance forall v r. Impurable (NP '[]) (NP '[]) v r where
-  impure Nil = pure Nil
+class ImpurableNP np'p np'v where
+  impure_np :: forall. np'p ⊸ np'v
 
-instance forall x'p x'v xs'p xs'v v r.
-         ( Impurable x'p x'v v r
-         , Impurable (NP xs'p) (NP xs'v) v r
-         ) => Impurable (NP (x'p:xs'p)) (NP (x'v:xs'v)) v r where
-  impure (x :* xs) = LVM.do
-    x' <- impure x
-    xs' <- impure xs
-    LVM.pure (x' :* xs')
+instance forall. ImpurableNP (NP '[]) (NP '[]) where
+  impure_np Nil = Nil
 
-impureN :: forall v r tpl'p tpl'v.
+impure :: forall x'p x'v r v. Impurable x'p x'v => x'p ⊸ YulMonad v v r x'v
+impure x = pure (impure'l x)
+
+instance forall x'p x'v xs'p xs'v.
+         ( Impurable x'p x'v
+         , ImpurableNP (NP xs'p) (NP xs'v)
+         ) => ImpurableNP (NP (x'p:xs'p)) (NP (x'v:xs'v)) where
+  impure_np (x :* xs) = impure'l x :* impure_np xs
+
+impureN :: forall tpl'p tpl'v x xs v r.
            ( ConvertibleTupleN tpl'p
            , ConvertibleTupleN tpl'v
-           -- , TupleNtoNP tpl'p ~ NP (P'P r a:xs)
-           -- , TupleNtoNP tpl'v ~ NP (P'V v r a:xs)
-           , Impurable (TupleNtoNP tpl'p) (TupleNtoNP tpl'v) v r
+           -- , TupleNtoNP tpl'p ~ NP (P'P r x:xs) -- WARNING: DO NOT OPEN THIS, FUNDEP HELL WILL BREAK LOOSE
+           , TupleNtoNP tpl'v ~ NP (P'V v r x:xs)
+           , ImpurableNP (TupleNtoNP tpl'p) (TupleNtoNP tpl'v)
            )
         => tpl'p ⊸ YulMonad v v r tpl'v
-impureN tpl'p = LVM.do
-  np'v :: TupleNtoNP tpl'v <- impure (fromTupleNtoNP tpl'p)
-  LVM.pure (fromNPtoTupleN np'v)
+impureN tpl'p = let !(np'v :: TupleNtoNP tpl'v) = impure_np (fromTupleNtoNP tpl'p)
+                in LVM.pure (fromNPtoTupleN np'v)

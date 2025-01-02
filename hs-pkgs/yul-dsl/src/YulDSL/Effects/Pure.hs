@@ -25,7 +25,6 @@ module YulDSL.Effects.Pure
 import Ethereum.ContractABI
 --
 import YulDSL.Core.YulCat
-import YulDSL.Core.YulCatObj
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -35,6 +34,9 @@ import YulDSL.Core.YulCatObj
 -- | Data kind for pure morphisms in the yul category.
 data PureEffectKind = Pure  -- ^ Pure morphism, may not be total
                     | Total -- ^ TODO, to further distinguish totality from other pure morphism.
+
+instance ClassifiedYulCatEffect Pure where classifyYulCatEffect = PureEffect
+instance ClassifiedYulCatEffect Total where classifyYulCatEffect = PureEffect
 
 type instance IsEffectNotPure (eff :: PureEffectKind) = False
 type instance MayEffectWorld  (eff :: PureEffectKind) = False
@@ -70,9 +72,7 @@ type YulCat'P = YulCat Pure
 -- It returns: @Pure (NP xs ↝ b)@
 fn :: forall f xs b m.
        ( YulO2 (NP xs) b
-       , UncurryNP'Fst f ~ xs
-       , UncurryNP'Snd f ~ b
-       , CurryNP (NP xs) b ~ f
+       , EquivalentNPOfFunction f xs b
        , YulCat'P (NP xs) ~ m
        , UncurryingNP f xs b m m m m Many
        , LiftFunction b m m Many ~ m b
@@ -87,9 +87,7 @@ fn cid f = let cat = uncurryingNP @f @xs @b @m @m @m @m f YulId
 -- @r ↝ b@ is returned.
 callFn :: forall f xs b r m.
           ( YulO3 (NP xs) b r
-          , UncurryNP'Fst f ~ xs
-          , UncurryNP'Snd f ~ b
-          , CurryNP (NP xs) b ~ f
+          , EquivalentNPOfFunction f xs b
           , YulCat'P r ~ m
           , CurryingNP xs b m m m Many
           , LiftFunction b m m Many ~ m b

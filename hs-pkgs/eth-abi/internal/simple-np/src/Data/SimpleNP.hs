@@ -23,7 +23,7 @@ module Data.SimpleNP
   ( Multiplicity (Many, One)
   , NP (Nil, (:*))
   , LiftFunction
-  , UncurryNP'Fst, UncurryNP'Snd, UncurryNP'Multiplicity, UncurryNP
+  , UncurryNP'Fst, UncurryNP'Snd, UncurryNP'Multiplicity, UncurryNP, EquivalentNPOfFunction
   , CurryNP
   , CurryingNP'Head, CurryingNP'Tail
   , CurryingNP (curryingNP), UncurryingNP(uncurryingNP)
@@ -80,6 +80,14 @@ type UncurryNP f = NP (UncurryNP'Fst f) %(UncurryNP'Multiplicity f)-> UncurryNP'
 type family CurryNP np b where
   CurryNP (NP (x:xs)) b = x -> CurryNP (NP xs) b
   CurryNP (NP    '[]) b = b
+
+
+-- | Declare the equivalence between a currying function form @f@ and @NP xs -> b@.
+type EquivalentNPOfFunction f xs b =
+  ( CurryNP (NP xs) b ~ f -- Note! The order of the constraint seems matter here.
+  , UncurryNP'Fst f ~ xs
+  , UncurryNP'Snd f ~ b
+  )
 
 --
 -- Type classes for defining uncurrying/currying functions for NP

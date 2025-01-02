@@ -14,7 +14,7 @@ module YulDSL.Effects.LinearSMC.LinearYulCat
   , match'l
   ) where
 -- base
-import GHC.TypeLits                     (type (+))
+import GHC.TypeLits                     (KnownNat, type (+))
 import Prelude                          qualified as BasePrelude
 -- linear-base
 import Control.Category.Linear          (P, decode, discard, encode, ignore, split)
@@ -53,6 +53,12 @@ type instance IsEffectNotPure (eff :: LinearEffectKind) = True
 type instance MayEffectWorld (VersionedInputOutput vd) = IsLinearEffectNonStatic vd
 type instance MayEffectWorld (PureInputVersionedOutput vd) = IsLinearEffectNonStatic vd
 
+instance KnownNat vd => ClassifiedYulCatEffect (VersionedInputOutput vd) where
+  classifyYulCatEffect = if fromSNat (natSing @vd) BasePrelude.== 0 then StaticEffect else OmniEffect
+
+instance KnownNat vd => ClassifiedYulCatEffect (PureInputVersionedOutput vd) where
+  classifyYulCatEffect = if fromSNat (natSing @vd) BasePrelude.== 0 then StaticEffect else OmniEffect
+
 ------------------------------------------------------------------------------------------------------------------------
 -- $YulPortDiagrams
 --
@@ -90,7 +96,7 @@ decode'lpv f = decode (h f) -- an intermediate function to fight the multiplicit
           ⊸ (forall r. YulO1 r => P (YulCat oe) r a ⊸ P (YulCat oe) r b)
         h = UnsafeLinear.coerce {- using Unsafe coerce to convert effect after type-checking -}
 
-encode'lvv :: forall a b r vd v1. YulO3 a b r
+encode'lvv :: forall a b r v1 vd. YulO3 a b r
   => YulCat (VersionedInputOutput vd) a b
   -> (P'V v1 r a ⊸ P'V (v1 + vd) r b)
 encode'lvv cat x = -- ghc can infer it; annotating for readability and double checking expected types
@@ -142,8 +148,7 @@ instance forall x xs b g v1 vn r a.
 uncurry'lvv :: forall f xs b r vd m1 m1b m2 m2b.
   ( YulO3 (NP xs) b r
   --
-  , UncurryNP'Fst f ~ xs
-  , UncurryNP'Snd f ~ b
+  , EquivalentNPOfFunction f xs b
   --
   , P'V  0 r ~ m1
   , P'V vd r ~ m1b
@@ -207,8 +212,7 @@ instance forall x xs b g vd r a.
 uncurry'lpv :: forall f xs b r vd m1 m1b m2 m2b.
   ( YulO3 (NP xs) b r
   --
-  , UncurryNP'Fst f ~ xs
-  , UncurryNP'Snd f ~ b
+  , EquivalentNPOfFunction f xs b
   --
   , P'P    r ~ m1
   , P'V vd r ~ m1b

@@ -24,7 +24,6 @@ import Control.Monad.State.Lazy (State, evalState, gets, modify')
 import Ethereum.ContractABI
 --
 import YulDSL.Core.YulCat
-import YulDSL.Core.YulCatObj
 
 
 newtype EvalData = MkEvalData { store_map :: M.Map B32 WORD
@@ -64,7 +63,7 @@ evalYulCat' YulDup  a  = pure (a, a)
 -- control flow
 evalYulCat' (YulJmpU (_, f)) a = evalYulCat' f a
 evalYulCat' (YulJmpB (_, f)) a = pure (f a)
-evalYulCat' (YulCall) _ = error "YulCall not supported"
+evalYulCat' (YulCall _) _    = error "YulCall not supported" -- FIXME
 evalYulCat' (YulITE ct cf) (BOOL t, a) = if t then evalYulCat' ct a else evalYulCat' cf a
 -- value primitives
 evalYulCat' (YulEmb b)  _ = pure b
@@ -74,6 +73,8 @@ evalYulCat' YulSPut (r, a) = modify' $ \s -> s { store_map = M.insert r (toWord 
 evalYulCat :: YulO2 a b => YulCat eff a b -> a -> b
 evalYulCat s a = evalState (evalYulCat' s a) initEvalState
 
-evalFn :: forall eff f. YulO2 (NP (UncurryNP'Fst f)) (UncurryNP'Snd f)
-       => Fn eff f -> NP (UncurryNP'Fst f) -> UncurryNP'Snd f
+evalFn :: forall eff f xs b. ( YulO2 (NP xs) b
+                             , EquivalentNPOfFunction f xs b
+                             )
+       => Fn eff f -> NP xs -> b
 evalFn = evalYulCat . snd . unFn

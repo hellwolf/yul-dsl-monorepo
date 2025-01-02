@@ -110,8 +110,7 @@ instance forall x xs b g v1 vn r a.
 yulmonad'v :: forall f xs b r vd m1 m1b m2 m2b f' b'.
   ( YulO3 (NP xs) b r
   -- constraint f, using b xs
-  , UncurryNP'Fst f ~ xs
-  , UncurryNP'Snd f ~ b
+  , EquivalentNPOfFunction f xs b
   -- constraint m1, m1b, m2, m2b, using xs
   , P'V         0 r ~ m1
   , YulMonad 0 vd r ~ m1b
@@ -121,9 +120,7 @@ yulmonad'v :: forall f xs b r vd m1 m1b m2 m2b f' b'.
   , P'V vd r b ~ b'
   , LiftFunction b' m2 m2b One ~ m2b b'
   -- constraint f'
-  , UncurryNP'Fst f'   ~ xs
-  , UncurryNP'Snd f'   ~ b'
-  , CurryNP (NP xs) b' ~ f' -- this is to workaround @m1b cannot lift @b@ to a port
+  , EquivalentNPOfFunction f' xs b'
   , UncurryingNP f' xs b' m1 m1b m2 m2b One
   )
   => LiftFunction f' m1 m1b One     -- ^ LiftFunction               f1  m1 m1b One
@@ -170,8 +167,7 @@ instance forall x xs b g v1 vn r a.
 yulmonad'p :: forall f xs b r vd m1 m1b m2 m2b f' b'.
   ( YulO3 (NP xs) b r
   -- constraint f, using b xs
-  , UncurryNP'Fst f ~ xs
-  , UncurryNP'Snd f ~ b
+  , EquivalentNPOfFunction f xs b
   -- constraint m1, m1b, m2, m2b, using xs
   , P'P           r ~ m1
   , YulMonad 0 vd r ~ m1b
@@ -181,9 +177,7 @@ yulmonad'p :: forall f xs b r vd m1 m1b m2 m2b f' b'.
   , P'V vd r b ~ b'
   , LiftFunction b' m2 m2b One ~ m2b b'
   --
-  , UncurryNP'Fst f'   ~ xs
-  , UncurryNP'Snd f'   ~ b'
-  , CurryNP (NP xs) b' ~ f' -- this is to workaround @m1b cannot lift @b@ to a port
+  , EquivalentNPOfFunction f' xs b'
   , UncurryingNP f' xs b' m1 m1b m2 m2b One
   )
   => LiftFunction f' m1 m1b One   -- ^ LiftFunction               f1  m1 m1b One

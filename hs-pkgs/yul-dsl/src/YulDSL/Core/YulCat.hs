@@ -1,4 +1,5 @@
-{-# LANGUAGE LinearTypes #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE LinearTypes         #-}
 {-|
 Copyright   : (c) 2023-2024 Miao, ZhiCheng
 License     : LGPL-3
@@ -22,9 +23,14 @@ safety to the practice of EVM programming.
 -}
 module YulDSL.Core.YulCat
   ( -- * Effect Classification
-    IsEffectNotPure, MayEffectWorld, PureEffect, StaticEffect, OmniEffect
+    IsEffectNotPure, MayEffectWorld, AssertPureEffect, AssertStaticEffect, AssertOmniEffect
+  , YulCatEffect (..), ClassifiedYulCatEffect (classifyYulCatEffect)
+  , YulO1, YulO2, YulO3, YulO4, YulO5, YulO6
     -- * YulCat, the Categorical DSL of Yul
-  , YulCat (..), NamedYulCat, locId, Fn (MkFn, unFn), AnyYulCat (..)
+  , YulCat (..), AnyYulCat (..)
+  , NamedYulCat, NamedYulCatNP
+  , Fn (MkFn, unFn)
+  , ExternalFn (MkExternalFn), declareExternalFn
   , (>.>), (<.<)
     -- * YulCat Pure Verbs
   , yulNumLt, yulNumLe, yulNumGt, yulNumGe, yulNumEq, yulNumNe
@@ -38,10 +44,11 @@ module YulDSL.Core.YulCat
   , Referenceable (yulRefGet, yulRefPut)
     -- * YulCat Stringify Functions
   , yulCatCompactShow, yulCatFingerprint
+    -- * Misc
+  , locId
   ) where
 -- base
 import Data.Kind                (Constraint)
-import Data.Proxy               (Proxy (Proxy))
 import GHC.TypeError            (Assert, ErrorMessage (Text), TypeError)
 import Text.Printf              (printf)
 -- template-haskell
@@ -74,24 +81,41 @@ type family IsEffectNotPure (eff :: k) :: Bool
 type family MayEffectWorld (eff :: k) :: Bool
 
 -- | Test if an effect can be used for morphisms that are pure.
-type PureEffect :: k -> Constraint
-type PureEffect eff = Assert (Not (IsEffectNotPure eff) && Not (MayEffectWorld eff)) -- (F, F)
-                      (TypeError (Text "pure effect expected"))
+type AssertPureEffect :: k -> Constraint
+type AssertPureEffect eff = Assert (Not (IsEffectNotPure eff) && Not (MayEffectWorld eff)) -- (F, F)
+                            (TypeError (Text "pure effect expected"))
 
 -- | Test if an effect can be used for morphisms that are pure.
-type NonPureEffect :: k -> Constraint
-type NonPureEffect eff = Assert (IsEffectNotPure eff) -- (T, -)
-                         (TypeError (Text "non-pure effect expected"))
+type AssertNonPureEffect :: k -> Constraint
+type AssertNonPureEffect eff = Assert (IsEffectNotPure eff) -- (T, -)
+                               (TypeError (Text "non-pure effect expected"))
 
 -- | Test if an effect can be used for morphisms that are non-pure but cannot change world.
-type StaticEffect :: k -> Constraint
-type StaticEffect eff = Assert (IsEffectNotPure eff && Not (MayEffectWorld eff)) -- (T, F)
-                        (TypeError (Text "static effect expected"))
+type AssertStaticEffect :: k -> Constraint
+type AssertStaticEffect eff = Assert (IsEffectNotPure eff && Not (MayEffectWorld eff)) -- (T, F)
+                              (TypeError (Text "static effect expected"))
 
 -- | Test if an effect can be used for morphisms that are non-pure and may change world.
-type OmniEffect :: k -> Constraint
-type OmniEffect eff = Assert (IsEffectNotPure eff && MayEffectWorld eff) -- (T, T)
-                      (TypeError (Text "omni effect expected"))
+type AssertOmniEffect :: k -> Constraint
+type AssertOmniEffect eff = Assert (IsEffectNotPure eff && MayEffectWorld eff) -- (T, T)
+                            (TypeError (Text "omni effect expected"))
+
+-- | Data type of yul category effect.
+data YulCatEffect = PureEffect
+                  | StaticEffect
+                  | OmniEffect
+                  deriving (Eq, Show)
+
+-- Shorthand for declaring multi-objects constraint:
+type YulO1 a = YulCatObj a
+type YulO2 a b = (YulCatObj a, YulCatObj b)
+type YulO3 a b c = (YulCatObj a, YulCatObj b, YulCatObj c)
+type YulO4 a b c d = (YulCatObj a, YulCatObj b, YulCatObj c, YulCatObj d)
+type YulO5 a b c d e = (YulCatObj a, YulCatObj b, YulCatObj c, YulCatObj d, YulCatObj e)
+type YulO6 a b c d e g = (YulCatObj a, YulCatObj b, YulCatObj c, YulCatObj d, YulCatObj e, YulCatObj g)
+
+class ClassifiedYulCatEffect eff where
+  classifyYulCatEffect :: YulCatEffect
 
 -- Note: IsNonsenseEffect eff = Not (IsEffectNotPure eff) && CanEffectWorld eff -- (F, T)
 
@@ -137,43 +161,45 @@ data YulCat (eff :: k) a b where
   -- ^ Jump to a built-in yul function.
   YulJmpB :: forall eff a b. YulO2 a b => BuiltInYulFunction a b %1-> YulCat eff a b
   -- ^ Call an external contract at the address along with a possible msgValue.
-  YulCall :: forall eff a b. YulO2 a b => YulCat eff (NP [ADDR, U256, a]) b
+  YulCall :: forall eff a b. YulO2 a b => SELECTOR -> YulCat eff ((ADDR, U256), a) b
   -- TODO: YulSCall
   -- TODO: YulDCall
 
   -- * Storage Primitives
   --
   -- ^ Get storage word.
-  YulSGet :: forall eff a. (NonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff B32 a
+  YulSGet :: forall eff a. (AssertNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff B32 a
   -- ^ Put storage word.
-  YulSPut :: forall eff a. (NonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff (B32, a) ()
+  YulSPut :: forall eff a. (AssertNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff (B32, a) ()
+
+-- | Existential wrapper of the 'YulCat'.
+data AnyYulCat = forall eff a b. (YulO2 a b) => MkAnyYulCat (YulCat eff a b)
 
 -- | Named YulCat morphism.
 type NamedYulCat eff a b = (String, YulCat eff a b)
 
--- | Automatically generate a source location based id using template haskell.
-locId :: TH.Q TH.Exp
-locId = do
-  loc <- TH.location
-  let modname = TH.loc_module loc
-      -- normalize module name: replace "."
-      modname' = fmap (\x -> if x `elem` "." then '_' else x) modname
-      (s1, s2) = TH.loc_start loc
-  TH.litE (TH.StringL (modname' ++ "_" ++ show s1 ++ "_" ++ show s2))
+-- | Named YulCat morphism with its domain in @NP xs@.
+type NamedYulCatNP eff xs b = NamedYulCat eff (NP xs) b
 
 -- | Yul function wrappers that are in currying function forms.
 --
 --   Note: Fn (a1 -> a2 -> ...aN -> b) ~ FnNP (NP [a1,a2...aN]) b
 data Fn eff f where
-  MkFn :: forall eff f xs b.
-          ( UncurryNP'Fst f ~ xs,
-            UncurryNP'Snd f ~ b,
-            YulO2 (NP xs) b
-          )
-       => { unFn :: NamedYulCat eff (NP (UncurryNP'Fst f)) (UncurryNP'Snd f) } -> Fn eff f
+  MkFn :: forall eff f xs b. EquivalentNPOfFunction f xs b
+       => { unFn :: NamedYulCatNP eff (UncurryNP'Fst f) (UncurryNP'Snd f) } -> Fn eff f
 
--- | Existential wrapper of the 'YulCat'.
-data AnyYulCat = forall eff a b. YulO2 a b => MkAnyYulCat (YulCat eff a b)
+-- | External contract functions that can be called via its selector.
+data ExternalFn f where
+  MkExternalFn :: forall f xs b. EquivalentNPOfFunction f xs b
+               => SELECTOR -> ExternalFn f
+
+-- | Create a 'ExternalFn' value by providing its function name function form @f@.
+declareExternalFn :: forall f xs b.
+                     ( EquivalentNPOfFunction f xs b
+                     , YulO2 (NP xs) b
+                     )
+                  => String -> ExternalFn f
+declareExternalFn fname = MkExternalFn (mkTypedSelector @(NP xs) fname)
 
 -- | Convenience operator for left to right composition of 'YulCat'.
 (>.>) :: forall eff a b c. YulO3 a b c => YulCat eff a b %1-> YulCat eff b c %1-> YulCat eff a c
@@ -294,34 +320,34 @@ yulCatCompactShow :: YulCat eff a b -> String
 yulCatCompactShow = go
   where
     go :: YulCat eff' a' b' -> String
-    go (YulReduceType @_ @a @b)    = "Tr" <> abi_type_name2 (Proxy :: Proxy (a, b))
-    go (YulExtendType @_ @a @b)    = "Te" <> abi_type_name2 (Proxy :: Proxy (a, b))
-    go (YulCoerceType @_ @a @b)    = "Tc" <> abi_type_name2 (Proxy :: Proxy (a, b))
-    go (YulSplit @_ @xs)           = "Ts" <> abi_type_name (Proxy :: Proxy (NP xs))
+    go (YulReduceType @_ @a @b)    = "Tr" <> abi_type_name2 @a @b
+    go (YulExtendType @_ @a @b)    = "Te" <> abi_type_name2 @a @b
+    go (YulCoerceType @_ @a @b)    = "Tc" <> abi_type_name2 @a @b
+    go (YulSplit @_ @xs)           = "Ts" <> abi_type_name @(NP xs)
     --
-    go (YulId @_ @a)               = "id" <> abi_type_name (Proxy :: Proxy a)
+    go (YulId @_ @a)               = "id" <> abi_type_name @a
     go (YulComp cb ac)             = "(" <> go ac <> ");(" <> go cb <> ")"
     go (YulProd ab cd)             = "(" <> go ab <> ")×(" <> go cd <> ")"
-    go (YulSwap @_ @a @b)          = "σ" <> abi_type_name2 (Proxy :: Proxy (a, b))
+    go (YulSwap @_ @a @b)          = "σ" <> abi_type_name2 @a @b
     go (YulFork ab ac)             = "(" <> go ab <> ")▵(" <> go ac <> ")"
-    go (YulExl @_ @a @b)           = "π₁" <> abi_type_name2 (Proxy :: Proxy (a, b))
-    go (YulExr @_ @a @b)           = "π₂" <> abi_type_name2 (Proxy :: Proxy (a, b))
-    go (YulDis @_ @a)              = "ε" <> abi_type_name (Proxy :: Proxy a)
-    go (YulDup @_ @a)              = "δ" <> abi_type_name (Proxy :: Proxy a)
+    go (YulExl @_ @a @b)           = "π₁" <> abi_type_name2 @a @b
+    go (YulExr @_ @a @b)           = "π₂" <> abi_type_name2 @a @b
+    go (YulDis @_ @a)              = "ε" <> abi_type_name @a
+    go (YulDup @_ @a)              = "δ" <> abi_type_name @a
     --
-    go (YulEmb @_ @a @b x)         = "{" <> show x <> "}" <> abi_type_name2 (Proxy :: Proxy (a, b))
+    go (YulEmb @_ @a @b x)         = "{" <> show x <> "}" <> abi_type_name2 @a @b
     go (YulITE a b)                = "?" <> "(" <> go a <> "):(" <> go b <> ")"
-    go (YulJmpU @_ @a @b (cid, _)) = "Ju " <> cid <> abi_type_name2 (Proxy :: Proxy (a, b))
-    go (YulJmpB @_ @a @b (cid, _)) = "Jb " <> cid <> abi_type_name2 (Proxy :: Proxy (a, b))
-    go (YulCall @_ @a @b)          = "C" <> abi_type_name2 (Proxy :: Proxy (a, b))
+    go (YulJmpU @_ @a @b (cid, _)) = "Ju " <> cid <> abi_type_name2 @a @b
+    go (YulJmpB @_ @a @b (cid, _)) = "Jb " <> cid <> abi_type_name2 @a @b
+    go (YulCall @_ @a @b sel)      = "C" <> showSelectorOnly sel <> abi_type_name2 @a @b
     --
-    go (YulSGet @_ @a)             = "Sg" <> abi_type_name (Proxy :: Proxy a)
-    go (YulSPut @_ @a)             = "Sp" <> abi_type_name (Proxy :: Proxy a)
+    go (YulSGet @_ @a)             = "Sg" <> abi_type_name @a
+    go (YulSPut @_ @a)             = "Sp" <> abi_type_name @a
     -- A 'abi_type_name variant, enclosing name with "@()".
-    abi_type_name :: forall a. ABITypeable a => Proxy a -> String
-    abi_type_name _ = "@" ++ abiTypeCompactName @a
-    abi_type_name2 :: forall a b. (ABITypeable a, ABITypeable b) => Proxy (a, b) -> String
-    abi_type_name2 _ = abi_type_name (Proxy :: Proxy a) ++ abi_type_name (Proxy :: Proxy b)
+    abi_type_name :: forall a. ABITypeable a => String
+    abi_type_name = "@" ++ abiTypeCompactName @a
+    abi_type_name2 :: forall a b. (ABITypeable a, ABITypeable b) => String
+    abi_type_name2 = abi_type_name @a ++ abi_type_name @b
     -- TODO escape the value of x
     -- escape = show
 
@@ -333,3 +359,18 @@ yulCatFingerprint = concatMap (printf "%02x") . BS.unpack . BA.convert . hash . 
 instance Show (YulCat eff a b) where show = yulCatCompactShow
 deriving instance Show AnyYulCat
 deriving instance Show (Fn eff f)
+
+
+------------------------------------------------------------------------------------------------------------------------
+-- Other stuff that probably doesn't belong here
+------------------------------------------------------------------------------------------------------------------------
+
+-- | Automatically generate a source location based id using template haskell.
+locId :: TH.Q TH.Exp
+locId = do
+  loc <- TH.location
+  let modname = TH.loc_module loc
+      -- normalize module name: replace "."
+      modname' = fmap (\x -> if x `elem` "." then '_' else x) modname
+      (s1, s2) = TH.loc_start loc
+  TH.litE (TH.StringL (modname' ++ "_" ++ show s1 ++ "_" ++ show s2))

@@ -12,14 +12,14 @@ documentation](https://docs.soliditylang.org/en/latest/yul.html#specification-of
 
 -}
 module YulDSL.Core.YulObject
-  ( FnEffect (PureFnEffect, StaticFnEffect, OmniFnEffect)
-  , ExportedFn (MkExportedFn), withExportedFn
+  ( AnyExportedYulCat (MkAnyExportedYulCat), withAnyExportedYulCat
   , pureFn,staticFn, omniFn
   , YulObject (..), mkYulObject
   , emptyCtor
   ) where
 
 -- base
+import Control.Exception                          (assert)
 import Data.List                                  (intercalate)
 -- eth-abi
 import Ethereum.ContractABI.ABITypeable           (abiTypeCanonName)
@@ -28,59 +28,55 @@ import Ethereum.ContractABI.CoreType.NP
 import Ethereum.ContractABI.ExtendedType.SELECTOR
 --
 import YulDSL.Core.YulCat
-import YulDSL.Core.YulCatObj
 import YulDSL.Effects.Pure
 
+-- | Existential yul function that is exported.
+data AnyExportedYulCat where
+  MkAnyExportedYulCat :: forall k { eff :: k } xs b. YulO2 (NP xs) b
+                      => SELECTOR -> YulCatEffect -> NamedYulCat eff (NP xs) b -> AnyExportedYulCat
 
--- | Type for the exported yul function.
-data FnEffect = PureFnEffect
-              | StaticFnEffect
-              | OmniFnEffect
-
--- | Exported yul function.
-data ExportedFn where
-  MkExportedFn :: forall k { eff :: k } xs b. YulO2 (NP xs) b
-               => SELECTOR -> FnEffect -> NamedYulCat eff (NP xs) b -> ExportedFn
-
-withExportedFn :: ExportedFn
+withAnyExportedYulCat :: AnyExportedYulCat
   -> (forall k { eff :: k } xs b. (YulO2 (NP xs) b ) => NamedYulCat eff (NP xs) b -> a)
   -> a
-withExportedFn (MkExportedFn _ _ f) g = g f
+withAnyExportedYulCat (MkAnyExportedYulCat _ _ f) g = g f
 
-pureFn :: forall f as b eff.
-  ( PureEffect eff
-  , YulO2 (NP as) b
-  , UncurryNP'Fst f ~ as
-  , UncurryNP'Snd f ~ b
-  ) => String -> Fn eff f -> ExportedFn
-pureFn fname (MkFn f) = MkExportedFn (mkTypedSelector @(NP as) fname) PureFnEffect f
+pureFn :: forall f xs b eff.
+  ( AssertPureEffect eff
+  , ClassifiedYulCatEffect eff
+  , YulO2 (NP xs) b
+  , EquivalentNPOfFunction f xs b
+  ) => String -> Fn eff f -> AnyExportedYulCat
+pureFn fname (MkFn f) = assert (classifyYulCatEffect @eff == PureEffect)
+  MkAnyExportedYulCat (mkTypedSelector @(NP xs) fname) PureEffect f
 
-staticFn :: forall f as b eff.
-  ( StaticEffect eff
-  , YulO2 (NP as) b
-  , UncurryNP'Fst f ~ as
-  , UncurryNP'Snd f ~ b
-  ) => String -> Fn eff f -> ExportedFn
-staticFn fname (MkFn f) = MkExportedFn (mkTypedSelector @(NP as) fname) StaticFnEffect f
+staticFn :: forall f xs b eff.
+  ( AssertStaticEffect eff
+  , ClassifiedYulCatEffect eff
+  , YulO2 (NP xs) b
+  , EquivalentNPOfFunction f xs b
+  ) => String -> Fn eff f -> AnyExportedYulCat
+staticFn fname (MkFn f) = assert (classifyYulCatEffect @eff == StaticEffect)
+  MkAnyExportedYulCat (mkTypedSelector @(NP xs) fname) StaticEffect f
 
-omniFn :: forall f as b eff.
-  ( OmniEffect eff
-  , YulO2 (NP as) b
-  , UncurryNP'Fst f ~ as
-  , UncurryNP'Snd f ~ b
-  ) => String -> Fn eff f -> ExportedFn
-omniFn fname (MkFn f) = MkExportedFn (mkTypedSelector @(NP as) fname) OmniFnEffect f
+omniFn :: forall f xs b eff.
+  ( AssertOmniEffect eff
+  , ClassifiedYulCatEffect eff
+  , YulO2 (NP xs) b
+  , EquivalentNPOfFunction f xs b
+  ) => String -> Fn eff f -> AnyExportedYulCat
+omniFn fname (MkFn f) = assert (classifyYulCatEffect @eff == OmniEffect)
+  MkAnyExportedYulCat (mkTypedSelector @(NP xs) fname) OmniEffect f
 
-instance Show ExportedFn where
-  show (MkExportedFn s PureFnEffect   cat) = "pure "   <> show_fn_spec s cat
-  show (MkExportedFn s StaticFnEffect cat) = "static " <> show_fn_spec s cat
-  show (MkExportedFn s OmniFnEffect   cat) = "omni "   <> show_fn_spec s cat
+instance Show AnyExportedYulCat where
+  show (MkAnyExportedYulCat s PureEffect   cat) = "pure "   <> show_fn_spec s cat
+  show (MkAnyExportedYulCat s StaticEffect cat) = "static " <> show_fn_spec s cat
+  show (MkAnyExportedYulCat s OmniEffect   cat) = "omni "   <> show_fn_spec s cat
 
 show_fn_spec :: forall xs b eff. YulO2 (NP xs) b => SELECTOR -> NamedYulCat eff (NP xs) b -> String
-show_fn_spec (SELECTOR (sig, fsig)) cat@(cid, _) =
+show_fn_spec (SELECTOR (sel, fsig)) cat@(cid, _) =
   let fspec = case fsig of
-                Just (FuncSig (fname, _)) -> fname ++ "," ++ show sig ++ "," ++ cid
-                Nothing                   -> show sig ++ "," ++ cid
+                Just (MkFuncSig fname) -> fname ++ "," ++ show sel ++ "," ++ cid
+                Nothing                -> show sel ++ "," ++ cid
   in "fn " <> fspec <> "(" <> abiTypeCanonName @(NP xs) <> ") -> " <> abiTypeCanonName @b <> "\n" <>
      show cat
 
@@ -91,7 +87,7 @@ show_fn_spec (SELECTOR (sig, fsig)) cat@(cid, _) =
 --   * Specification: https://docs.soliditylang.org/en/latest/yul.html#specification-of-yul-object
 data YulObject = MkYulObject { yulObjectName :: String
                              , yulObjectCtor :: AnyYulCat  -- FIXME support constructor
-                             , yulObjectSFns :: [ExportedFn] -- scoped functions
+                             , yulObjectSFns :: [AnyExportedYulCat] -- scoped functions
                              , yulSubObjects :: [YulObject]
                              -- , TODO support object data
                              }
@@ -104,7 +100,7 @@ instance Show YulObject where
 
 mkYulObject :: String
             -> AnyYulCat
-            -> [ExportedFn]
+            -> [AnyExportedYulCat]
             -> YulObject
 mkYulObject name ctor afns = MkYulObject { yulObjectName = name
                                          , yulObjectCtor = ctor

@@ -17,7 +17,7 @@ These combinators should be reexported by the contextualized 'Control.LinearlyVe
 module Control.LinearlyVersionedMonad.Combinators
   ( pure
   , embed
-  , toss, tossN
+  , toss, tossN, tossToUnit
   , pass, pass_, passN, passN_
   , with, with_
   ) where
@@ -42,15 +42,28 @@ embed a = MkLVM \ctx -> let !(ctx', ma) = contextualEmbed ctx a in (Dict, ctx', 
 -- toss
 --------------------------------------------------------------------------------
 
--- | Toss a single value into the context of a LVM.
-toss :: forall ctx v a. ContextualConsumable ctx a
-     => a ⊸ LVM ctx v v ()
-toss x = MkLVM \ctx -> (Dict, contextualConsume ctx x, ())
+-- | Toss a single value into a context unit.
+toss :: forall ctx v a m. (ContextualConsumable ctx a, ContextualEmbeddable ctx m ())
+     => a ⊸ LVM ctx v v (m ())
+toss x = MkLVM \ctx -> let ctx' = contextualConsume ctx x
+                           !(ctx'', mu) = contextualEmbed ctx' ()
+                       in (Dict, ctx'', mu)
 
 -- | Toss a TupleN into the context of a LVM.
-tossN :: forall ctx v tpl. (ConvertibleTupleN tpl, ContextualConsumable ctx (TupleNtoNP tpl))
-     => tpl ⊸ LVM ctx v v ()
-tossN tpl = MkLVM \ctx -> (Dict, contextualConsume ctx (fromTupleNtoNP tpl), ())
+tossN :: forall ctx v tpl m.
+         ( ConvertibleTupleN tpl
+         , ContextualConsumable ctx (TupleNtoNP tpl)
+         , ContextualEmbeddable ctx m ()
+         )
+     => tpl ⊸ LVM ctx v v (m ())
+tossN tpl = MkLVM \ctx -> let ctx' = contextualConsume ctx (fromTupleNtoNP tpl)
+                              !(ctx'', mu) = contextualEmbed ctx' ()
+                          in (Dict, ctx'', mu)
+
+-- | Toss a single value into a simple unit.
+tossToUnit :: forall ctx v a. (ContextualConsumable ctx a)
+     => a ⊸ LVM ctx v v ()
+tossToUnit x = MkLVM \ctx -> (Dict, contextualConsume ctx x, ())
 
 --------------------------------------------------------------------------------
 -- pass
@@ -87,7 +100,7 @@ passN_ :: forall ctx va vb tpl b.
           , ContextualConsumable ctx b
           )
        => tpl ⊸ (tpl ⊸ LVM ctx va vb b) ⊸ LVM ctx va vb tpl
-passN_ tpl mb = passN tpl mb >>= (\(tpl', b) -> toss b >> pure tpl')
+passN_ tpl mb = passN tpl mb >>= (\(tpl', b) -> tossToUnit b >> pure tpl')
 
 --------------------------------------------------------------------------------
 -- with

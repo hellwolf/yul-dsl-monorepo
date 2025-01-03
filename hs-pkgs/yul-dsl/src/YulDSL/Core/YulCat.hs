@@ -25,6 +25,7 @@ module YulDSL.Core.YulCat
   ( -- * Effect Classification
     IsEffectNotPure, MayEffectWorld, AssertPureEffect, AssertStaticEffect, AssertOmniEffect
   , YulCatEffectClass (..), KnownYulCatEffect (classifyYulCatEffect)
+  , SYulCatEffectClass (SYulCatEffectClass), classifySYulCatEffect
   , YulO1, YulO2, YulO3, YulO4, YulO5, YulO6
     -- * YulCat, the Categorical DSL of Yul
   , YulCat (..), AnyYulCat (..)
@@ -106,9 +107,17 @@ data YulCatEffectClass = PureEffect
                        | OmniEffect
                        deriving (Eq, Show)
 
--- | Singleton for YulCat effect classification.
+-- | Singleton class for YulCat effect classification.
 class KnownYulCatEffect eff where
+  -- | Create classification data for known yul effect.
   classifyYulCatEffect :: YulCatEffectClass
+
+-- | Singleton data for YulCat effect classification.
+data SYulCatEffectClass eff = KnownYulCatEffect eff => SYulCatEffectClass
+
+-- | Create classification singleton of known yul effect.
+classifySYulCatEffect :: SYulCatEffectClass eff -> YulCatEffectClass
+classifySYulCatEffect (SYulCatEffectClass @eff) = classifyYulCatEffect @eff
 
 -- Shorthand for declaring multi-objects constraint:
 type YulO1 a = YulCatObj a
@@ -149,8 +158,8 @@ data YulCat (eff :: k) a b where
   YulFork :: forall eff a b c. YulO3 a b c => YulCat eff a b %1-> YulCat eff a c %1-> YulCat eff a (b, c)
   YulExl  :: forall eff a b.   YulO2 a b   => YulCat eff (a, b) a
   YulExr  :: forall eff a b.   YulO2 a b   => YulCat eff (a, b) b
-  YulDis  :: forall eff a.     YulO1 a     => YulCat eff a ()
-  YulDup  :: forall eff a.     YulO1 a     => YulCat eff a (a, a)
+  YulDis  :: forall eff a. YulO1 a => YulCat eff a ()
+  YulDup  :: forall eff a. YulO1 a => YulCat eff a (a, a)
 
   -- * Control Flow Primitives
   --
@@ -245,7 +254,7 @@ yulKeccak256 x = x >.> yulB_Keccak256
 ------------------------------------------------------------------------------------------------------------------------
 
 -- | Revert without any message.
-yulRevert :: forall eff a b. YulO2 a b => YulCat eff a b
+yulRevert :: forall eff a b. (YulO2 a b) => YulCat eff a b
 yulRevert = YulDis >.> YulJmpB ("__revert_c_" ++ abiTypeCompactName @b, error "revert(0, 0)")
 
 ------------------------------------------------------------------------------------------------------------------------

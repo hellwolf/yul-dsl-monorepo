@@ -6,8 +6,8 @@ module YulDSL.Effects.LinearSMC.LinearFn
     -- * Call Yul Functions Linearly
   , LinearlyCallableFn, CallFnLinearly (callFn'l)
   , callFn'lpp
-    -- * Call external smart contract functions
-  , externalCall'l
+    -- * Call External Smart Contract Functions
+  , externalCall
   ) where
 -- base
 import GHC.TypeLits                          (type (+))
@@ -17,10 +17,12 @@ import Prelude.Linear
 import Unsafe.Linear                         qualified as UnsafeLinear
 -- yul-dsl
 import YulDSL.Core
+-- linearly-versioned-monoad
+import Control.LinearlyVersionedMonad        qualified as LVM
 --
 import YulDSL.Effects.LinearSMC.LinearYulCat
+import YulDSL.Effects.LinearSMC.YulMonad
 import YulDSL.Effects.LinearSMC.YulPort
-
 
 ------------------------------------------------------------------------------------------------------------------------
 -- lfn
@@ -80,7 +82,7 @@ instance CallFnLinearly (VersionedInputOutput vd) vd where
   callFn'l (MkFn t) x =
     mkUnit x
     & \(x', u) -> curryingNP @xs @b @(P'V v1 r) @(P'V vn r) @(YulCat'LVV v1 v1 r ()) @One
-    $ \(MkYulCat'LVV fxs) -> encode'lvv (YulJmpU t)
+    $ \(MkYulCat'LVV fxs) -> encode'lvv (YulJmpU t) id
     $ cons'l x' (fxs u)
 
 instance CallFnLinearly (PureInputVersionedOutput vd) vd
@@ -102,24 +104,34 @@ callFn'lpp :: forall f x xs b r eff.
 callFn'lpp (MkFn t) x =
   mkUnit x
   & \(x', u) -> curryingNP @_ @_ @(P'P r) @(P'P r) @(YulCat'LPP r ()) @One
-  $ \(MkYulCat'LPP fxs) -> encode'lpp (YulJmpU t)
+  $ \(MkYulCat'LPP fxs) -> encode'lpp (YulJmpU t) id
   $ cons'l x' (fxs u)
 
 ------------------------------------------------------------------------------------------------------------------------
--- calling external functions
+-- calling external functions (Yul Monadic)
 ------------------------------------------------------------------------------------------------------------------------
 
-externalCall'l :: forall f x xs b r v1 addrEff.
-  LinearlyCallableFn f x xs b r v1 1 (v1 + 1)
+externalCall :: forall f x xs b b' r v1 addrEff.
+  ( YulO4 x (NP xs) b r
+  , P'V (v1 + 1) r b ~ b'
+    -- constraint f
+  , EquivalentNPOfFunction f (x:xs) b
+    -- CurryingNP instance on "NP xs -> b"
+  , CurryingNP xs b' (P'V v1 r) (YulMonad v1 (v1 + 1) r) (YulCat'LVV v1 v1 r ()) One
+  )
   => ExternalFn f
   -> P'x addrEff r ADDR
-  ⊸ (P'V v1 r x ⊸ LiftFunction (CurryNP (NP xs) b) (P'V v1 r) (P'V (v1 + 1) r) One)
-externalCall'l (MkExternalFn sel) addr x =
+  ⊸ (P'V v1 r x ⊸ LiftFunction (CurryNP (NP xs) b') (P'V v1 r) (YulMonad v1 (v1 + 1) r) One)
+externalCall (MkExternalFn sel) addr x =
   mkUnit x
-  & \(x', u) -> curryingNP @_ @_ @(P'V v1 r) @(P'V (v1 + 1) r) @(YulCat'LVV v1 v1 r ()) @One
-  $ \(MkYulCat'LVV fxs) -> encode'lvv YulId
+  & \(x', u) -> curryingNP @_ @_ @(P'V v1 r) @(YulMonad v1 (v1 + 1) r) @(YulCat'LVV v1 v1 r ()) @One
+  $ \(MkYulCat'LVV fxs) -> encode'lvv @_ @_ @(YulMonad v1 (v1 + 1) r b') @r @v1 @1
+                           YulId
+                           (\(b' :: P'V (v1 + 1) r b) -> let mb = LVM.pure b' :: YulMonad (v1 + 1) (v1 + 1) r b'
+                                                         in UnsafeLinear.coerce mb)
   $ go (cons'l x' (fxs u))
   where go :: forall. P'x (VersionedPort v1) r (NP (x : xs)) ⊸ P'V v1 r b
         go args = let !(args', u) = mkUnit args
-                  in encode'lvv @_ @_ @_ @v1 @0 (YulCall sel)
+                  in encode'lvv @_ @_ @_ @r @v1 @0 (YulCall sel)
+                     id
                      (merge (merge (UnsafeLinear.coerce addr, emb'l 0 u), args'))

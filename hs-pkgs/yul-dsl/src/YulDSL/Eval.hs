@@ -56,10 +56,10 @@ evalYulCat' (YulFork m n) a = do
   b <- evalYulCat' m a
   c <- evalYulCat' n a
   pure (b, c)
-evalYulCat' YulExl  (a, _) = pure a
-evalYulCat' YulExr  (_, b) = pure b
-evalYulCat' YulDis  _  = pure ()
-evalYulCat' YulDup  a  = pure (a, a)
+evalYulCat' YulExl  (a, _)  = pure a
+evalYulCat' YulExr  (_, b)  = pure b
+evalYulCat' YulDis _ = pure () -- FIXME: there may be semantic difference with YulGen, a is always evaluated even if eff may not affect the world.
+evalYulCat' YulDup a = pure (a, a)
 -- control flow
 evalYulCat' (YulJmpU (_, f)) a = evalYulCat' f a
 evalYulCat' (YulJmpB (_, f)) a = pure (f a)

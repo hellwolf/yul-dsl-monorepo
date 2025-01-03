@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 module YulDSL.CodeGens.Yul.Internal.RhsExpr
   ( RhsExpr
-  , rhs_expr_to_code
+  , rhs_expr_to_code, spread_rhs
   , RhsExprGen (..)
   , mk_rhs_vars, build_rhs_aliases, build_inline_expr, build_code_block
   , assign_vars
@@ -25,6 +25,10 @@ data RhsExpr = LetVar Var      -- ^ Declared let var
 rhs_expr_to_code :: RhsExpr -> Code
 rhs_expr_to_code (LetVar x)     = unVar x
 rhs_expr_to_code (SimpleExpr x) = x
+
+-- | Spread variables separated by comma.
+spread_rhs :: [RhsExpr] -> Code
+spread_rhs = T.intercalate ", " . fmap rhs_expr_to_code
 
 -- | RHS expression generator.
 data RhsExprGen = MkRhsExprGen
@@ -76,6 +80,6 @@ assign_vars :: HasCallStack
 assign_vars ind vars rexprs = gen_assert_msg ("assign_vars" ++ show(length vars, length rexprs))
                               (length vars == length rexprs) $ T.unlines $
   zipWith
-  (\a b -> ind (a <> " := " <> b))
+  (\a b -> T.init $ ind $ a <> " := " <> b)
   (fmap unVar vars)
   (fmap rhs_expr_to_code rexprs)

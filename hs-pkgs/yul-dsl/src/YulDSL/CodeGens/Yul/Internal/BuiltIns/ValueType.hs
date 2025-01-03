@@ -55,7 +55,7 @@ keccak256 = mk_builtin "__keccak_c_" $ \part full ->
       vars  = gen_vars (length types)
       abienc_builtin = "__abienc_from_stack_c_" <> part
   in ( [ "function " <> T.pack full <> "(" <> spread_vars vars <> ") -> hash {"
-       , " let memPos := __allocate_unbounded()"
+       , " let memPos := allocate_unbounded()"
        , " let memEnd := " <> T.pack abienc_builtin <> "(memPos, " <> spread_vars vars <> ")"
        , " hash := keccak256(memPos, sub(memEnd, memPos))"
        , "}"

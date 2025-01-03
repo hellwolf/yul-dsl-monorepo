@@ -34,14 +34,14 @@ do_compile_cat (MkAnyYulCat (cat :: YulCat eff a b)) = go cat where
   go (YulFork ab ac)        = go_fork ab ac
   go (YulExl @_ @m @n)      = go_extract @m @n True  {- extractLeft -}
   go (YulExr @_ @m @n)      = go_extract @m @n False {- extractLeft -}
-  go (YulDis )              = go_dis @eff @a
+  go (YulDis)               = go_dis @a
   go (YulDup)               = go_dup @a
   -- - control flows
   go (YulEmb @_ @m @n x)    = go_emb @m @n x
   go (YulITE ct cf)         = go_ite ct cf
   go (YulJmpU t)            = go_jmpu t
   go (YulJmpB t)            = go_jmpb t
-  go (YulCall @_ @m @n sel) = go_call @m @n 'c' sel
+  go (YulCall @_ @m @n sel) = go_call @m @n 'O' sel
   -- - storage effects
   go (YulSGet)              = go_sget
   go (YulSPut @_ @m)        = go_sput @m
@@ -107,12 +107,11 @@ go_extract extractLeft =
      else build_code_block @(a, b) @b $
           \ind (code, ab_ins) -> pure (decor_code ind title code, drop na ab_ins)
 
-go_dis :: forall eff a. (HasCallStack, YulO1 a)
+go_dis :: forall a. (HasCallStack, YulO1 a)
        => CGState RhsExprGen
 go_dis = build_code_block @a @() $ \ind (code, _) ->
-  let -- effType = classifyYulCatEffect @eff
-      title = T.pack $ "dis " ++ "(" ++ abiTypeCompactName @a ++ ")"
-  in pure (decor_code ind title code, [])
+  let title = T.pack $ "dis " ++ "(" ++ abiTypeCompactName @a ++ ")"
+  in  pure (decor_code ind title code, [])
 
 go_dup :: forall a. (HasCallStack, YulO1 a)
        => CGState RhsExprGen
@@ -178,7 +177,47 @@ go_jmp fname = do
 
 go_call :: forall a b. (HasCallStack, YulO2 a b)
         => Char -> SELECTOR -> CGState RhsExprGen
-go_call _ = error "TODO"
+go_call effCode sel = build_code_block @((ADDR, U256), a) @b $ \ind (code, a_ins) -> do
+  let title = T.pack $ "cal" ++ effCode:" " ++ abiTypeCompactName @a ++ " -> " ++ abiTypeCompactName @b
+      addrExpr = a_ins !! 0
+      weiExpr = a_ins !! 1
+      abienc_builtin = "__abienc_from_stack_c_" <> abiTypeCompactName @a
+      dataSize = length (abiTypeInfo @b) * 32
+      abidec_builtin = "__abidec_from_memory_c_" <> abiTypeCompactName @b
+  mapM_ cg_use_builtin [abienc_builtin, abidec_builtin]
+  b_vars <- cg_create_vars @b
+  pure ( decor_code ind title $
+         code <>
+         declare_vars ind b_vars <>
+         T.unlines
+         ((T.init . ind) <$>
+           [ "let memPos := allocate_unbounded()"
+           , "mstore(memPos, shl(224, " <> T.pack (showSelectorOnly sel) <> "))"
+           , "let memEnd := " <> T.pack abienc_builtin <> "(add(memPos, 4), " <> spread_rhs (drop 2 a_ins) <> ")"
+           ]) <>
+         -- call(g, a, v, in, insize, out, outsize)
+         --
+         -- call contract at address a with input mem[in…(in+insize)) providing g gas and v wei and output area
+         -- mem[out…(out+outsize)) returning 0 on error (eg. out of gas) and 1 on success See more
+         ind ( "let success := call(gas()" <>
+               ", " <> rhs_expr_to_code addrExpr <>
+               ", " <> rhs_expr_to_code weiExpr <>
+               ", memPos" <> -- in
+               ", sub(memEnd, memPos)" <> -- inSize
+               ", memPos" <> -- out
+               ", " <> T.pack (show dataSize) <> ")" -- outSize
+             ) <>
+         T.unlines
+         ((T.init . ind) <$>
+           [ "if iszero(success) { revert_forward_1() }"
+           , "if success {"
+           , " let rsize := " <> T.pack (show dataSize)
+           , " if gt (rsize, returndatasize()) { rsize := returndatasize() }"
+           , " finalize_allocation(memPos, rsize)"
+           , " " <> spread_vars b_vars <> " := " <> T.pack abidec_builtin <> "(memPos, add(memPos, rsize))"
+           , "}"
+           ])
+       , mk_rhs_vars b_vars )
 
 go_sget :: HasCallStack
         => CGState RhsExprGen

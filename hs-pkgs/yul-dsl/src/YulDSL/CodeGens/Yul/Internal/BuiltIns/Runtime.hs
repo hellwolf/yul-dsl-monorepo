@@ -28,12 +28,27 @@ raw_boolean_operators =
   , const_builtin "sge" [ "function sge(a, b) -> r { r := iszero(slt(a, b)) }" ]
   ]
 
-allocate_unbounded =  const_builtin "__allocate_unbounded"
-  [ "function __allocate_unbounded() -> memPtr { memPtr := mload(64) }" ]
+revert_forward_1 = const_builtin "revert_forward_1"
+  [ "function revert_forward_1() {"
+  , " let pos := allocate_unbounded()"
+  , " returndatacopy(pos, 0, returndatasize())"
+  , " revert(pos, returndatasize())"
+  , "}"
+  ]
 
-prelude =
-  raw_boolean_operators ++
-  [ allocate_unbounded ]
+allocate_unbounded =  const_builtin "allocate_unbounded"
+  [ "function allocate_unbounded() -> memPtr { memPtr := mload(64) }" ]
+
+finalize_allocation = const_builtin_with_deps "finalize_allocation"
+  [ "function finalize_allocation(memPtr, size) {"
+  , " size := and(add(size, 31), not(31)) // round_up_to_mul_of_32"
+  , " let newFreePtr := add(memPtr, size)"
+  , " // protect against overflow"
+  , " if or(gt(newFreePtr, 0xffffffffffffffff), lt(newFreePtr, memPtr)) { panic_error_0x41() }"
+  , " mstore(64, newFreePtr)"
+  , "}"
+  ]
+  [ "panic_error_0x41" ]
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Memory management
@@ -43,6 +58,7 @@ prelude =
 -- Exceptions
 ------------------------------------------------------------------------------------------------------------------------
 
+-- TODO: rename to `const_revert0_c_
 revert0 = mk_builtin "__revert_c_" $ \part full ->
   let types = decodeAbiCoreTypeCompactName part
       vars  = gen_vars (length types)
@@ -76,6 +92,13 @@ dispatcher_builtins =
     , " s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)"
     , "}"
     ]
+  ]
+
+prelude =
+  raw_boolean_operators ++
+  [ revert_forward_1
+  , allocate_unbounded
+  , finalize_allocation
   ]
 
 exports =

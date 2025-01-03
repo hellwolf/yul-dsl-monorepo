@@ -86,7 +86,7 @@ instance forall x v1 vn r a.
          (P'V v1 r) (YulMonad v1 vn r)
          (YulCat'LVV v1 v1 r a) (YulCat'LVM v1 vn r a) One where
   uncurryingNP x (MkYulCat'LVV h) = MkYulCat'LVM
-    \a -> toss (h a) LVM.>> x
+    \a -> tossToUnit (h a) LVM.>> x
 
 instance forall x xs b g v1 vn r a.
          ( YulO5 x (NP xs) b r a
@@ -106,6 +106,19 @@ instance forall x xs b g v1 vn r a.
                           (MkYulCat'LVV (\a -> ignore (discard a) xs))
                         )
                   in g xxs2
+
+instance forall x v1 vn r a.
+         ( YulO3 x r a
+         , LiftFunction (CurryNP (NP '[]) x) (P'V v1 r) (YulMonad v1 vn r) One ~ YulMonad v1 vn r x
+         ) => CurryingNP '[] (P'V vn r x) (P'V v1 r) (YulMonad v1 vn r) (YulCat'LVV v1 v1 r a) One where
+  curryingNP cb = cb (MkYulCat'LVV (\a -> coerce'l (discard a)))
+
+instance forall x xs b r a v1 vn.
+         ( YulO5 x (NP xs) b r a
+         , CurryingNP xs (P'V vn r b) (P'V v1 r) (YulMonad v1 vn r) (YulCat'LVV v1 v1 r a) One
+         ) => CurryingNP (x:xs) (P'V vn r b) (P'V v1 r) (YulMonad v1 vn r) (YulCat'LVV v1 v1 r a) One where
+  curryingNP cb x = curryingNP @xs @(P'V vn r b) @(P'V v1 r) @(YulMonad v1 vn r) @(YulCat'LVV v1 v1 r a) @One
+                    (\(MkYulCat'LVV fxs) -> cb (MkYulCat'LVV (\a -> (cons'l x (fxs a)))))
 
 yulmonad'v :: forall f xs b r vd m1 m1b m2 m2b f' b'.
   ( YulO3 (NP xs) b r
@@ -143,7 +156,7 @@ instance forall x v1 vn r a.
          (P'P r) (YulMonad v1 vn r)
          (YulCat'LPP r a) (YulCat'LPM v1 vn r a) One where
   uncurryingNP x (MkYulCat'LPP h) = MkYulCat'LPM
-    \a -> toss (UnsafeLinear.coerce @_ @(P'V v1 r x) (h a & coerce'l @_ @())) LVM.>> x
+    \a -> tossToUnit (UnsafeLinear.coerce @_ @(P'V v1 r x) (h a & coerce'l @_ @())) LVM.>> x
 
 instance forall x xs b g v1 vn r a.
          ( YulO5 x (NP xs) b r a

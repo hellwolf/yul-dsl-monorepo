@@ -19,7 +19,7 @@ abidec_dispatcher = mk_builtin "__abidec_dispatcher_c_" $ \part full ->
   let types = decodeAbiCoreTypeCompactName part
       vars  = gen_vars (length types)
   in ( [ "function " <> T.pack full <> "(headStart, dataEnd) -> " <> spread_vars vars <> " {" ]
-       ++ abidec_dispatcher_body types vars
+       ++ abidec_main_body abidec_from_calldata_builtin_name types vars
        ++ [ "}" ]
      , fmap abidec_from_calldata_builtin_name types
      ++ fmap validate_value_builtin_name types
@@ -28,7 +28,7 @@ abidec_dispatcher = mk_builtin "__abidec_dispatcher_c_" $ \part full ->
 abidec_from_calldata1 = mk_builtin "__abidec_from_calldata_c1_" $ \part full ->
   let t = case decodeAbiCoreTypeCompactName part of
             [x] -> x
-            _   -> error ("abidec_from_stack, bad part: " <> part)
+            _   -> error ("__abidec_from_calldata_c1_, bad part: " <> part)
       goSimpleValue = [ "value := calldataload(offset)"
                       , T.pack (validate_value_builtin_name t) <> "(value)"
                       ]
@@ -40,6 +40,35 @@ abidec_from_calldata1 = mk_builtin "__abidec_from_calldata_c1_" $ \part full ->
        fmap add_indent (go t) ++
        [ "}" ]
      , [])
+
+------------------------------------------------------------------------------------------------------------------------
+
+abidec_from_memory = mk_builtin "__abidec_from_memory_c_" $ \part full ->
+  let types = decodeAbiCoreTypeCompactName part
+      vars  = gen_vars (length types)
+  in ( [ "function " <> T.pack full <> "(headStart, dataEnd) -> " <> spread_vars vars <> " {" ]
+       ++ abidec_main_body abidec_from_memory_builtin_name types vars
+       ++ [ "}" ]
+     , fmap abidec_from_memory_builtin_name types
+     ++ fmap value_cleanup_builtin_name types
+     )
+
+abidec_from_memory1 = mk_builtin "__abidec_from_memory_c1_" $ \part full ->
+  let t = case decodeAbiCoreTypeCompactName part of
+            [x] -> x
+            _   -> error ("__abidec_from_memory_c1_, bad part: " <> part)
+      -- TODO: use OrPattersn
+      goSimpleValue = [ "value := " <> T.pack (value_cleanup_builtin_name t) <> "(mload(offset))" ]
+      go (INTx' _ _) = goSimpleValue
+      go (BOOL')     = goSimpleValue
+      go (ADDR')     = goSimpleValue
+      go _           = error ("__abidec_from_memory_c1_ TOOD: "  <> part)
+  in ( [ "function " <> T.pack full <> "(offset, end) -> value {" ]
+       ++ fmap add_indent (go t) ++
+       [ "}" ]
+     , [])
+
+------------------------------------------------------------------------------------------------------------------------
 
 abienc_from_stack = mk_builtin "__abienc_from_stack_c_" $ \part full ->
   let types = decodeAbiCoreTypeCompactName part
@@ -54,22 +83,27 @@ abienc_from_stack = mk_builtin "__abienc_from_stack_c_" $ \part full ->
 abienc_from_stack1 = mk_builtin "__abienc_from_stack_c1_" $ \part full ->
   let t = case decodeAbiCoreTypeCompactName part of
             [x] -> x
-            _   -> error ("abienc_from_stack, bad part: " <> part)
+            _   -> error ("__abienc_from_stack_c1_, bad part: " <> part)
       -- TODO: use OrPattersn
       goSimpleValue = [ "mstore(pos, " <> T.pack (value_cleanup_builtin_name t) <> "(value))" ]
       go (INTx' _ _) = goSimpleValue
       go (BOOL')     = goSimpleValue
       go (ADDR')     = goSimpleValue
-      go _           = error ("abienc_from_stack TOOD: "  <> part)
+      go _           = error ("__abienc_from_stack_c1_ TOOD: "  <> part)
   in ( [ "function " <> T.pack full <> "(pos, value) {" ]
        ++ fmap add_indent (go t) ++
        [ "}" ]
      , [])
 
+------------------------------------------------------------------------------------------------------------------------
+
 exports :: [BuiltInEntry]
 exports =
   [ abidec_dispatcher
   , abidec_from_calldata1
+  , abidec_from_memory
+  , abidec_from_memory1
+  --
   , abienc_from_stack
   , abienc_from_stack1
   ]
@@ -78,23 +112,28 @@ exports =
 -- internal functions
 --
 
-abidec_from_calldata_builtin_name t = "__abidec_from_calldata_c1_" ++ abiCoreTypeCompactName t
+-- decoder
 
-abidec_dispatcher_body :: [ABICoreType] -> [Var] -> [Code]
-abidec_dispatcher_body types vars =
-  add_indent "if slt(sub(dataEnd, headStart), " <> T.pack (show dataSize) <> ") { revert(0, 0) }" :
+abidec_from_calldata_builtin_name t = "__abidec_from_calldata_c1_" ++ abiCoreTypeCompactName t
+abidec_from_memory_builtin_name t = "__abidec_from_memory_c1_" ++ abiCoreTypeCompactName t
+
+abidec_main_body :: (ABICoreType -> String) -> [ABICoreType] -> [Var] -> [Code]
+abidec_main_body builtin_f types vars =
+  add_indent "if slt(sub(dataEnd, headStart), " <> T.pack (show dataSize) <> ") { revert(0, 0) }" : -- TODO use a better revert
   map add_indent (go types 0)
   where
     go (n:ns) slot =
       [ "{"
       , add_indent $ "let offset := " <> T.pack (show (slot * 32))
       , add_indent $ unVar (vars !! slot) <> " := "
-        <> T.pack (abidec_from_calldata_builtin_name n) <> "(add(headStart, offset), dataEnd)"
+        <> T.pack (builtin_f n) <> "(add(headStart, offset), dataEnd)"
       , "}"
       ]
       ++ go ns (slot + 1)
     go [] _ = []
     dataSize = length types * 32
+
+-- encocder
 
 abienc_from_stack_builtin_name t = "__abienc_from_stack_c1_" ++ abiCoreTypeCompactName t
 

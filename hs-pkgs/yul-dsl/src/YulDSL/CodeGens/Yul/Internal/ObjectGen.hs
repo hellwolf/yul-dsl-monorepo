@@ -39,7 +39,7 @@ compile_fn_dispatcher ind (MkAnyExportedYulCat sel _ ((cid, _) :: NamedYulCat ef
              ) <>
         -- call the abi encoder for outputs
         ( if not (null vars_b) then
-            ind' "let memPos := __allocate_unbounded()" <>
+            ind' "let memPos := allocate_unbounded()" <>
             ind' ( "let memEnd := " <> T.pack abienc_builtin <> "(memPos, " <> spread_vars vars_b <> ")" ) <>
             ind' "return(memPos, sub(memEnd, memPos))"
           else ind' "return(0, 0)"

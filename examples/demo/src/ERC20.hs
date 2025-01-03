@@ -40,25 +40,10 @@ erc20_transfer = lfn $locId $ yulmonad'p @(ADDR -> ADDR -> U256 -> BOOL)
 
   embed true
 
-erc20_callback = lfn $locId $ yulmonad'p @(ADDR -> U256 -> BOOL)
-  \acc'p val'p -> LVM.do
-  -- (acc, val) <- impureN (acc'p, val'p)
-  -- acc <- impure acc'p
-  -- val <- impure val'p
-  -- toss $ externalCall'l honeyPot acc val
-  -- toss acc
-  -- toss val
-  tossN (acc'p, val'p)
-  embed true
-
 object = mkYulObject "ERC20" emptyCtor
   [ staticFn "balanceOf" erc20_balance_of
   , omniFn   "mint" erc20_mint
   , omniFn   "transfer" erc20_transfer
-  , staticFn "testCallback" erc20_callback
   ]
 
-
--- honeyPot ::
--- honeyPot :: YulO1 r => P'x e1 r ADDR %1 -> ExternalCall'L (U256 -> ()) -- P'V v1 r U256 %1 -> P'V (v1 + 1) r ()
-honeyPot = declareExternalFn @(U256 -> ()) "honeyPot"
+--honeyPot_tasteMe = declareExternalFn @(U256 -> U256 -> U256) "tasteMe"

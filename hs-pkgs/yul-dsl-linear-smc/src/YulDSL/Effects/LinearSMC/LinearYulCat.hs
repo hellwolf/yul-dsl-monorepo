@@ -96,21 +96,23 @@ decode'lpv f = decode (h f) -- an intermediate function to fight the multiplicit
           ⊸ (forall r. YulO1 r => P (YulCat oe) r a ⊸ P (YulCat oe) r b)
         h = UnsafeLinear.coerce {- using Unsafe coerce to convert effect after type-checking -}
 
-encode'lvv :: forall a b r v1 vd. YulO3 a b r
+encode'lvv :: forall a b c r v1 vd. YulO3 a b r
   => YulCat (VersionedInputOutput vd) a b
-  -> (P'V v1 r a ⊸ P'V (v1 + vd) r b)
-encode'lvv cat x = -- ghc can infer it; annotating for readability and double checking expected types
+  -> (P'V (v1 + vd) r b ⊸ c)
+  -> (P'V v1 r a ⊸ c)
+encode'lvv cat f x = -- ghc can infer it; annotating for readability and double checking expected types
   let cat' = UnsafeLinear.coerce cat :: YulCat (VersionedPort v1) a b
-  in UnsafeLinear.coerce @(P'V v1 r b) @(P'V (v1 + vd) r b)
-     (encode cat' x)
+      b = UnsafeLinear.coerce @(P'V v1 r b) @(P'V (v1 + vd) r b) (encode cat' x)
+  in f b
 
-encode'lpp :: forall a b r eff. YulO3 a b r
+encode'lpp :: forall a b c r eff. YulO3 a b r
   => YulCat (eff :: PureEffectKind) a b
-  -> (P'P r a ⊸ P'P r b)
-encode'lpp cat x = -- ghc can infer it; annotating for readability and double checking expected types
+  -> (P'P r b ⊸ c)
+  -> (P'P r a ⊸ c)
+encode'lpp cat f x = -- ghc can infer it; annotating for readability and double checking expected types
   let cat' = UnsafeLinear.coerce cat :: YulCat PurePort a b
-  in UnsafeLinear.coerce @(P'P r b) @(P'P r b)
-     (encode cat' x)
+      b = UnsafeLinear.coerce @(P'P r b) @(P'P r b) (encode cat' x)
+  in f b
 
 ------------------------------------------------------------------------------------------------------------------------
 -- (P'V v1 r x1 ⊸ P'V v1 r x2 ⊸ ... P'V vn r b) <=> YulCat'LVV v1 vn r (NP xs) b
@@ -271,12 +273,12 @@ match'l :: forall p r a b va vd.
   ⊸ (forall r1. YulO1 r1 => p (P'V va r1 (p a) ⊸ P'V va r1 a) ⊸ (P'V 0 r1 (p a) ⊸ P'V vd r1 b))
   -> P'V (va + vd) r b
 match'l p f = let c = match (YulId :: YulCat (VersionedInputOutput 0) (p a) (p a))
-                      \cs -> UnsafeLinear.coerce
+                      \cats -> UnsafeLinear.coerce
                              @(YulCat (VersionedInputOutput vd) (p a) b)
                              @(YulCat (VersionedInputOutput 0) (p a) b)
-                             (decode'lvv (f (BasePrelude.fmap encode'lvv cs)))
+                             (decode'lvv (f (BasePrelude.fmap (`encode'lvv` id) cats)))
                   c' = UnsafeLinear.coerce
                        @(YulCat (VersionedInputOutput 0) (p a) b)
                        @(YulCat (VersionedInputOutput vd) (p a) b)
                        c
-              in encode'lvv c' p
+              in encode'lvv c' id p

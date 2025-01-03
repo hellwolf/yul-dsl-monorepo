@@ -20,10 +20,18 @@ rangeSum'p = fn @(U256 -> U256 -> U256 -> U256) $locId
                                 then callFn rangeSum'p j step until
                                 else 0
 
-rangeSum'l = lfn $locId $
-  yulmonad'p @(U256 -> U256 -> U256 -> U256)
+rangeSum'l = lfn $locId $ yulmonad'p @(U256 -> U256 -> U256 -> U256)
   \from'p step'p until'p -> LVM.do
   impure $ callFn'lpp rangeSum'p from'p step'p until'p
+
+-- callExternalFoo0 = lfn $locId $ yulmonad'v @(ADDR -> U256)
+--   \to -> dup2'l to & \(to1, to2) -> externalCall external_foo0 to1 (discard to2)
+
+callExternalFoo1 = lfn $locId $ yulmonad'v @(ADDR -> U256 -> U256)
+  \to val1 -> externalCall external_foo1 to val1
+
+callExternalFoo2 = lfn $locId $ yulmonad'v @(ADDR -> U256 -> U256 -> U256)
+  \to val1 val2 -> externalCall external_foo2 to val1 val2
 
 object = mkYulObject "BasicTests" emptyCtor
   [ pureFn   "embUnit$p" embUnit'p
@@ -32,4 +40,14 @@ object = mkYulObject "BasicTests" emptyCtor
   , staticFn "embTrue$l" embTrue'l
   , pureFn   "rangeSum$p" rangeSum'p
   , staticFn "rangeSum$l" rangeSum'l
+  -- , omniFn   "callExternalFoo0" callExternalFoo0
+  , omniFn   "callExternalFoo1" callExternalFoo1
+  , omniFn   "callExternalFoo2" callExternalFoo2
   ]
+
+
+-- TODO generated interfaces
+
+external_foo0 = declareExternalFn @(U256) "foo0"
+external_foo1 = declareExternalFn @(U256 -> U256) "foo1"
+external_foo2 = declareExternalFn @(U256 -> U256 -> U256) "foo2"

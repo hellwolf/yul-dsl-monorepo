@@ -7,6 +7,7 @@ module YulDSL.CodeGens.Yul.Internal.FunctionGen
   ) where
 
 -- base
+import Control.Monad                               (unless, when)
 -- text
 import Data.Text.Lazy                              qualified as T
 --
@@ -184,8 +185,9 @@ go_call effCode sel = build_code_block @((ADDR, U256), a) @b $ \ind (code, a_ins
       abienc_builtin = "__abienc_from_stack_c_" <> abiTypeCompactName @a
       dataSize = length (abiTypeInfo @b) * 32
       abidec_builtin = "__abidec_from_memory_c_" <> abiTypeCompactName @b
-  mapM_ cg_use_builtin [abienc_builtin, abidec_builtin]
   b_vars <- cg_create_vars @b
+  when (length a_ins > 2) $ cg_use_builtin abienc_builtin
+  unless (null b_vars) $ cg_use_builtin abidec_builtin
   pure ( decor_code ind title $
          code <>
          declare_vars ind b_vars <>
@@ -193,7 +195,10 @@ go_call effCode sel = build_code_block @((ADDR, U256), a) @b $ \ind (code, a_ins
          ((T.init . ind) <$>
            [ "let memPos := allocate_unbounded()"
            , "mstore(memPos, shl(224, " <> T.pack (showSelectorOnly sel) <> "))"
-           , "let memEnd := " <> T.pack abienc_builtin <> "(add(memPos, 4), " <> spread_rhs (drop 2 a_ins) <> ")"
+           , "let memEnd := " <>
+             if (length a_ins > 2)
+             then T.pack abienc_builtin <> "(add(memPos, 4), " <> spread_rhs (drop 2 a_ins) <> ")"
+             else "add(memPos, 4)"
            ]) <>
          -- call(g, a, v, in, insize, out, outsize)
          --
@@ -214,9 +219,11 @@ go_call effCode sel = build_code_block @((ADDR, U256), a) @b $ \ind (code, a_ins
            , " let rsize := " <> T.pack (show dataSize)
            , " if gt (rsize, returndatasize()) { rsize := returndatasize() }"
            , " finalize_allocation(memPos, rsize)"
-           , " " <> spread_vars b_vars <> " := " <> T.pack abidec_builtin <> "(memPos, add(memPos, rsize))"
-           , "}"
-           ])
+           ] ++
+           ([ " " <> spread_vars b_vars <> " := " <>
+                    T.pack abidec_builtin <> "(memPos, add(memPos, rsize))"
+            | not (null b_vars) ]) ++
+           [ "}" ])
        , mk_rhs_vars b_vars )
 
 go_sget :: HasCallStack

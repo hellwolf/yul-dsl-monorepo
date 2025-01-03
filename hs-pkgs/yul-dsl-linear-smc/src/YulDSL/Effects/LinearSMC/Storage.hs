@@ -13,7 +13,7 @@ This module provides yul monads that work with contract storage.
 
 -}
 module YulDSL.Effects.LinearSMC.Storage
-  ( sget, SLocation (..) --, impureSGet
+  ( sget, SLocation (..)
   , sput, SPuttable (sputs)
   ) where
 -- base
@@ -35,19 +35,19 @@ import YulDSL.Effects.LinearSMC.YulMonad
 import YulDSL.Effects.LinearSMC.YulPort
 
 
-data SLocation v r = PureAdress (P'P r B32)
-                   | VersionedAddress (P'V v r B32)
+data SLocation v r = PureLocation (P'P r B32)
+                   | VersionedLocation (P'V v r B32)
 
 sget :: forall a r v. (YulO2 r a, ABIWordValue a)
      => SLocation v r ⊸ YulMonad v v r (P'V v r a)
-sget (VersionedAddress a) = pure (encode YulSGet a)
-sget (PureAdress a)       = pure (encode YulSGet (UnsafeLinear.coerce a))
+sget (VersionedLocation a) = pure (encode YulSGet a)
+sget (PureLocation a)      = pure (encode YulSGet (UnsafeLinear.coerce a))
 
 sput :: forall v r a. (YulO2 r a, ABIWordValue a)
       => SLocation v r ⊸ P'V v r a ⊸ YulMonad v (v + 1) r (P'V (v + 1) r ())
 sput to x = case to of
-              (VersionedAddress to') -> go to'
-              (PureAdress to')       -> go (UnsafeLinear.coerce to')
+              (VersionedLocation to') -> go to'
+              (PureLocation to')      -> go (UnsafeLinear.coerce to')
   where go to' = encode YulSPut (merge (to', x))
                  & \u -> MkLVM (unsafeAxiom, , UnsafeLinear.coerce u)
 

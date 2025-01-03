@@ -12,14 +12,35 @@ erc20_balance_storage_of = fn @(ADDR -> B32) $locId $
           (YulEmb (0xc455e3e95e9cd89a306d7619bc5f6406a85b850d31788d0c0fb15e6364be6592 :: U256))
           `YulFork` acc
 
+balance_sloc account'p = PureLocation (callFn'lpp erc20_balance_storage_of account'p)
+balance_of account'p = sget $ PureLocation (callFn'lpp erc20_balance_storage_of account'p)
+
 -- | ERC20 balance of the account.
 erc20_balance_of = lfn $locId $ yulmonad'p @(ADDR -> U256)
-  \account'p -> sget $ PureAdress (callFn'lpp erc20_balance_storage_of account'p)
+  \account'p -> balance_of account'p
 
 erc20_mint = lfn $locId $ yulmonad'p @(ADDR -> U256 -> ())
-  \account'p amount'p -> LVM.do
-  amount <- impure amount'p
-  sput (PureAdress (callFn'lpp erc20_balance_storage_of account'p)) amount
+  \account'p mintAmount'p -> LVM.do
+  -- (account'p, balanceBefore) <- pass account'p balance_of
+  -- -- update balance
+  -- (account'p, mintAmount'p) <- passN_ (account'p, mintAmount'p) $ \(account'p, mintAmount'p) -> LVM.do
+  --   mintAmount <- impure mintAmount'p
+  --   sput (balance_sloc account'p) (balanceBefore + mintAmount)
+  -- -- call external
+  -- (account, mintAmount) <- impureN (account'p, mintAmount'p)
+  -- externalCall onTokenMinted account mintAmount
+
+  -- NOTE1!! balanceBefore is fetched before calling the callback
+  (account'p, balanceBefore) <- pass account'p balance_of
+  -- call external
+  (account'p, mintAmount'p) <- passN_ (account'p, mintAmount'p) $ \(account'p, mintAmount'p) -> LVM.do
+    (account, mintAmount) <- impureN (account'p, mintAmount'p)
+    -- NOTE2!! this is a callback to an unsafe external contract
+    externalCall onTokenMinted account mintAmount
+  -- update balance
+  mintAmount <- impure mintAmount'p
+  -- NOTE3!! This code will never be able to compile, because data versioning mismatch.
+  sput (balance_sloc account'p) (balanceBefore + mintAmount)
 
 erc20_transfer = lfn $locId $ yulmonad'p @(ADDR -> ADDR -> U256 -> BOOL)
   \from'p to'p amount'p -> LVM.do
@@ -27,13 +48,13 @@ erc20_transfer = lfn $locId $ yulmonad'p @(ADDR -> ADDR -> U256 -> BOOL)
   -- data generate 0 block: update sender balance
   amount'p <- pass_ amount'p \amount'p -> LVM.do
     (from, amount) <- impureN (from'p, amount'p)
-    (from, fromS) <- pass from (pure . VersionedAddress . callFn'l erc20_balance_storage_of)
+    (from, fromS) <- pass from (pure . VersionedLocation . callFn'l erc20_balance_storage_of)
     sput fromS (callFn'l erc20_balance_of from - amount)
 
   -- data generation 1 block: update receiver balance
   with amount'p \amount'p -> LVM.do
     (to, amount) <- impureN (to'p, amount'p)
-    (to, toS) <- pass to (pure . VersionedAddress . callFn'l erc20_balance_storage_of)
+    (to, toS) <- pass to (pure . VersionedLocation . callFn'l erc20_balance_storage_of)
     sput toS (callFn'l erc20_balance_of to + amount)
 
   embed true

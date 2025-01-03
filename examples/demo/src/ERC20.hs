@@ -21,26 +21,26 @@ erc20_balance_of = lfn $locId $ yulmonad'p @(ADDR -> U256)
 
 erc20_mint = lfn $locId $ yulmonad'p @(ADDR -> U256 -> ())
   \account'p mintAmount'p -> LVM.do
-  -- (account'p, balanceBefore) <- pass account'p balance_of
-  -- -- update balance
-  -- (account'p, mintAmount'p) <- passN_ (account'p, mintAmount'p) $ \(account'p, mintAmount'p) -> LVM.do
-  --   mintAmount <- impure mintAmount'p
-  --   sput (balance_sloc account'p) (balanceBefore + mintAmount)
-  -- -- call external
-  -- (account, mintAmount) <- impureN (account'p, mintAmount'p)
-  -- externalCall onTokenMinted account mintAmount
-
-  -- NOTE1!! balanceBefore is fetched before calling the callback
   (account'p, balanceBefore) <- pass account'p balance_of
-  -- call external
-  (account'p, mintAmount'p) <- passN_ (account'p, mintAmount'p) $ \(account'p, mintAmount'p) -> LVM.do
-    (account, mintAmount) <- impureN (account'p, mintAmount'p)
-    -- NOTE2!! this is a callback to an unsafe external contract
-    externalCall onTokenMinted account mintAmount
   -- update balance
-  mintAmount <- impure mintAmount'p
-  -- NOTE3!! This code will never be able to compile, because data versioning mismatch.
-  sput (balance_sloc account'p) (balanceBefore + mintAmount)
+  (account'p, mintAmount'p) <- passN_ (account'p, mintAmount'p) $ \(account'p, mintAmount'p) -> LVM.do
+    mintAmount <- impure mintAmount'p
+    sput (balance_sloc account'p) (balanceBefore + mintAmount)
+  -- call external
+  (account, mintAmount) <- impureN (account'p, mintAmount'p)
+  externalCall onTokenMinted account mintAmount
+
+  -- -- NOTE1!! balanceBefore is fetched before calling the callback
+  -- (account'p, balanceBefore) <- pass account'p balance_of
+  -- -- call external
+  -- (account'p, mintAmount'p) <- passN_ (account'p, mintAmount'p) $ \(account'p, mintAmount'p) -> LVM.do
+  --   (account, mintAmount) <- impureN (account'p, mintAmount'p)
+  --   -- NOTE2!! this is a callback to an unsafe external contract
+  --   externalCall onTokenMinted account mintAmount
+  -- -- update balance
+  -- mintAmount <- impure mintAmount'p
+  -- -- NOTE3!! This code will never be able to compile, because data versioning mismatch.
+  -- sput (balance_sloc account'p) (balanceBefore + mintAmount)
 
 erc20_transfer = lfn $locId $ yulmonad'p @(ADDR -> ADDR -> U256 -> BOOL)
   \from'p to'p amount'p -> LVM.do

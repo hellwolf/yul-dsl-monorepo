@@ -202,7 +202,7 @@ TODOs & Future Plans
   - CLI
     - [x] ⭐ `yolc`, a MVP in shells script, prepares YOLC project and invoke YOLC builder.
   - Developer communication
-    - [ ] 🟠 Annotated ERC20 demo
+    - [x] Annotated ERC20 demo
   - Software distributions
     - [x] Nix flake
     - [ ] 🟢 Rudimentary github dev console

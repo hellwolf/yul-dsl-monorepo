@@ -54,11 +54,13 @@ import Data.LinearContext
 newtype LVM ctx (va :: Nat) (vb :: Nat) a = MkLVM (ctx ⊸ (Dict (va <= vb), ctx, a))
 
 -- | Unwrap the LVM linearly; otherwise the GHC default syntax createwith a multiplicity-polymorphic arrow.
-unLVM :: forall ctx va vb a. LVM ctx va vb a ⊸ ctx ⊸ (Dict (va <= vb), ctx, a)
+unLVM :: forall ctx va vb a. ()
+      => LVM ctx va vb a ⊸ ctx ⊸ (Dict (va <= vb), ctx, a)
 unLVM (MkLVM fa) = fa
 
 -- | Run a linearly versioned monad.
-runLVM :: forall a va vb ctx. ctx ⊸ LVM ctx va vb a ⊸ (ctx, a)
+runLVM :: forall a va vb ctx. ()
+       => ctx ⊸ LVM ctx va vb a ⊸ (ctx, a)
 runLVM ctx m = let !(lp, ctx', a) = unLVM m ctx in lseq lp (ctx', a)
 
 -- | Lift a value into a LVM.

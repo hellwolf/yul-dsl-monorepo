@@ -28,7 +28,7 @@ class ImpurableNP np'p np'v where
 instance forall. ImpurableNP (NP '[]) (NP '[]) where
   impure_np Nil = Nil
 
-impure :: forall x'p x'v r v. Impurable x'p x'v => x'p ⊸ YulMonad v v r x'v
+impure :: forall x'p x'v r v. (Impurable x'p x'v) => x'p ⊸ YulMonad v v r x'v
 impure x = pure (impure'l x)
 
 instance forall x'p x'v xs'p xs'v.

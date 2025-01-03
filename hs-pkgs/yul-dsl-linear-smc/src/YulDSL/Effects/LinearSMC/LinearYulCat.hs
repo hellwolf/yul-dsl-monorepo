@@ -53,10 +53,10 @@ type instance IsEffectNotPure (eff :: LinearEffectKind) = True
 type instance MayEffectWorld (VersionedInputOutput vd) = IsLinearEffectNonStatic vd
 type instance MayEffectWorld (PureInputVersionedOutput vd) = IsLinearEffectNonStatic vd
 
-instance KnownNat vd => ClassifiedYulCatEffect (VersionedInputOutput vd) where
+instance KnownNat vd => KnownYulCatEffect (VersionedInputOutput vd) where
   classifyYulCatEffect = if fromSNat (natSing @vd) BasePrelude.== 0 then StaticEffect else OmniEffect
 
-instance KnownNat vd => ClassifiedYulCatEffect (PureInputVersionedOutput vd) where
+instance KnownNat vd => KnownYulCatEffect (PureInputVersionedOutput vd) where
   classifyYulCatEffect = if fromSNat (natSing @vd) BasePrelude.== 0 then StaticEffect else OmniEffect
 
 ------------------------------------------------------------------------------------------------------------------------

@@ -33,7 +33,7 @@ import YulDSL.Effects.Pure
 -- | Existential yul function that is exported.
 data AnyExportedYulCat where
   MkAnyExportedYulCat :: forall k { eff :: k } xs b. YulO2 (NP xs) b
-                      => SELECTOR -> YulCatEffect -> NamedYulCat eff (NP xs) b -> AnyExportedYulCat
+                      => SELECTOR -> YulCatEffectClass -> NamedYulCat eff (NP xs) b -> AnyExportedYulCat
 
 withAnyExportedYulCat :: AnyExportedYulCat
   -> (forall k { eff :: k } xs b. (YulO2 (NP xs) b ) => NamedYulCat eff (NP xs) b -> a)
@@ -42,7 +42,7 @@ withAnyExportedYulCat (MkAnyExportedYulCat _ _ f) g = g f
 
 pureFn :: forall f xs b eff.
   ( AssertPureEffect eff
-  , ClassifiedYulCatEffect eff
+  , KnownYulCatEffect eff
   , YulO2 (NP xs) b
   , EquivalentNPOfFunction f xs b
   ) => String -> Fn eff f -> AnyExportedYulCat
@@ -51,7 +51,7 @@ pureFn fname (MkFn f) = assert (classifyYulCatEffect @eff == PureEffect)
 
 staticFn :: forall f xs b eff.
   ( AssertStaticEffect eff
-  , ClassifiedYulCatEffect eff
+  , KnownYulCatEffect eff
   , YulO2 (NP xs) b
   , EquivalentNPOfFunction f xs b
   ) => String -> Fn eff f -> AnyExportedYulCat
@@ -60,7 +60,7 @@ staticFn fname (MkFn f) = assert (classifyYulCatEffect @eff == StaticEffect)
 
 omniFn :: forall f xs b eff.
   ( AssertOmniEffect eff
-  , ClassifiedYulCatEffect eff
+  , KnownYulCatEffect eff
   , YulO2 (NP xs) b
   , EquivalentNPOfFunction f xs b
   ) => String -> Fn eff f -> AnyExportedYulCat
@@ -72,7 +72,8 @@ instance Show AnyExportedYulCat where
   show (MkAnyExportedYulCat s StaticEffect cat) = "static " <> show_fn_spec s cat
   show (MkAnyExportedYulCat s OmniEffect   cat) = "omni "   <> show_fn_spec s cat
 
-show_fn_spec :: forall xs b eff. YulO2 (NP xs) b => SELECTOR -> NamedYulCat eff (NP xs) b -> String
+show_fn_spec :: forall xs b eff. YulO2 (NP xs) b
+             => SELECTOR -> NamedYulCat eff (NP xs) b -> String
 show_fn_spec (SELECTOR (sel, fsig)) cat@(cid, _) =
   let fspec = case fsig of
                 Just (MkFuncSig fname) -> fname ++ "," ++ show sel ++ "," ++ cid

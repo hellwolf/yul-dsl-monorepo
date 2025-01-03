@@ -73,8 +73,9 @@ evalYulCat' YulSPut (r, a) = modify' $ \s -> s { store_map = M.insert r (toWord 
 evalYulCat :: YulO2 a b => YulCat eff a b -> a -> b
 evalYulCat s a = evalState (evalYulCat' s a) initEvalState
 
-evalFn :: forall eff f xs b. ( YulO2 (NP xs) b
-                             , EquivalentNPOfFunction f xs b
-                             )
+evalFn :: forall eff f xs b.
+          ( YulO2 (NP xs) b
+          , EquivalentNPOfFunction f xs b
+          )
        => Fn eff f -> NP xs -> b
 evalFn = evalYulCat . snd . unFn

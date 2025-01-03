@@ -35,8 +35,8 @@ import YulDSL.Core.YulCat
 data PureEffectKind = Pure  -- ^ Pure morphism, may not be total
                     | Total -- ^ TODO, to further distinguish totality from other pure morphism.
 
-instance ClassifiedYulCatEffect Pure where classifyYulCatEffect = PureEffect
-instance ClassifiedYulCatEffect Total where classifyYulCatEffect = PureEffect
+instance KnownYulCatEffect Pure where classifyYulCatEffect = PureEffect
+instance KnownYulCatEffect Total where classifyYulCatEffect = PureEffect
 
 type instance IsEffectNotPure (eff :: PureEffectKind) = False
 type instance MayEffectWorld  (eff :: PureEffectKind) = False

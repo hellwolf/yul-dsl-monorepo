@@ -21,7 +21,6 @@ module Control.LinearlyVersionedMonad.Combinators
   , pass, pass_, passN, passN_
   , with, with_
   ) where
-
 -- constraints
 import Data.Constraint.Linear         (Dict (Dict))
 --
@@ -35,7 +34,7 @@ import Data.TupleN                    (ConvertibleTupleN, TupleNtoNP, fromTupleN
 --------------------------------------------------------------------------------
 
 -- | Embed a value into the context of a LVM.
-embed :: forall ctx v a m. ContextualEmbeddable ctx m a
+embed :: forall ctx m v a. (ContextualEmbeddable ctx m a)
       => a ⊸ LVM ctx v v (m a)
 embed a = MkLVM \ctx -> let !(ctx', ma) = contextualEmbed ctx a in (Dict, ctx', ma)
 

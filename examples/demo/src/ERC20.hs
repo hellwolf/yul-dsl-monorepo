@@ -18,11 +18,10 @@ erc20_balance_of = lfn $locId $ yulmonad'p @(ADDR -> U256)
   accountS <- impure (callFn'lpp erc20_balance_storage_of account'p)
   sget accountS
 
-erc20_mint = lfn $locId $ yulmonad'p @(ADDR -> U256 -> BOOL)
+erc20_mint = lfn $locId $ yulmonad'p @(ADDR -> U256 -> ())
   \account'p amount'p -> LVM.do
   (to, amount) <- impureN (callFn'lpp erc20_balance_storage_of account'p, amount'p)
-  sput to amount
-  embed true
+  sput_ to amount
 
 erc20_transfer = lfn $locId $ yulmonad'p @(ADDR -> ADDR -> U256 -> BOOL)
   \from'p to'p amount'p -> LVM.do
@@ -43,11 +42,13 @@ erc20_transfer = lfn $locId $ yulmonad'p @(ADDR -> ADDR -> U256 -> BOOL)
 
 erc20_callback = lfn $locId $ yulmonad'p @(ADDR -> U256 -> BOOL)
   \acc'p val'p -> LVM.do
-  (acc, val) <- impureN (acc'p, val'p)
-  toss $ externalCall'l honeyPot acc val
+  -- (acc, val) <- impureN (acc'p, val'p)
+  -- acc <- impure acc'p
+  -- val <- impure val'p
+  -- toss $ externalCall'l honeyPot acc val
   -- toss acc
   -- toss val
-  -- tossN (acc'p, val'p)
+  tossN (acc'p, val'p)
   embed true
 
 object = mkYulObject "ERC20" emptyCtor

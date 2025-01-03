@@ -17,6 +17,7 @@ import Control.Category.Linear
 import YulDSL.Core
 --
 import Control.Category.Constrained.YulDSL ()
+import Data.LinearContext
 import Data.MPOrd
 
 
@@ -47,6 +48,8 @@ type P'P = P'x PurePort
 -- | Linear port of yul category with linearly versioned data, aka. versioned yul ports.
 type P'V v = P'x (VersionedPort v)
 
+-- instance LinearlyVersionedData (P'V v r a) v
+
 ------------------------------------------------------------------------------------------------------------------------
 -- $GeneralOps
 --
@@ -55,15 +58,18 @@ type P'V v = P'x (VersionedPort v)
 ------------------------------------------------------------------------------------------------------------------------
 
 -- | Embed a free value to a yul port diagram that discards any input yul ports.
-emb'l :: forall a b eff r. YulO3 a b r => a -> (P'x eff r b ⊸ P'x eff r a)
+emb'l :: forall a b eff r. YulO3 a b r
+      => a -> (P'x eff r b ⊸ P'x eff r a)
 emb'l a = encode (YulEmb a) . discard
 
 -- | Create a constant yul port diagram that discards any input yul ports.
-const'l :: forall a b eff r. (YulO3 a b r) => P'x eff r a ⊸ (P'x eff r b ⊸ P'x eff r a)
+const'l :: forall a b eff r. (YulO3 a b r)
+        => P'x eff r a ⊸ (P'x eff r b ⊸ P'x eff r a)
 const'l = flip (ignore . discard)
 
 -- | Duplicate the input yul port twice as a tuple.
-dup2'l :: forall a eff r. YulO2 a r => P'x eff r a ⊸ (P'x eff r a, P'x eff r a)
+dup2'l :: forall a eff r. YulO2 a r
+       => P'x eff r a ⊸ (P'x eff r a, P'x eff r a)
 dup2'l = split . copy
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -71,15 +77,18 @@ dup2'l = split . copy
 ------------------------------------------------------------------------------------------------------------------------
 
 -- | Coerce input yul port to an ABI coercible output yul port.
-coerce'l :: forall a b eff r. (YulO3 a b r, ABITypeCoercible a b) => P'x eff r a ⊸ P'x eff r b
+coerce'l :: forall a b eff r. (YulO3 a b r, ABITypeCoercible a b)
+         => P'x eff r a ⊸ P'x eff r b
 coerce'l = encode YulCoerceType
 
 -- | Prepend an element to a 'NP'.
-cons'l :: forall x xs eff r. YulO3 x (NP xs) r => P'x eff r x ⊸ P'x eff r (NP xs) ⊸ P'x eff r (NP (x:xs))
+cons'l :: forall x xs eff r. YulO3 x (NP xs) r
+       => P'x eff r x ⊸ P'x eff r (NP xs) ⊸ P'x eff r (NP (x:xs))
 cons'l x xs = coerce'l (merge (x, xs))
 
 -- | Split a 'NP' into its first element and the rest.
-uncons'l :: forall x xs eff r. YulO3 x (NP xs) r => P'x eff r (NP (x:xs)) ⊸ (P'x eff r x, P'x eff r (NP xs))
+uncons'l :: forall x xs eff r. YulO3 x (NP xs) r
+         => P'x eff r (NP (x:xs)) ⊸ (P'x eff r x, P'x eff r (NP xs))
 uncons'l = split . coerce'l
 
 ------------------------------------------------------------------------------------------------------------------------

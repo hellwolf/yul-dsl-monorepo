@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 {-|
 
 Copyright   : (c) 2024 Miao, ZhiCheng
@@ -13,17 +14,19 @@ Type classes required by the linear context that works with the 'Control.Linearl
 
 -}
 module Data.LinearContext
-  ( ContextualConsumable (contextualConsume)
+  ( LinearlyVersionedData
+  , ContextualConsumable (contextualConsume)
   , ContextualDupable (contextualDup), contextualDupTupleN
   , ContextualEmbeddable (contextualEmbed)
   ) where
-
 -- linear-base
 import Prelude.Linear (lseq)
 -- eth-abi
 import Data.SimpleNP  (NP (..))
 import Data.TupleN
 
+
+type family LinearlyVersionedData a v
 
 --------------------------------------------------------------------------------
 -- ContextualConsumable

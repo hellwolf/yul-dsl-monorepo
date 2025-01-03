@@ -24,7 +24,7 @@ safety to the practice of EVM programming.
 module YulDSL.Core.YulCat
   ( -- * Effect Classification
     IsEffectNotPure, MayEffectWorld, AssertPureEffect, AssertStaticEffect, AssertOmniEffect
-  , YulCatEffect (..), ClassifiedYulCatEffect (classifyYulCatEffect)
+  , YulCatEffectClass (..), KnownYulCatEffect (classifyYulCatEffect)
   , YulO1, YulO2, YulO3, YulO4, YulO5, YulO6
     -- * YulCat, the Categorical DSL of Yul
   , YulCat (..), AnyYulCat (..)
@@ -100,22 +100,23 @@ type AssertOmniEffect :: k -> Constraint
 type AssertOmniEffect eff = Assert (IsEffectNotPure eff && MayEffectWorld eff) -- (T, T)
                             (TypeError (Text "omni effect expected"))
 
--- | Data type of yul category effect.
-data YulCatEffect = PureEffect
-                  | StaticEffect
-                  | OmniEffect
-                  deriving (Eq, Show)
+-- | Classification of yul category effect.
+data YulCatEffectClass = PureEffect
+                       | StaticEffect
+                       | OmniEffect
+                       deriving (Eq, Show)
+
+-- | Singleton for YulCat effect classification.
+class KnownYulCatEffect eff where
+  classifyYulCatEffect :: YulCatEffectClass
 
 -- Shorthand for declaring multi-objects constraint:
 type YulO1 a = YulCatObj a
-type YulO2 a b = (YulCatObj a, YulCatObj b)
-type YulO3 a b c = (YulCatObj a, YulCatObj b, YulCatObj c)
-type YulO4 a b c d = (YulCatObj a, YulCatObj b, YulCatObj c, YulCatObj d)
-type YulO5 a b c d e = (YulCatObj a, YulCatObj b, YulCatObj c, YulCatObj d, YulCatObj e)
-type YulO6 a b c d e g = (YulCatObj a, YulCatObj b, YulCatObj c, YulCatObj d, YulCatObj e, YulCatObj g)
-
-class ClassifiedYulCatEffect eff where
-  classifyYulCatEffect :: YulCatEffect
+type YulO2 a b = (YulCatObj a, YulO1 b)
+type YulO3 a b c = (YulCatObj a, YulO2 b c)
+type YulO4 a b c d = (YulCatObj a, YulO3 b c d)
+type YulO5 a b c d e = (YulCatObj a, YulO4 b c d e)
+type YulO6 a b c d e g = (YulCatObj a, YulO5 b c d e g)
 
 -- Note: IsNonsenseEffect eff = Not (IsEffectNotPure eff) && CanEffectWorld eff -- (F, T)
 
@@ -134,6 +135,7 @@ data YulCat (eff :: k) a b where
   YulCoerceType :: forall eff a b. (YulO2 a b, ABITypeCoercible a b) => YulCat eff a b
   -- ^ Split the head and tail of a n-ary product where n >= 1.
   YulSplit :: forall eff xs. YulO1 (NP xs) => YulCat eff (NP xs) (Head xs, NP (Tail xs))
+  -- ^ Leave the effect conversion to the professionals.
 
   -- * SMC Primitives
   --
@@ -161,16 +163,16 @@ data YulCat (eff :: k) a b where
   -- ^ Jump to a built-in yul function.
   YulJmpB :: forall eff a b. YulO2 a b => BuiltInYulFunction a b %1-> YulCat eff a b
   -- ^ Call an external contract at the address along with a possible msgValue.
-  YulCall :: forall eff a b. YulO2 a b => SELECTOR -> YulCat eff ((ADDR, U256), a) b
+  YulCall :: forall eff a b. (YulO2 a b, AssertNonPureEffect eff) => SELECTOR -> YulCat eff ((ADDR, U256), a) b
   -- TODO: YulSCall
   -- TODO: YulDCall
 
   -- * Storage Primitives
   --
   -- ^ Get storage word.
-  YulSGet :: forall eff a. (AssertNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff B32 a
+  YulSGet :: forall eff a. (YulO1 a, AssertNonPureEffect eff, ABIWordValue a) => YulCat eff B32 a
   -- ^ Put storage word.
-  YulSPut :: forall eff a. (AssertNonPureEffect eff, YulO1 a, ABIWordValue a) => YulCat eff (B32, a) ()
+  YulSPut :: forall eff a. (YulO1 a, AssertNonPureEffect eff, ABIWordValue a) => YulCat eff (B32, a) ()
 
 -- | Existential wrapper of the 'YulCat'.
 data AnyYulCat = forall eff a b. (YulO2 a b) => MkAnyYulCat (YulCat eff a b)
@@ -279,8 +281,7 @@ instance forall x r eff.
 -- ^ Inductive case: @uncurryingNP (x -> ...xs -> b) => (x, uncurryingNP (... xs -> b)) => NP (x:xs) -> b@
 instance forall x xs b g r eff.
          ( YulO4 x (NP xs) b r
-         , UncurryNP'Fst g ~ xs
-         , UncurryNP'Snd g ~ b
+         , EquivalentNPOfFunction g xs b
          , UncurryingNP g xs b (YulCat eff r) (YulCat eff r) (YulCat eff r) (YulCat eff r) Many
          ) => UncurryingNP (x -> g) (x:xs) b (YulCat eff r) (YulCat eff r) (YulCat eff r) (YulCat eff r) Many where
   uncurryingNP f xxs = uncurryingNP @g @xs @b @(YulCat eff r) @(YulCat eff r) @(YulCat eff r) @(YulCat eff r) @Many

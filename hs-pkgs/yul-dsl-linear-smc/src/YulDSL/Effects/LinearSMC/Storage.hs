@@ -1,5 +1,20 @@
+{-|
+
+Copyright   : (c) 2024-5 Miao, ZhiCheng
+License     : LGPL-3
+
+Maintainer  : hellwolf@yolc.dev
+Stability   : experimental
+Portability : GHC2024
+
+= Description
+
+This module provides yul monads that work with contract storage.
+
+-}
 module YulDSL.Effects.LinearSMC.Storage
-  ( sget, sput, sput_
+  ( sget, SLocation (..) --, impureSGet
+  , sput, SPuttable (sputs)
   ) where
 -- base
 import GHC.TypeLits                      (type (+))
@@ -13,27 +28,44 @@ import Unsafe.Linear                     qualified as UnsafeLinear
 import YulDSL.Core
 -- linearly-versioned-monad
 import Control.LinearlyVersionedMonad    (LVM (MkLVM))
+import Control.LinearlyVersionedMonad    qualified as LVM
+import Data.LinearContext                (contextualEmbed)
 --
 import YulDSL.Effects.LinearSMC.YulMonad
 import YulDSL.Effects.LinearSMC.YulPort
 
 
-sget :: forall v r a. (YulO2 r a, ABIWordValue a)
-     => P'V v r B32 ⊸ YulMonad v v r (P'V v r a)
-sget a = pure (encode YulSGet a)
+data SLocation v r = PureAdress (P'P r B32)
+                   | VersionedAddress (P'V v r B32)
+
+sget :: forall a r v. (YulO2 r a, ABIWordValue a)
+     => SLocation v r ⊸ YulMonad v v r (P'V v r a)
+sget (VersionedAddress a) = pure (encode YulSGet a)
+sget (PureAdress a)       = pure (encode YulSGet (UnsafeLinear.coerce a))
 
 sput :: forall v r a. (YulO2 r a, ABIWordValue a)
-     => P'V v r B32 ⊸ P'V v r a ⊸ YulMonad v (v + 1) r (P'V (v + 1) r a)
-sput to x =
-  dup2'l x
-  & \(x1, x2) -> encode YulSPut (merge (to, x1))
-  & \u -> MkLVM (unsafeAxiom, , UnsafeLinear.coerce (ignore u x2))
+      => SLocation v r ⊸ P'V v r a ⊸ YulMonad v (v + 1) r (P'V (v + 1) r ())
+sput to x = case to of
+              (VersionedAddress to') -> go to'
+              (PureAdress to')       -> go (UnsafeLinear.coerce to')
+  where go to' = encode YulSPut (merge (to', x))
+                 & \u -> MkLVM (unsafeAxiom, , UnsafeLinear.coerce u)
 
-sput_ :: forall v r a. (YulO2 r a, ABIWordValue a)
-      => P'V v r B32 ⊸ P'V v r a ⊸ YulMonad v (v + 1) r (P'V (v + 1) r ())
-sput_ to x =
-  encode YulSPut (merge (to, x))
-  & \u -> MkLVM (unsafeAxiom, , UnsafeLinear.coerce u)
+class SPuttable v r a where
+  sputs :: forall. a ⊸ YulMonad v (v + 1) r (P'V (v + 1) r ())
 
--- refGet :: forall v r a. REF a -> YulMonad v v r (P'V v r a)
--- refGet = _
+instance (YulO2 r a, ABIWordValue a) => SPuttable v r (SLocation v r, P'V v r a) where
+  sputs (a, x) = sput a x
+
+instance (YulO1 r) => SPuttable v r (NP '[]) where
+  sputs Nil = MkLVM \ctx -> let !(ctx', u) = contextualEmbed ctx ()
+                            in (unsafeAxiom, ctx', u)
+
+instance ( YulO1 r
+         , SPuttable v r x
+         , SPuttable v r (NP xs)
+         ) => SPuttable v r (NP (x:xs)) where
+  sputs (x :* xs) = let x' = sputs x :: YulMonad v (v + 1) r (P'V (v + 1) r ())
+                        x'' = UnsafeLinear.coerce x' :: YulMonad v v r (P'V (v + 1) r ())
+                        xs' = sputs xs :: YulMonad v (v + 1) r (P'V (v + 1) r ())
+                    in x'' LVM.>> xs'

@@ -157,7 +157,7 @@ TODOs & Future Plans
       - [x] yulKeccak256 for supported types.
     - Side Effects
       - [x] `YulSGet`, `YulSPut` for raw storage operations.
-      - [ ] 🟠 `YulCall`, external function calls.
+      - [x]`YulCall`, external function calls.
     - Exceptions
       - [x] `revert0`, solidity-equivalent of `revert()`
     - Control flows
@@ -167,15 +167,15 @@ TODOs & Future Plans
       - [x] Function export modifiers resembling solidity: `pureFn, staticFn, externalFn`.
     - Type safety
       - [x] Type-level purity classification: `IsEffectNotPure, MayEffectWorld`.
+  - Built-in Yul Functions Infrastructure
+    - [ ] 🚧 🟢 Full arithmetic support
+    - [ ] 🚧 🟢 Full ABICodec support
   - Working with pure effect
     - [x] Build pure functions `fn`. ⚠️ This will be replaced with `$fn`.
     - [x] Call pure functions `callFn`.
   - CodeGen
     - [x] Yul code generator for any YulCat
     - [x] Yul object dispatcher generator for exported functions.
-    - Yul built-ins generators
-      - [ ] 🚧 🟢 Full arithmetic support
-      - [ ] 🚧 🟢 Full ABICodec support
   - Evaluator
     - `evalFn` to evaluate `Fn` (single YulCat value styled as a function) value.
 - yul-dsl-linear-smc

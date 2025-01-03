@@ -1,6 +1,6 @@
 {-|
 
-Copyright   : (c) 2024 Miao, ZhiCheng
+Copyright   : (c) 2024-2025 Miao, ZhiCheng
 License     : LGPL-3
 
 Maintainer  : hellwolf@yolc.dev

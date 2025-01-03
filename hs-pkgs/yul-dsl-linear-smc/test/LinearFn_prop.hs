@@ -41,7 +41,7 @@ bar3 = lfn "bar3" $ yulmonad'p @(U256 -> U256 -> U256 -> U256)
 
 fooSPut = lfn "fooSPut" $ yulmonad'v @(B32 -> U256 -> ())
   \addr val -> LVM.do
-  sput_ addr val
+  sput (VersionedAddress addr) val
 
 call0 = lfn "call0" $
   uncurry'lvv @(() -> U256)

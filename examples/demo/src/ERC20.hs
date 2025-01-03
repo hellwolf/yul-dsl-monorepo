@@ -14,14 +14,12 @@ erc20_balance_storage_of = fn @(ADDR -> B32) $locId $
 
 -- | ERC20 balance of the account.
 erc20_balance_of = lfn $locId $ yulmonad'p @(ADDR -> U256)
-  \account'p -> LVM.do
-  accountS <- impure (callFn'lpp erc20_balance_storage_of account'p)
-  sget accountS
+  \account'p -> sget $ PureAdress (callFn'lpp erc20_balance_storage_of account'p)
 
 erc20_mint = lfn $locId $ yulmonad'p @(ADDR -> U256 -> ())
   \account'p amount'p -> LVM.do
-  (to, amount) <- impureN (callFn'lpp erc20_balance_storage_of account'p, amount'p)
-  sput_ to amount
+  amount <- impure amount'p
+  sput (PureAdress (callFn'lpp erc20_balance_storage_of account'p)) amount
 
 erc20_transfer = lfn $locId $ yulmonad'p @(ADDR -> ADDR -> U256 -> BOOL)
   \from'p to'p amount'p -> LVM.do
@@ -29,14 +27,14 @@ erc20_transfer = lfn $locId $ yulmonad'p @(ADDR -> ADDR -> U256 -> BOOL)
   -- data generate 0 block: update sender balance
   amount'p <- pass_ amount'p \amount'p -> LVM.do
     (from, amount) <- impureN (from'p, amount'p)
-    (from, fromS) <- pass from (pure . callFn'l erc20_balance_storage_of)
-    sput_ fromS (callFn'l erc20_balance_of from - amount) -- TODO: operator for storage references
+    (from, fromS) <- pass from (pure . VersionedAddress . callFn'l erc20_balance_storage_of)
+    sput fromS (callFn'l erc20_balance_of from - amount)
 
   -- data generation 1 block: update receiver balance
   with amount'p \amount'p -> LVM.do
     (to, amount) <- impureN (to'p, amount'p)
-    (to, toS) <- pass to (pure . callFn'l erc20_balance_storage_of)
-    sput_ toS (callFn'l erc20_balance_of to + amount)
+    (to, toS) <- pass to (pure . VersionedAddress . callFn'l erc20_balance_storage_of)
+    sput toS (callFn'l erc20_balance_of to + amount)
 
   embed true
 
@@ -46,4 +44,6 @@ object = mkYulObject "ERC20" emptyCtor
   , omniFn   "transfer" erc20_transfer
   ]
 
---honeyPot_tasteMe = declareExternalFn @(U256 -> U256 -> U256) "tasteMe"
+-- TODO: to be abstracted in an interface definition
+--
+onTokenMinted = declareExternalFn @(U256 -> ()) "onTokenMinted"

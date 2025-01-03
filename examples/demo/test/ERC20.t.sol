@@ -5,12 +5,7 @@ import { Test, console } from "forge-std/Test.sol";
 import { IERC20Program, createERC20Program } from "yol-build/Contracts.sol";
 
 
-
-interface HoneyPot {
-  function tasteMe(uint256 v1, uint256 v2) external returns (uint256);
-}
-
-contract ERC20ProgramTest is Test, HoneyPot {
+contract ERC20ProgramTest is Test {
   IERC20Program private token;
   address constant ALICE = address(41);
   address constant BOB = address(42);
